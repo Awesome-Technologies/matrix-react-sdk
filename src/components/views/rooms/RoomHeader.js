@@ -138,6 +138,24 @@ module.exports = createReactClass({
             },
         });
     },
+
+    onArchiveCaseClick: function(ev) {
+        const ArchiveDialog = sdk.getComponent("dialogs.ConfirmArchiveCaseDialog");
+        Modal.createTrackedDialog('Archive case', '', ArchiveDialog, {
+            onFinished: (archiveCase) => {
+                if (!archiveCase) return;
+
+                // TODO archive case
+
+                // leave room
+
+                // forget room
+
+            },
+            room: this.props.room,
+        });
+    },
+
     _hasUnreadPins: function() {
         const currentPinEvent = this.props.room.currentState.getStateEvents("m.room.pinned_events", '');
         if (!currentPinEvent) return false;
@@ -306,16 +324,43 @@ module.exports = createReactClass({
         }
 
         let closeCaseButton;
-            closeCaseButton =
-                <AccessibleButton className="amp_RoomHeader_close_button"
-                    onClick={this.onCloseCaseClick}
-                    title={_t('Close case')}
-                >
-                  <span>{ _t('Close case') }</span>
-                </AccessibleButton>;
+        closeCaseButton =
+            <AccessibleButton className="amp_RoomHeader_close_button"
+                              onClick={this.onCloseCaseClick}
+                              title={_t('Close case')}
+            >
+                <span>{ _t('Close case') }</span>
+            </AccessibleButton>;
+
+        let archiveCaseButton;
+        let caseIsClosed = false;
+
+        // check if room is closed
+        for (let i=0; i <= this.props.room.timeline.length-1; i++) {
+            if (this.props.room.timeline[i].event.type === 'care.amp.done') {
+                caseIsClosed = this.props.room.timeline[i].event.content.done;
+                console.log("AMP.care case is closed")
+            } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
+                if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.done') {
+                    caseIsClosed = this.props.room.timeline[i]._clearEvent.content.done;
+                    console.log("AMP.care case is closed")
+                }
+            }
+        }
+
+        archiveCaseButton =
+            <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
+                              onClick={this.onArchiveCaseClick}
+                              title={_t('Archive case')}
+                              disabled={!caseIsClosed}
+            >
+                <span>{ _t('Archive case') }</span>
+            </AccessibleButton>;
+
         const rightRow =
             <div className="mx_RoomHeader_buttons">
                 { closeCaseButton }
+                { archiveCaseButton }
                 { settingsButton }
                 { pinnedEventsButton }
                 { manageIntegsButton }

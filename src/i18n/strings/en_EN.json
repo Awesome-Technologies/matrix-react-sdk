@@ -1902,6 +1902,9 @@
     "Close case": "Close case",
     "Close case?": "Close case?",
     "Closing the case is permanent. After closing the case will not be editable anymore.": "Closing the case is permanent. After closing the case will not be editable anymore.",
-    "This case has been closed. Editing is not possible anymore.": "This case has been closed. Editing is not possible anymore."
+    "This case has been closed. Editing is not possible anymore.": "This case has been closed. Editing is not possible anymore.",
+    "Archive case": "Archive case",
+    "Archive case?": "Archive case?",
+    "After archiving the case all the included data will not be accesible anymore.": "After archiving the case all the included data will not be accesible anymore."
 
 }
