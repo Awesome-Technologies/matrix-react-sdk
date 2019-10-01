@@ -196,3 +196,26 @@ limitations under the License.
 .mx_GroupInviteTile .mx_RoomTile_name {
     flex: 1;
 }
+
+.amp_RoomTile_infoContainer {
+    padding: 0 6px;
+    flex: 0 0 12px;
+    height: 12px;
+    position: relative;
+    top: -7px;
+}
+
+.amp_RoomTile_sender {
+    font-size: 10px;
+    padding: 0 6px;
+    color: #61708b;
+}
+
+.amp_RoomTile_createDate {
+    font-size: 10px;
+    padding: 0 6px;
+    color: #61708b;
+    position: absolute;
+    right: 0px;
+    bottom: -7px;
+}
