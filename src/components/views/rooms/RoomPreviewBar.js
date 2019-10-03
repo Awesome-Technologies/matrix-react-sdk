@@ -432,6 +432,10 @@ module.exports = createReactClass({
                 break;
             }
             case MessageCase.Invite: {
+
+                // AMP.care autojoin every invite
+                this.props.onJoinClick();
+
                 const RoomAvatar = sdk.getComponent("views.avatars.RoomAvatar");
                 const avatar = <RoomAvatar room={this.props.room} oobData={this.props.oobData} />;
 
