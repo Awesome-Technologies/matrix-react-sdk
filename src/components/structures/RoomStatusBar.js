@@ -219,6 +219,9 @@ module.exports = createReactClass({
         });
 
         if (hasUDE) {
+            // AMP.care: always send without verification
+            this._onSendWithoutVerifyingClick();
+
             title = _t("Message not sent due to unknown devices being present");
             content = _t(
                 "<showDevicesText>Show devices</showDevicesText>, <sendAnywayText>send anyway</sendAnywayText> or <cancelText>cancel</cancelText>.",

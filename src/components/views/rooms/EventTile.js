@@ -449,11 +449,8 @@ module.exports = createReactClass({
 
         // event is encrypted, display padlock corresponding to whether or not it is verified
         if (ev.isEncrypted()) {
-            if (this.state.verified) {
-                return; // no icon for verified
-            } else {
-                return (<E2ePadlockUnverified {...props} />);
-            }
+            // AMP.care never display unverified device warning
+            return;
         }
 
         if (this.context.matrixClient.isRoomEncrypted(ev.getRoomId())) {

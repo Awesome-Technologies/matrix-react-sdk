@@ -298,7 +298,6 @@ module.exports = createReactClass({
             <div className="mx_RoomHeader light-panel">
                 <div className="mx_RoomHeader_wrapper">
                     <div className="mx_RoomHeader_avatar">{ roomAvatar }</div>
-                    { e2eIcon }
                     { name }
                     { topicElement }
                     { cancelButton }
