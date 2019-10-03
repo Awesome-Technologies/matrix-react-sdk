@@ -1821,7 +1821,9 @@
     "AMP.care version:": "AMP.care version:",
     "AMP.care collects anonymous analytics to allow us to improve the application.": "AMP.care collects anonymous analytics to allow us to improve the application.",
     "For help with using AMP.care, click <a>here</a>.": "For help with using AMP.care, click <a>here</a>.",
-    "A new version of AMP.care is available.": "A new version of AMP.care is available."
-
+    "A new version of AMP.care is available.": "A new version of AMP.care is available.",
+    "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.": "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.",
+    "Share keys": "Share keys",
+    "New device": "New device"
 
 }

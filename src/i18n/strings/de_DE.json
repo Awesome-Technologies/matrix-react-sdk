@@ -1930,6 +1930,9 @@
     "A device's public name is visible to people you communicate with": "Der Gerätename ist sichtbar für die Personen mit denen du kommunizierst",
     "AMP.care collects anonymous analytics to allow us to improve the application.": "AMP.care sammelt anonymisierte Analysedaten, um die Anwendung kontinuierlich verbessern zu können.",
     "For help with using AMP.care, click <a>here</a>.": "Um Hilfe zur Benutzung von AMP.care zu erhalten, klicke <a>hier</a>.",
-    "A new version of AMP.care is available.": "Eine neue Version von AMP.care ist verfügbar."
-    
+    "A new version of AMP.care is available.": "Eine neue Version von AMP.care ist verfügbar.",
+    "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.": "Es wurde ein neues Gerät '%(displayName)s' zu deinem Account hinzugefügt, welches nun Verschlüsselungs-Schlüssel anfordert. Wenn dies korrekt ist, klicke auf 'Schlüssel teilen' um alle Daten auf dem neuen Gerät entschlüsseln zu können.",
+    "Share keys": "Schlüssel teilen",
+    "New device": "Neues Gerät"
+
 }

@@ -118,8 +118,8 @@ export default createReactClass({
 
         let text;
         if (this.state.wasNewDevice) {
-            text = _td("You added a new device '%(displayName)s', which is"
-                + " requesting encryption keys.");
+            text = _td("A new device was added to your account '%(displayName)s', which is requesting encryption keys. "
+            + "If this is correct click 'Share keys' to be able to decrypt all your data on the new device.");
         } else {
             text = _td("Your unverified device '%(displayName)s' is requesting"
                 + " encryption keys.");
@@ -131,11 +131,8 @@ export default createReactClass({
                 <p>{ text }</p>
 
                 <div className="mx_Dialog_buttons">
-                    <button onClick={this._onVerifyClicked} autoFocus="true">
-                        { _t('Start verification') }
-                    </button>
-                    <button onClick={this._onShareClicked}>
-                        { _t('Share without verifying') }
+                    <button onClick={this._onShareClicked} autoFocus="true">
+                        { _t('Share keys') }
                     </button>
                     <button onClick={this._onIgnoreClicked}>
                         { _t('Ignore request') }
@@ -165,7 +162,7 @@ export default createReactClass({
         return (
             <BaseDialog className='mx_KeyShareRequestDialog'
                 onFinished={this.props.onFinished}
-                title={_t('Encryption key request')}
+                title={_t('New device')}
                 contentId='mx_Dialog_content'
             >
                 { content }
