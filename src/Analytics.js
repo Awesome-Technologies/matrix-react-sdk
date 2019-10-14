@@ -95,12 +95,12 @@ const customVariables = {
     'Homeserver URL': {
         id: 7,
         expl: _td('Your homeserver\'s URL'),
-        example: 'https://matrix.org',
+        example: 'https://test.AMP.chat',
     },
     'Identity Server URL': {
         id: 8,
         expl: _td('Your identity server\'s URL'),
-        example: 'https://vector.im',
+        example: 'https://test.AMP.chat',
     },
 };
 

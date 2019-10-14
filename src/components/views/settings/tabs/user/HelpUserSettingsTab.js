@@ -170,7 +170,7 @@ export default class HelpUserSettingsTab extends React.Component {
                     {
                         _t('For help with using Riot, click <a>here</a> or start a chat with our ' +
                             'bot using the button below.', {}, {
-                            'a': (sub) => <a href="https://about.riot.im/need-help/" rel='noopener'
+                            'a': (sub) => <a href="https://amp.chat/help/" rel='noopener'
                                              target='_blank'>{sub}</a>,
                         })
                     }
@@ -184,7 +184,7 @@ export default class HelpUserSettingsTab extends React.Component {
         }
 
         const vectorVersion = this.state.vectorVersion
-            ? ghVersionLabel('vector-im/riot-web', this.state.vectorVersion)
+            ? ghVersionLabel('awesome-Technologies/riot-web', this.state.vectorVersion)
             : 'unknown';
 
         let olmVersion = MatrixClientPeg.get().olmVersion;
