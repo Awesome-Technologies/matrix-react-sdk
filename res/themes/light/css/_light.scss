@@ -290,6 +290,17 @@ $interactive-tooltip-fg-color: #ffffff;
 
 $breadcrumb-placeholder-bg-color: #e8eef5;
 
+// AMP.care Case panel
+$amp_case_border_color: #03B381;
+$amp_case_row_color: #F2F5F8;
+$amp_case_uneven_cell_color: #368BD6;
+$amp_case_even_cell_color: #75708B;
+$amp_case_severity_critical_color: #eb3b59;
+$amp_case_severity_urgent_color: #f7c930;
+$amp_case_severity_request_color: #26de82;
+$amp_case_severity_info_color: #45abf2;
+
+
 // ***** Mixins! *****
 
 @define-mixin mx_DialogButton {

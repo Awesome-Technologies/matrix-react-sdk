@@ -3,6 +3,7 @@ Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2017 Vector Creations Ltd
 Copyright 2018, 2019 New Vector Ltd
 Copyright 2019 The Matrix.org Foundation C.I.C.
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -1566,6 +1567,7 @@ module.exports = createReactClass({
         const TimelinePanel = sdk.getComponent("structures.TimelinePanel");
         const RoomUpgradeWarningBar = sdk.getComponent("rooms.RoomUpgradeWarningBar");
         const RoomRecoveryReminder = sdk.getComponent("rooms.RoomRecoveryReminder");
+        const CasePanel = sdk.getComponent("structures.CasePanel");
 
         if (!this.state.room) {
             const loading = this.state.roomLoading || this.state.peekLoading;
@@ -1940,6 +1942,27 @@ module.exports = createReactClass({
             <RightPanel roomId={this.state.room.roomId} resizeNotifier={this.props.resizeNotifier} />;
         const collapsedRhs = hideRightPanel || this.props.collapsedRhs;
 
+
+        const casePanel = (
+            <CasePanel ref={this._gatherTimelinePanelRef}
+                timelineSet={this.state.room.getUnfilteredTimelineSet()}
+                showReadReceipts={SettingsStore.getValue('showReadReceipts')}
+                manageReadReceipts={!this.state.isPeeking}
+                manageReadMarkers={!this.state.isPeeking}
+                hidden={hideMessagePanel}
+                highlightedEventId={highlightedEventId}
+                eventId={this.state.initialEventId}
+                eventPixelOffset={this.state.initialEventPixelOffset}
+                onScroll={this.onMessageListScroll}
+                onReadMarkerUpdated={this._updateTopUnreadMessagesBar}
+                showUrlPreview = {this.state.showUrlPreview}
+                className="mx_RoomView_casePanel"
+                membersLoaded={this.state.membersLoaded}
+                permalinkCreator={this._getPermalinkCreatorForRoom(this.state.room)}
+                resizeNotifier={this.props.resizeNotifier}
+                showReactions={true}
+            />);
+
         return (
             <main className={"mx_RoomView" + (inCall ? " mx_RoomView_inCall" : "")} ref="roomView">
                 <RoomHeader ref="header" room={this.state.room} searchInfo={searchInfo}
@@ -1961,6 +1984,7 @@ module.exports = createReactClass({
                 >
                     <div className={fadableSectionClasses}>
                         { auxPanel }
+                        { casePanel }
                         <div className="mx_RoomView_timeline">
                             { topUnreadMessagesBar }
                             { jumpToBottom }

@@ -1,5 +1,6 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -93,6 +94,13 @@ limitations under the License.
     overflow-anchor: none;
 }
 
+.mx_RoomView_casePanel {
+    width: 100%;
+    overflow-y: auto;
+    flex: 1 1 0;
+    overflow-anchor: none;
+}
+
 .mx_RoomView_messagePanelSearchSpinner {
     flex: 1;
     background-image: url('$(res)/img/typing-indicator-2x.gif');
@@ -122,6 +130,10 @@ limitations under the License.
     flex-direction: column;
     flex: 1;
     min-width: 0;
+
+    .mx_RoomView_casePanel {
+        order: 1;
+    }
 
     .mx_RoomView_messagePanel, .mx_RoomView_messagePanelSpinner, .mx_RoomView_messagePanelSearchSpinner {
         order: 2;
