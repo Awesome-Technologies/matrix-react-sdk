@@ -1,6 +1,7 @@
 /*
 Copyright 2016 OpenMarket Ltd
 Copyright 2017, 2018 New Vector Ltd
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -153,6 +154,21 @@ function _onStartDmFinished(shouldInvite, addrs) {
     }
 }
 
+function _onCreateCaseFinished(cancelled, addrs) {
+    if (!cancelled) return;
+
+    const addrTexts = addrs.map((addr) => addr.address);
+
+    // Start a new DM chat
+    createRoom({dmUserId: addrTexts[0]}).catch((err) => {
+        const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
+        Modal.createTrackedDialog('Failed to create case', '', ErrorDialog, {
+            title: _t("Failed to create case"),
+            description: ((err && err.message) ? err.message : _t("Operation failed")),
+        });
+    });
+}
+
 function _onRoomInviteFinished(roomId, shouldInvite, addrs) {
     if (!shouldInvite) return;
 
@@ -225,4 +241,3 @@ function _getDirectMessageRooms(addr) {
     });
     return rooms;
 }
-

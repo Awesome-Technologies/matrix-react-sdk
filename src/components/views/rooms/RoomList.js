@@ -1,6 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2017, 2018 Vector Creations Ltd
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -730,7 +731,7 @@ module.exports = createReactClass({
             },
             {
                 list: this.state.lists['im.vector.fake.invite'],
-                label: _t('Invites'),
+                label: _t('New cases'),
                 order: "recent",
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.invite'),
                 isInvite: true,
@@ -744,21 +745,13 @@ module.exports = createReactClass({
             },
             {
                 list: this.state.lists['im.vector.fake.direct'],
-                label: _t('People'),
+                label: _t('Cases'),
                 tagName: "im.vector.fake.direct",
                 headerItems: this._getHeaderItems('im.vector.fake.direct'),
                 order: "recent",
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.direct'),
-                onAddRoom: () => {dis.dispatch({action: 'view_create_chat'})},
-                addRoomLabel: _t("Start chat"),
-            },
-            {
-                list: this.state.lists['im.vector.fake.recent'],
-                label: _t('Rooms'),
-                headerItems: this._getHeaderItems('im.vector.fake.recent'),
-                order: "recent",
-                incomingCall: incomingCallIfTaggedAs('im.vector.fake.recent'),
-                onAddRoom: () => {dis.dispatch({action: 'view_create_room'});},
+                onAddRoom: () => {dis.dispatch({action: 'view_create_case'})},
+                addRoomLabel: _t("New case"),
             },
         ];
         const tagSubLists = Object.keys(this.state.lists)

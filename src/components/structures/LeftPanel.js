@@ -1,5 +1,6 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -267,7 +268,7 @@ const LeftPanel = createReactClass({
         const searchBox = (<SearchBox
             enableRoomSearchFocus={true}
             blurredPlaceholder={ _t('Filter') }
-            placeholder={ _t('Filter rooms…') }
+            placeholder={ _t('Filter cases…') }
             onSearch={ this.onSearch }
             onCleared={ this.onSearchCleared }
             onFocus={this._onSearchFocus}

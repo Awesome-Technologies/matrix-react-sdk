@@ -1,0 +1,67 @@
+/*
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+.amp_CreateCaseDialog {
+
+}
+
+.amp_Dialog_content {
+
+}
+
+.amp_CreateCaseDialog_details {
+
+}
+
+.amp_CreateCaseDialog_details_summary {
+    outline: none;
+}
+
+.amp_CaseTab_section {
+    display: flex;
+}
+
+.amp_VitalData_section {
+  
+}
+
+.amp_CreateCaseDialog_label {
+    text-align: left;
+    padding-top: 6px;
+    font-size: 12px;
+}
+
+.amp_CreateCaseDialog_input_container {
+    padding-right: 20px;
+}
+
+.amp_CreateCaseDialog_input {
+    font-size: 15px;
+    border-radius: 3px;
+    border: 1px solid $input-border-color;
+    padding: 9px;
+    color: $primary-fg-color;
+    background-color: $primary-bg-color;
+    width: 100%;
+}
+
+.amp_CreateCaseDialog_error {
+    text-align: center;
+    text-decoration: none;
+    font-family: Arial;
+    font-size: 17px;
+    color: $amp_no_recipient_warning_color;
+}

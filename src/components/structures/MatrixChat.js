@@ -3,6 +3,7 @@ Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2017 Vector Creations Ltd
 Copyright 2017-2019 New Vector Ltd
 Copyright 2019 The Matrix.org Foundation C.I.C.
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -49,6 +50,7 @@ import PageTypes from '../../PageTypes';
 import { getHomePageUrl } from '../../utils/pages';
 
 import createRoom from "../../createRoom";
+import createCase from "../../createCase";
 import KeyRequestHandler from '../../KeyRequestHandler';
 import { _t, getCurrentLanguage } from '../../languageHandler';
 import SettingsStore, {SettingLevel} from "../../settings/SettingsStore";
@@ -108,6 +110,7 @@ const ONBOARDING_FLOW_STARTERS = [
     'view_create_chat',
     'view_create_room',
     'view_create_group',
+    'view_create_case',
 ];
 
 export default createReactClass({
@@ -586,6 +589,9 @@ export default createReactClass({
             case 'view_create_room':
                 this._createRoom();
                 break;
+            case 'view_create_case':
+                this._createCase();
+                break;
             case 'view_create_group': {
                 const CreateGroupDialog = sdk.getComponent("dialogs.CreateGroupDialog");
                 Modal.createTrackedDialog('Create Community', '', CreateGroupDialog);
@@ -974,6 +980,25 @@ export default createReactClass({
         if (shouldCreate) {
             createRoom({createOpts}).done();
         }
+    },
+
+    _createCase: function() {
+        const CreateCaseDialog = sdk.getComponent('dialogs.CreateCaseDialog');
+        Modal.createTrackedDialog('Create Case', '', CreateCaseDialog, {
+            onFinished: (shouldCreate, name, noFederate, invitees, caseData) => {
+                if (shouldCreate) {
+                    const createOpts = {};
+                    if (name) createOpts.name = name;
+                    if (noFederate) createOpts.creation_content = {'m.federate': false};
+                    if (invitees) createOpts.invitees = invitees;
+                    if (caseData) createOpts.caseData = caseData;
+                    if (invitees.length >= 1) {
+                        const dmUserId = invitees[0];
+                        createCase({createOpts, dmUserId}).done();
+                    }
+                }
+            },
+        });
     },
 
     _chatCreateOrReuse: function(userId) {
