@@ -802,7 +802,6 @@ module.exports = createReactClass({
                                            onHeightChanged={this.props.onHeightChanged} />
                             { keyRequestInfo }
                             { reactionsRow }
-                            { actionBar }
                         </div>
                         {
                             // The avatar goes after the event tile as it's absolutely positioned to be over the

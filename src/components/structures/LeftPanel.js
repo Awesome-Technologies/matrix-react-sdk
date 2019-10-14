@@ -284,9 +284,7 @@ const LeftPanel = createReactClass({
                 { tagPanelContainer }
                 <aside className={"mx_LeftPanel dark-panel"} onKeyDown={ this._onKeyDown } onFocus={ this._onFocus } onBlur={ this._onBlur }>
                     <TopLeftMenuButton collapsed={ this.props.collapsed } />
-                    { breadcrumbs }
                     <div className="mx_LeftPanel_exploreAndFilterRow">
-                        { exploreButton }
                         { searchBox }
                     </div>
                     <CallPreview ConferenceHandler={VectorConferenceHandler} />

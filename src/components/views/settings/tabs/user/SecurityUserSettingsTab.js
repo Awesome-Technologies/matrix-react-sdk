@@ -193,8 +193,6 @@ export default class SecurityUserSettingsTab extends React.Component {
                     </li>
                 </ul>
                 {importExportButtons}
-                <SettingsFlag name='blacklistUnverifiedDevices' level={SettingLevel.DEVICE}
-                              onChange={this._updateBlacklistDevicesFlag} />
             </div>
         );
     }
@@ -267,7 +265,7 @@ export default class SecurityUserSettingsTab extends React.Component {
                 <div className='mx_SettingsTab_section'>
                     <span className="mx_SettingsTab_subheading">{_t("Analytics")}</span>
                     <div className='mx_SettingsTab_subsectionText'>
-                        {_t("Riot collects anonymous analytics to allow us to improve the application.")}
+                        {_t("AMP.care collects anonymous analytics to allow us to improve the application.")}
                         &nbsp;
                         {_t("Privacy is important to us, so we don't collect any personal or " +
                             "identifiable data for our analytics.")}

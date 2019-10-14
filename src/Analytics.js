@@ -61,7 +61,7 @@ const customVariables = {
     },
     'App Version': {
         id: 2,
-        expl: _td('The version of Riot.im'),
+        expl: _td('The version of AMP.care'),
         example: '15.0.0',
     },
     'User Type': {
@@ -92,12 +92,12 @@ const customVariables = {
     'Homeserver URL': {
         id: 7,
         expl: _td('Your homeserver\'s URL'),
-        example: 'https://matrix.org',
+        example: 'https://test.amp.care',
     },
     'Identity Server URL': {
         id: 8,
         expl: _td('Your identity server\'s URL'),
-        example: 'https://vector.im',
+        example: 'https://test.amp.care',
     },
 };
 
@@ -280,7 +280,7 @@ class Analytics {
             title: _t('Analytics'),
             description: <div className="mx_AnalyticsModal">
                 <div>
-                    { _t('The information being sent to us to help make Riot.im better includes:') }
+                    { _t('The information being sent to us to help make AMP.care better includes:') }
                 </div>
                 <table>
                     { rows.map((row) => <tr key={row[0]}>

@@ -1915,5 +1915,21 @@
     "Enter a new identity server": "Gib einen neuen Identitätsserver ein",
     "Clear personal data": "Persönliche Daten löschen",
     "Warning: Your personal data (including encryption keys) is still stored on this device. Clear it if you're finished using this device, or want to sign in to another account.": "Warnung: Deine persönlichen Daten (inkl. Verschlüsselungsschlüssel) sind noch auf diesem Gerät gespeichert. Lösche diese Daten, wenn du mit der Nutzung auf diesem Gerät fertig bist oder dich in einen anderen Account einloggen möchtest.",
-    "Disconnecting from your identity server will mean you won't be discoverable by other users and you won't be able to invite others by email or phone.": "Wenn du die Verbindung zu deinem Identitätsserver trennst, heißt das, dass du nicht mehr von anderen Benutzern gefunden werden und auch andere nicht mehr per E-Mail oder Telefonnummer einladen kannst."
+    "Disconnecting from your identity server will mean you won't be discoverable by other users and you won't be able to invite others by email or phone.": "Wenn du die Verbindung zu deinem Identitätsserver trennst, heißt das, dass du nicht mehr von anderen Benutzern gefunden werden und auch andere nicht mehr per E-Mail oder Telefonnummer einladen kannst.",
+    "Backup has an <validity>invalid</validity> signature from this device": "Das Backup hat eine <validity> ungültige </validity> Signatur von diesem Gerät.",
+    "Show recent room avatars above the room list": "Zeige die letzten Avatare über der Raumliste an (neu laden um Änderungen zu übernehmen)",
+
+    "Deactivate account": "Benutzerkonto schließen",
+    "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).": "Bitte hilf uns AMP.care zu verbessern, in dem du <UsageDataLink>anonyme Nutzungsdaten</UsageDataLink> schickst. Dies wird ein Cookie benutzen (bitte beachte auch unsere <PolicyLink>Cookie-Richtlinie</PolicyLink>).",
+    "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie.": "Bitte hilf uns AMP.care zu verbessern, in dem du <UsageDataLink>anonyme Nutzungsdaten</UsageDataLink> schickst. Dies wird ein Cookie benutzen.",
+    "The information being sent to us to help make AMP.care better includes:": "Die Informationen, die an uns gesendet werden um AMP.care zu verbessern enthalten:",
+    "The version of AMP.care": "AMP.care Versionsnummer",
+    "Sign in to your AMP.care account": "Melde dich mit deinem AMP.care-Benutzerkonto an",
+    "Sign in to your AMP.care account on %(serverName)s": "Melde dich mit deinem AMP.care-Benutzerkonto auf %(serverName)s an",
+    "AMP.care version:": "AMP.care Version:",
+    "A device's public name is visible to people you communicate with": "Der Gerätename ist sichtbar für die Personen mit denen du kommunizierst",
+    "AMP.care collects anonymous analytics to allow us to improve the application.": "AMP.care sammelt anonymisierte Analysedaten, um die Anwendung kontinuierlich verbessern zu können.",
+    "For help with using AMP.care, click <a>here</a>.": "Um Hilfe zur Benutzung von AMP.care zu erhalten, klicke <a>hier</a>.",
+    "A new version of AMP.care is available.": "Eine neue Version von AMP.care ist verfügbar."
+    
 }

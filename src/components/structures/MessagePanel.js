@@ -1,6 +1,7 @@
 /*
 Copyright 2016 OpenMarket Ltd
 Copyright 2018 New Vector Ltd
+Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -302,6 +303,40 @@ module.exports = createReactClass({
 
     // TODO: Implement granular (per-room) hide options
     _shouldShowEvent: function(mxEv) {
+
+        // exclude AMP data from messages view
+        if (mxEv._clearEvent !== undefined) {
+          if (mxEv._clearEvent.type === "care.amp.observation") {
+            return false;
+          }
+        }
+        if (mxEv.event.state_key === "care.amp.case" || mxEv.event.state_key === "care.amp.patient") {
+          return false;
+        }
+
+        // hide state event messages
+        switch (mxEv.event.type) {
+            case 'm.room.encryption': //Event.EVENT_TYPE_MESSAGE_ENCRYPTION:
+            //case '': //Event.EVENT_TYPE_STATE_ROOM_CREATE:
+            case 'm.room.name': //Event.EVENT_TYPE_STATE_ROOM_NAME:
+            case 'm.room.topic':
+            //case '': //Event.EVENT_TYPE_STATE_ROOM_AVATAR:
+            case 'm.room.member': //Event.EVENT_TYPE_STATE_ROOM_MEMBER:
+            case 'm.room.aliases': //Event.EVENT_TYPE_STATE_ROOM_ALIASES:
+            case 'm.room.canonical_alias':
+            case 'm.room.history_visibility': //Event.EVENT_TYPE_STATE_HISTORY_VISIBILITY:
+            case 'm.room.guest_access': //Event.EVENT_TYPE_STATE_ROOM_JOIN_RULES:
+            case 'm.room.power_levels': //Event.EVENT_TYPE_STATE_ROOM_POWER_LEVELS:
+            case 'm.room.third_party_invite': //Event.EVENT_TYPE_STATE_ROOM_THIRD_PARTY_INVITE:
+            case 'm.room.related_groups': //Event.EVENT_TYPE_STATE_RELATED_GROUPS:
+            case 'm.room.pinned_events':
+            case 'm.room.server_acl':
+            case 'm.room.tombstone':
+            case 'm.room.join_rules':
+            case 'm.room.guest_access':
+                return false;
+        }
+
         if (mxEv.sender && MatrixClientPeg.get().isUserIgnored(mxEv.sender.userId)) {
             return false; // ignored = no show (only happens if the ignore happens after an event was received)
         }

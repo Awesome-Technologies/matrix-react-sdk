@@ -318,7 +318,8 @@ export default class MessageComposer extends React.Component {
                     room={this.props.room}
                     placeholder={this.renderPlaceholderText()}
                     permalinkCreator={this.props.permalinkCreator} />,
-                <Stickerpicker key='stickerpicker_controls_button' room={this.props.room} />,
+                showFormattingButton ? <FormattingButton key="controls_formatting"
+                    showFormatting={this.state.showFormatting} onClickHandler={this.onToggleFormattingClicked} /> : null,
                 <UploadButton key="controls_upload" roomId={this.props.room.roomId} />,
                 callInProgress ? <HangupButton key="controls_hangup" roomId={this.props.room.roomId} /> : null,
                 callInProgress ? null : <CallButton key="controls_call" roomId={this.props.room.roomId} />,

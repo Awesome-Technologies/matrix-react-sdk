@@ -1810,5 +1810,18 @@
     "If you didn't remove the recovery method, an attacker may be trying to access your account. Change your account password and set a new recovery method immediately in Settings.": "If you didn't remove the recovery method, an attacker may be trying to access your account. Change your account password and set a new recovery method immediately in Settings.",
     "Failed to set direct chat tag": "Failed to set direct chat tag",
     "Failed to remove tag %(tagName)s from room": "Failed to remove tag %(tagName)s from room",
-    "Failed to add tag %(tagName)s to room": "Failed to add tag %(tagName)s to room"
+    "Failed to add tag %(tagName)s to room": "Failed to add tag %(tagName)s to room",
+
+    "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).": "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).",
+    "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie.": "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie.",
+    "The information being sent to us to help make AMP.care better includes:": "The information being sent to us to help make AMP.care better includes:",
+    "The version of AMP.care": "The version of AMP.care",
+    "Sign in to your AMP.care account": "Sign in to your AMP.care account",
+    "Sign in to your AMP.care account on %(serverName)s": "Sign in to your AMP.care account on %(serverName)s",
+    "AMP.care version:": "AMP.care version:",
+    "AMP.care collects anonymous analytics to allow us to improve the application.": "AMP.care collects anonymous analytics to allow us to improve the application.",
+    "For help with using AMP.care, click <a>here</a>.": "For help with using AMP.care, click <a>here</a>.",
+    "A new version of AMP.care is available.": "A new version of AMP.care is available."
+
+
 }
