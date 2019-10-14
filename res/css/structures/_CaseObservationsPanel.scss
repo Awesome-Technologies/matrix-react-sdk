@@ -126,3 +126,11 @@ limitations under the License.
   border-radius: 20px;
   max-height: 50%;
 }
+
+.amp_CaseObservationsPanel_isClosedWarning {
+  text-align: center;
+  text-decoration: none;
+  font-family: Arial;
+  font-size: 17px;
+  color: $amp_case_closed_warning_color;
+}

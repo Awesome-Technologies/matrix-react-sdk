@@ -219,25 +219,25 @@ module.exports = createReactClass({
     // TODO: Implement granular (per-room) hide options
     _shouldShowEvent: function(mxEv) {
         // filter for type='care.amp.observation' or state_key='care.amp.patient/care.amp.case'
-        if( mxEv.event.state_key === "care.amp.case" || mxEv.event.state_key === "care.amp.patient"){
-          return true;
+        if (mxEv.event.state_key === "care.amp.case" || mxEv.event.state_key === "care.amp.patient") {
+            return true;
         }
 
-        if(mxEv._clearEvent.type !== undefined){
-          if(mxEv._clearEvent.type === "care.amp.observation"){
-            return true;
-          }
-          if(mxEv._clearEvent.type === "care.amp.done"){
-            return true;
-          }
+        if (mxEv._clearEvent.type !== undefined) {
+            if (mxEv._clearEvent.type === "care.amp.observation") {
+                return true;
+            }
+            if (mxEv._clearEvent.type === "care.amp.done") {
+                return true;
+            }
         }
 
         // unencrypted events
-        if(mxEv.event.type === "care.amp.observation"){
-          return true;
+        if (mxEv.event.type === "care.amp.observation") {
+            return true;
         }
-        if(mxEv.event.type === "care.amp.done"){
-          return true;
+        if (mxEv.event.type === "care.amp.done") {
+            return true;
         }
 
         // ignore everything else
@@ -430,164 +430,152 @@ module.exports = createReactClass({
     _parseData: function(mxEv) {
 
       // return if event is not decrypted yet
-      if(mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined){
-        return;
+      if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
+          return;
       }
 
-      if(mxEv.event.type === 'm.room.encrypted'){
-        console.log("AMP.care encrypted Event " + mxEv._clearEvent.type);
-      }
-      else{
-        console.log("AMP.care Event " + mxEv.event.type);
+      if (mxEv.event.type === 'm.room.encrypted') {
+          console.log("AMP.care encrypted Event " + mxEv._clearEvent.type);
+      } else {
+          console.log("AMP.care Event " + mxEv.event.type);
       }
       console.log(mxEv);
-      /*
-      let content = mxEv._clearEvent.content;
-      if(content === undefined){
-        // search for unencrypted content
-        content = mxEv.event.content;
-        if(content === undefined){
-          return;
-        }
-      }*/
-
 
       let local_event = mxEv.event;
-      if(mxEv.event.type === 'm.room.encrypted') {
-        local_event = mxEv._clearEvent;
+      if (mxEv.event.type === 'm.room.encrypted') {
+          local_event = mxEv._clearEvent;
       }
 
-      if( local_event.type === "care.amp.case" ){
-        if(local_event.content.title !== undefined) {
-          this.state.caseTitle = local_event.content.title;
-          this.state.hasCaseData = true;
-        }
-        if(local_event.content.note !== undefined) {
-          this.state.caseNote = local_event.content.note;
-          this.state.hasCaseData = true;
-        }
-        if(local_event.content.severity !== undefined) {
-          this.state.caseSeverity = local_event.content.severity;
-          this.state.hasCaseData = true;
-        }
-        if(local_event.content.requester !== undefined) {
-          this.state.caseRequester = local_event.content.requester.reference;
-          this.state.hasCaseData = true;
-        }
-      }
-
-      if( local_event.type === "care.amp.patient" ){
-        if(local_event.content.name !== '' && local_event.content.name !== undefined){
-            this.state.patientName = local_event.content.name;
-            this.state.hasPatientData = true;
-        }
-        if(local_event.content.gender !== undefined) {
-          this.state.patientGender = local_event.content.gender;
-          if(local_event.content.gender !== 'unknown'){
-            this.state.hasPatientData = true;
+      if (local_event.type === "care.amp.case" ) {
+          if (local_event.content.title !== undefined) {
+              this.state.caseTitle = local_event.content.title;
+              this.state.hasCaseData = true;
           }
-        }
-        if(local_event.content.birthDate !== '' && local_event.content.birthDate !== undefined) {
-          var date = new Date(local_event.content.birthDate);
-          this.state.patientBirthdate = date.toLocaleDateString();
-          this.state.hasPatientData = true;
-        }
+          if (local_event.content.note !== undefined) {
+              this.state.caseNote = local_event.content.note;
+              this.state.hasCaseData = true;
+          }
+          if (local_event.content.severity !== undefined) {
+              this.state.caseSeverity = local_event.content.severity;
+              this.state.hasCaseData = true;
+          }
+          if (local_event.content.requester !== undefined) {
+              this.state.caseRequester = local_event.content.requester.reference;
+              this.state.hasCaseData = true;
+          }
       }
 
-      if( local_event.type === "care.amp.observation" ){
-        switch(local_event.content.id){
-          case('heart-rate'):
-            this.state.vitalData_pulse = local_event.content.valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_pulseDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_pulseDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('glucose'):
-            this.state.vitalData_bloodSugar = local_event.content.valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_bloodSugarDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_bloodSugarDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('body-temperature'):
-            this.state.vitalData_temperature = local_event.content.valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_temperatureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_temperatureDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('blood-pressure'):
-            this.state.vitalData_bloodPressureSys = local_event.content.component[0].valueQuantity.value;
-            this.state.vitalData_bloodPressureDia = local_event.content.component[1].valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_bloodpressureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_bloodpressureDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('body-weight'):
-            this.state.vitalData_weight = local_event.content.valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_weightDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_weightDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('oxygen'):
-            this.state.vitalData_oxygen = local_event.content.valueQuantity.value;
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.vitalData_oxygenDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-            }
-            else{
-              this.state.vitalData_oxygenDatetime = '-';
-            }
-            this.state.hasVitalData = true;
-            break;
-          case('last-defecation'):
-            if(local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined){
-              var date = new Date(local_event.content.effectiveDateTime);
-              this.state.anamnesisData_lastDefecation = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-              this.state.hasAnamnesisData = true;
-            }
-            break;
-          case('misc'):
-            this.state.anamnesisData_misc = local_event.content.valueString;
-            this.state.hasAnamnesisData = true;
-            break;
-          case('responsiveness'):
-            this.state.anamnesisData_responsiveness = local_event.content.valueString;
-            this.state.hasAnamnesisData = true;
-            break;
-          case('pain'):
-            this.state.anamnesisData_pain = local_event.content.valueString;
-            this.state.hasAnamnesisData = true;
-            break;
-        }
+      if (local_event.type === "care.amp.patient") {
+          if (local_event.content.name !== '' && local_event.content.name !== undefined) {
+                this.state.patientName = local_event.content.name;
+                this.state.hasPatientData = true;
+          }
+          if (local_event.content.gender !== undefined) {
+              this.state.patientGender = local_event.content.gender;
+              if (local_event.content.gender !== 'unknown') {
+                  this.state.hasPatientData = true;
+              }
+          }
+          if (local_event.content.birthDate !== '' && local_event.content.birthDate !== undefined) {
+              var date = new Date(local_event.content.birthDate);
+              this.state.patientBirthdate = date.toLocaleDateString();
+              this.state.hasPatientData = true;
+          }
+      }
+
+      if (local_event.type === "care.amp.observation") {
+          switch (local_event.content.id) {
+              case('heart-rate'):
+                  this.state.vitalData_pulse = local_event.content.valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_pulseDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_pulseDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('glucose'):
+                  this.state.vitalData_bloodSugar = local_event.content.valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_bloodSugarDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_bloodSugarDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('body-temperature'):
+                  this.state.vitalData_temperature = local_event.content.valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_temperatureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_temperatureDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('blood-pressure'):
+                  this.state.vitalData_bloodPressureSys = local_event.content.component[0].valueQuantity.value;
+                  this.state.vitalData_bloodPressureDia = local_event.content.component[1].valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_bloodpressureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_bloodpressureDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('body-weight'):
+                  this.state.vitalData_weight = local_event.content.valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_weightDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_weightDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('oxygen'):
+                  this.state.vitalData_oxygen = local_event.content.valueQuantity.value;
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.vitalData_oxygenDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                  } else {
+                      this.state.vitalData_oxygenDatetime = '-';
+                  }
+                  this.state.hasVitalData = true;
+                  break;
+              case('last-defecation'):
+                  if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
+                      var date = new Date(local_event.content.effectiveDateTime);
+                      this.state.anamnesisData_lastDefecation = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                      this.state.hasAnamnesisData = true;
+                  }
+                  break;
+              case('misc'):
+                  this.state.anamnesisData_misc = local_event.content.valueString;
+                  this.state.hasAnamnesisData = true;
+                  break;
+              case('responsiveness'):
+                  this.state.anamnesisData_responsiveness = local_event.content.valueString;
+                  this.state.hasAnamnesisData = true;
+                  break;
+              case('pain'):
+                  this.state.anamnesisData_pain = local_event.content.valueString;
+                  this.state.hasAnamnesisData = true;
+                  break;
+          }
+      }
+
+      if (local_event.type === "care.amp.done") {
+          this.state.isClosed = local_event.content.done;
       }
     },
 
     render: function() {
 
+        const isClosedWarningStyle = this.state.isClosed ? {} : { display: 'none' };
         const caseDetailsStyle = this.state.hasCaseData ? {} : { display: 'none' };
         const patientStyle = this.state.hasPatientData ? {} : { display: 'none' };
         const vitalDataStyle = this.state.hasVitalData ? {} : { display: 'none' };
@@ -597,16 +585,16 @@ module.exports = createReactClass({
         const caseStyle = hideall ? {} : { display: 'none' };
 
         let severityClass = "amp_CaseObservationsPanel_Severity_info";
-        switch(this.state.caseSeverity){
-          case('critical'):
-            severityClass = "amp_CaseObservationsPanel_Severity_critical";
-            break;
-          case('urgent'):
-            severityClass = "amp_CaseObservationsPanel_Severity_urgent";
-            break;
-          case('request'):
-            severityClass = "amp_CaseObservationsPanel_Severity_request";
-            break;
+        switch (this.state.caseSeverity) {
+            case('critical'):
+                severityClass = "amp_CaseObservationsPanel_Severity_critical";
+                break;
+            case('urgent'):
+                severityClass = "amp_CaseObservationsPanel_Severity_urgent";
+                break;
+            case('request'):
+                severityClass = "amp_CaseObservationsPanel_Severity_request";
+                break;
         }
         this._getEventTiles();
 
@@ -744,6 +732,10 @@ module.exports = createReactClass({
                     </tbody>
                 </table>
               </div>
+            </div>
+            <div style={isClosedWarningStyle} className="amp_CaseObservationsPanel_isClosedWarning">
+              <span>{_t("This case has been closed. Editing is not possible anymore.")}</span>
+              <hr/>
             </div>
           </div>
           ;

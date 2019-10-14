@@ -1897,6 +1897,10 @@
     "Name or AMP.care ID": "Name or AMP.care ID",
     "Add recipient" : "Add recipient",
     "Case title": "Case title",
-    "Case note": "Case note"
+    "Case note": "Case note",
+    "Close case": "Close case",
+    "Close case?": "Close case?",
+    "Closing the case is permanent. After closing the case will not be editable anymore.": "Closing the case is permanent. After closing the case will not be editable anymore.",
+    "This case has been closed. Editing is not possible anymore.": "This case has been closed. Editing is not possible anymore."
 
 }

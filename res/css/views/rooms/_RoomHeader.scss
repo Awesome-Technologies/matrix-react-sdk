@@ -192,6 +192,7 @@ limitations under the License.
 }
 
 .mx_RoomHeader_button {
+    margin-top: 6px;
     margin-left: 10px;
     cursor: pointer;
     height: 20px;
@@ -220,6 +221,21 @@ limitations under the License.
 
 .mx_RoomHeader_manageIntegsButton {
     mask-image: url('$(res)/img/feather-customised/grid.svg');
+}
+
+.amp_RoomHeader_close_button {
+    cursor: pointer;
+    background-color: $amp-roomheader-close-button-color;
+
+    flex: 0 0 auto;
+    position: relative;
+    border-radius: 4px;
+    padding: 4px;
+    margin: 4px;
+    display: flex;
+    justify-content: center;
+    color: $button-fg-color;
+    font-weight: 600;
 }
 
 .mx_RoomHeader_showPanel {

@@ -31,6 +31,7 @@ import {CancelButton} from './SimpleRoomHeader';
 import SettingsStore from "../../../settings/SettingsStore";
 import RoomHeaderButtons from '../right_panel/RoomHeaderButtons';
 import E2EIcon from './E2EIcon';
+import dis from "../../../dispatcher";
 
 module.exports = createReactClass({
     displayName: 'RoomHeader',
@@ -118,6 +119,25 @@ module.exports = createReactClass({
         });
     },
 
+    onCloseCaseClick: function(ev) {
+        const CloseDialog = sdk.getComponent('dialogs.ConfirmCloseCaseDialog');
+        Modal.createTrackedDialog('Close case', '', CloseDialog, {
+            onFinished: (closeCase) => {
+                if (!closeCase) return;
+
+                // send case closed event
+                const client = MatrixClientPeg.get();
+
+                let doneContent = {};
+                doneContent["done"] = true;
+                client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).done(() => {
+                    dis.dispatch({action: 'message_sent'});
+                }, (err) => {
+                    dis.dispatch({action: 'message_send_failed'});
+                });
+            },
+        });
+    },
     _hasUnreadPins: function() {
         const currentPinEvent = this.props.room.currentState.getStateEvents("m.room.pinned_events", '');
         if (!currentPinEvent) return false;
@@ -285,8 +305,17 @@ module.exports = createReactClass({
             />;
         }
 
+        let closeCaseButton;
+            closeCaseButton =
+                <AccessibleButton className="amp_RoomHeader_close_button"
+                    onClick={this.onCloseCaseClick}
+                    title={_t('Close case')}
+                >
+                  <span>{ _t('Close case') }</span>
+                </AccessibleButton>;
         const rightRow =
             <div className="mx_RoomHeader_buttons">
+                { closeCaseButton }
                 { settingsButton }
                 { pinnedEventsButton }
                 { manageIntegsButton }

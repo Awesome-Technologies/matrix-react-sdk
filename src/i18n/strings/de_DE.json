@@ -2013,6 +2013,10 @@
     "Name or AMP.care ID": "Name oder AMP.care ID",
     "Add recipient" : "Empfänger hinzufügen",
     "Case title": "Titel des Falls",
-    "Case note": "Nachricht"
+    "Case note": "Nachricht",
+    "Close case": "Fall abschließen",
+    "Close case?": "Fall abschließen?",
+    "Closing the case is permanent. After closing the case will not be editable anymore.": "Das Abschließen des Falls kann nicht rückgängig gemacht werden. Nach Abschluss des Falls können die Fall-Daten nicht mehr geändert werden.",
+    "This case has been closed. Editing is not possible anymore.": "Dieser Fall wurde abgeschlossen. Eine Bearbeitung ist nicht mehr möglich."
 
 }
