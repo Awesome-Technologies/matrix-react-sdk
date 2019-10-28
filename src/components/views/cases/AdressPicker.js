@@ -547,7 +547,7 @@ module.exports = createReactClass({
                         address={this.state.selectedList[i]}
                         canDismiss={true}
                         onDismissed={this.onDismissed(i)}
-                        showAddress={this.props.pickerType === 'user'} />,
+                        showAddress={false} />,
                 );
             }
         }
@@ -585,7 +585,7 @@ module.exports = createReactClass({
             addressSelector = (
                 <AddressSelector ref={(ref) => {this.addressSelector = ref;}}
                     addressList={filteredSuggestedList}
-                    showAddress={this.props.pickerType === 'user'}
+                    showAddress={false}
                     onSelected={this.onSelected}
                     truncateAt={TRUNCATE_QUERY_LIST}
                 />
