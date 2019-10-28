@@ -164,26 +164,8 @@ export default class HelpUserSettingsTab extends React.Component {
 
     render() {
         let faqText = _t('For help with using AMP.care, click <a>here</a>.', {}, {
-            'a': (sub) => <a href="https://about.riot.im/need-help/" rel='noopener' target='_blank'>{sub}</a>,
+            'a': (sub) => <a href="https://amp.care/help/" rel='noopener' target='_blank'>{sub}</a>,
         });
-        if (SdkConfig.get().welcomeUserId && getCurrentLanguage().startsWith('en')) {
-            faqText = (
-                <div>
-                    {
-                        _t('For help with using Riot, click <a>here</a> or start a chat with our ' +
-                            'bot using the button below.', {}, {
-                            'a': (sub) => <a href="https://about.riot.im/need-help/" rel='noopener'
-                                             target='_blank'>{sub}</a>,
-                        })
-                    }
-                    <div>
-                        <AccessibleButton onClick={this._onStartBotChat} kind='primary'>
-                            {_t("Chat with Riot Bot")}
-                        </AccessibleButton>
-                    </div>
-                </div>
-            );
-        }
 
         const reactSdkVersion = REACT_SDK_VERSION !== '<local>'
             ? ghVersionLabel('matrix-org/matrix-react-sdk', REACT_SDK_VERSION)
