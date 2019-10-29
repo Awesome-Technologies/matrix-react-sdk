@@ -41,6 +41,7 @@ export default createReactClass({
             caseNote: '',
             caseSeverity: 'info',
             caseRecipient: '',
+            caseRequesterName: '',
             patientData_name: '',
             patientData_gender: 'unknown',
             patientData_birthDate: '',
@@ -118,7 +119,7 @@ export default createReactClass({
             note: this.state.caseNote,
             severity: this.state.caseSeverity,
             requester: {
-              reference: myId
+              reference: this.state.caseRequesterName,
             }
         }
 
@@ -447,6 +448,12 @@ export default createReactClass({
         });
     },
 
+    _onCaseRequesterChanged: function(e) {
+        this.setState({
+            caseRequesterName: e.target.value,
+        });
+    },
+
     _onCaseSeverityChanged: function(e) {
         this.setState({
             caseSeverity: e.target.value,
@@ -523,6 +530,16 @@ export default createReactClass({
                                 onChange={this._onCaseNoteChanged}
                                 value={this.state.caseNote}
                             />
+                          </div>
+
+                          <div className="amp_CaseTab_section">
+                              <Field id="requester" className="amp_CreateCaseDialog_input_field"
+                                  label={_t('Requester')}
+                                  size="64"
+                                  type="text"
+                                  onChange={this._onCaseRequesterChanged}
+                                  value={this.state.caseRequesterName}
+                              />
                           </div>
 
                           <div className="amp_CreateCaseDialog_label">
