@@ -565,7 +565,7 @@ export default createReactClass({
                 <div style={noRecipientSelected}  className="amp_CreateCaseDialog_error">
                     { _t('No recipient selected') }
                 </div>
-                <DialogButtons primaryButton={_t('Create Case')}
+                <DialogButtons primaryButton={_t('Send case')}
                     onPrimaryButtonClick={this._onOk}
                     onCancel={this._onCancel} />
             </BaseDialog>
