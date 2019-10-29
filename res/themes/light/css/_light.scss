@@ -302,6 +302,9 @@ $amp_case_severity_request_color: #26de82;
 $amp_case_severity_info_color: #45abf2;
 $amp_case_closed_warning_color: #eb3b59;
 
+// AMP.care case create dialog
+$amp_no_recipient_warning_color: #eb3b59;
+
 // ***** Mixins! *****
 
 @define-mixin mx_DialogButton {
