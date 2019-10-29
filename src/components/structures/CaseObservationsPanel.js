@@ -137,32 +137,32 @@ module.exports = createReactClass({
 
             vitalData_bloodPressureSys: '-',
             vitalData_bloodPressureDia: '-',
-            vitalData_bloodpressureDatetime: '',
+            vitalData_bloodpressureDatetime: '-',
             vitalData_pulse: '-',
-            vitalData_pulseDatetime: '',
+            vitalData_pulseDatetime: '-',
             vitalData_temperature: '-',
-            vitalData_temperatureDatetime: '',
+            vitalData_temperatureDatetime: '-',
             vitalData_bloodSugar: '-',
-            vitalData_bloodSugarDatetime: '',
+            vitalData_bloodSugarDatetime: '-',
             vitalData_weight: '-',
-            vitalData_weightDatetime: '',
+            vitalData_weightDatetime: '-',
             vitalData_oxygen: '-',
-            vitalData_oxygenDatetime: '',
-            anamnesisData_responsiveness: '',
-            anamnesisData_pain: '',
-            anamnesisData_lastDefecation: '',
-            anamnesisData_misc: '',
-            medicationData_activeAgent: '',
-            medicationData_brand: '',
-            medicationData_strength: '',
-            medicationData_form: '',
-            medicationData_mo: '',
-            medicationData_no: '',
-            medicationData_ev: '',
-            medicationData_ni: '',
-            medicationData_unit: '',
-            medicationData_notes: '',
-            medicationData_reason: '',
+            vitalData_oxygenDatetime: '-',
+            anamnesisData_responsiveness: '-',
+            anamnesisData_pain: '-',
+            anamnesisData_lastDefecation: '-',
+            anamnesisData_misc: '-',
+            medicationData_activeAgent: '-',
+            medicationData_brand: '-',
+            medicationData_strength: '-',
+            medicationData_form: '-',
+            medicationData_mo: '-',
+            medicationData_no: '-',
+            medicationData_ev: '-',
+            medicationData_ni: '-',
+            medicationData_unit: '-',
+            medicationData_notes: '-',
+            medicationData_reason: '-',
             hasCaseData: false,
             hasPatientData: false,
             hasVitalData: false,
@@ -612,131 +612,131 @@ module.exports = createReactClass({
         let caseData;
         caseData = <div>
             <div className="amp_CaseObservationsPanel_Patient" style={patientStyle}>
-              <table className="amp_CaseObservationsPanel_Table_patientData">
-                <tbody>
-                  <tr>
-                    <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Patient name")}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Gender")}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Birthday")}</span></td>
-                  </tr>
-                  <tr>
-                    <td><span className="amp_CaseObservationsPanel_patientData">{this.state.patientName}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_patientData">{_t(this.state.patientGender)}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_patientData">{this.state.patientBirthdate}</span></td>
-                  </tr>
-                </tbody>
-              </table>
+                <table className="amp_CaseObservationsPanel_Table_patientData">
+                    <tbody>
+                        <tr>
+                            <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Patient name")}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Gender")}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Birthday")}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="amp_CaseObservationsPanel_patientData">{this.state.patientName}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_patientData">{_t(this.state.patientGender)}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_patientData">{this.state.patientBirthdate}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             <div className="amp_CaseObservationsPanel_CaseDetails" style={caseDetailsStyle}>
-              <table className="amp_CaseObservationsPanel_Table">
-                <tbody>
-                  <tr>
-                    <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Title")}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Severity")}</span></td>
-                    <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Requester")}</span></td>
-                  </tr>
-                  <tr>
-                    <td width="70%"><span className="amp_CaseObservationsPanel_caseData">{this.state.caseTitle}</span></td>
-                    <td width="10%"><span className="amp_CaseObservationsPanel_caseData">{_t(this.state.caseSeverity)}</span></td>
-                    <td width="20%"><span className="amp_CaseObservationsPanel_caseData">{this.state.caseRequester}</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <table className="amp_CaseObservationsPanel_Table">
-                <tbody>
-                  <tr>
-                    <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Message")}</span></td>
-                  </tr>
-                  <tr>
-                    <td><span className="amp_CaseObservationsPanel_caseData">{this.state.caseNote}</span></td>
-                  </tr>
-                </tbody>
-              </table>
+                <table className="amp_CaseObservationsPanel_Table">
+                    <tbody>
+                        <tr>
+                            <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Title")}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Severity")}</span></td>
+                            <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Requester")}</span></td>
+                        </tr>
+                        <tr>
+                            <td width="60%"><span className="amp_CaseObservationsPanel_caseData">{this.state.caseTitle}</span></td>
+                            <td width="20%"><span className="amp_CaseObservationsPanel_caseData">{_t(this.state.caseSeverity)}</span></td>
+                            <td width="20%"><span className="amp_CaseObservationsPanel_caseData">{this.state.caseRequester}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <table className="amp_CaseObservationsPanel_Table">
+                    <tbody>
+                        <tr>
+                            <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Message")}</span></td>
+                        </tr>
+                        <tr>
+                            <td><span className="amp_CaseObservationsPanel_caseData">{this.state.caseNote}</span></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
             <div className="amp_CaseObservationsPanel_Observations">
-              <div style={vitalDataStyle}>
-                <span className="amp_CaseObservationsPanel_subheading">{_t("Vital data")}</span>
-                <table className="amp_CaseObservationsPanel_Table">
-                    <thead>
-                        <tr>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
-                          <td>{_t("Weight")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_weight} kg</td>
-                          <td>{_t("Temperature")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_temperature} °C</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_weightDatetime}</td>
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_temperatureDatetime}</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Even">
-                          <td>{_t("Blood pressure")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodPressureSys} mmHg / {this.state.vitalData_bloodPressureDia} mmHg</td>
-                          <td>{_t("Blood sugar")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodSugar} mg/dl</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Even">
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodpressureDatetime}</td>
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodSugarDatetime}</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
-                          <td>{_t("Pulse")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_pulse} bpm</td>
-                          <td>{_t("Oxygen saturation")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_oxygen} %</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_pulseDatetime}</td>
-                          <td>{_t("measured")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_oxygenDatetime}</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div style={vitalDataStyle}>
+                    <span className="amp_CaseObservationsPanel_subheading">{_t("Vital data")}</span>
+                    <table className="amp_CaseObservationsPanel_Table">
+                        <thead>
+                            <tr>
+                                <th width="25%"></th>
+                                <th width="25%"></th>
+                                <th width="25%"></th>
+                                <th width="25%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
+                                <td>{_t("Weight")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_weight} kg</td>
+                                <td>{_t("Temperature")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_temperature} °C</td>
+                            </tr>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_weightDatetime}</td>
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_temperatureDatetime}</td>
+                            </tr>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Even">
+                                <td>{_t("Blood pressure")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodPressureSys} mmHg / {this.state.vitalData_bloodPressureDia} mmHg</td>
+                                <td>{_t("Blood sugar")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodSugar} mg/dl</td>
+                            </tr>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Even">
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodpressureDatetime}</td>
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_bloodSugarDatetime}</td>
+                            </tr>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
+                                <td>{_t("Pulse")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_pulse} bpm</td>
+                                <td>{_t("Oxygen saturation")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_oxygen} %</td>
+                            </tr>
+                            <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_pulseDatetime}</td>
+                                <td>{_t("measured")}</td>
+                                <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.vitalData_oxygenDatetime}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div style={anamnesisDataStyle}>
+                    <span className="amp_CaseObservationsPanel_subheading">{_t("Anamnesis")}</span>
+                        <table className="amp_CaseObservationsPanel_Table">
+                            <thead>
+                                <tr>
+                                    <th width="25%"></th>
+                                    <th width="25%"></th>
+                                    <th width="25%"></th>
+                                    <th width="25%"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
+                                    <td>{_t("Responsiveness")}</td>
+                                    <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_responsiveness}</td>
+                                    <td>{_t("Pain")}</td>
+                                    <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_pain}</td>
+                                </tr>
+                                <tr className="amp_CaseObservationsPanel_TableRow_Even">
+                                    <td>{_t("Last defecation")}</td>
+                                    <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_lastDefecation}</td>
+                                    <td>{_t("Misc")}</td>
+                                    <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_misc}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                  </div>
               </div>
-              <div style={anamnesisDataStyle}>
-                <span className="amp_CaseObservationsPanel_subheading">{_t("Anamnesis")}</span>
-                <table className="amp_CaseObservationsPanel_Table">
-                    <thead>
-                        <tr>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                            <th width="25%"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
-                          <td>{_t("Responsiveness")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_responsiveness}</td>
-                          <td>{_t("Pain")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_pain}</td>
-                        </tr>
-                        <tr className="amp_CaseObservationsPanel_TableRow_Even">
-                          <td>{_t("Last defecation")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_lastDefecation}</td>
-                          <td>{_t("Misc")}</td>
-                          <td className="amp_CaseObservationsPanel_TableCell_Value">{this.state.anamnesisData_misc}</td>
-                        </tr>
-                    </tbody>
-                </table>
+              <div style={isClosedWarningStyle} className="amp_CaseObservationsPanel_isClosedWarning">
+                  <span>{_t("This case has been closed. Editing is not possible anymore.")}</span>
+                  <hr/>
               </div>
-            </div>
-            <div style={isClosedWarningStyle} className="amp_CaseObservationsPanel_isClosedWarning">
-              <span>{_t("This case has been closed. Editing is not possible anymore.")}</span>
-              <hr/>
-            </div>
           </div>
           ;
 

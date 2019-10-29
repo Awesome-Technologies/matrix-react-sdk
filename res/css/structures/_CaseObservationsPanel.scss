@@ -134,3 +134,19 @@ limitations under the License.
   font-size: 17px;
   color: $amp_case_closed_warning_color;
 }
+
+.amp_Severity_info {
+  background-color: $amp_case_severity_info_color !important;
+}
+
+.amp_Severity_request {
+  background-color: $amp_case_severity_request_color !important;
+}
+
+.amp_Severity_urgent {
+  background-color: $amp_case_severity_urgent_color !important;
+}
+
+.amp_Severity_critical {
+  background-color: $amp_case_severity_critical_color !important;
+}

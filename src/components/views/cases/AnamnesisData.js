@@ -60,19 +60,23 @@ export default class AnamnesisData extends React.Component {
 
     render() {
         return (
-            <div className="mx_ProfileSettings_profile">
-            <Field id="profileDisplayName" label={_t("Responsiveness")}
-                               type="text" value={this.state.responsiveness} autoComplete="off"
-                               onChange={this._onResponsivenessChanged} /><br/>
-            <Field id="profileDisplayName" label={_t("Pain")}
-                               type="text" value={this.state.pain} autoComplete="off"
-                               onChange={this._onPainChanged} /><br/>
-            <Field id="profileDisplayName" label={_t("Last defecation")}
-                               type="datetime-local" value={this.state.lastDefecation} autoComplete="off"
-                               onChange={this._onLastDefecationChanged} /><br/>
-            <Field id="profileDisplayName" label={_t("Misc")}
-                               type="text" value={this.state.misc} autoComplete="off"
-                               onChange={this._onMiscChanged} /><br/>
+            <div className="amp_CaseTab_section amp_Flex_column">
+                <div className="mx_ProfileSettings_profile">
+                    <Field id="profileDisplayName" className="amp_CreateCaseDialog_input_field" label={_t("Responsiveness")}
+                                   type="text" value={this.state.responsiveness} autoComplete="off"
+                                   onChange={this._onResponsivenessChanged} /><br/>
+                    <Field id="profileDisplayName" className="amp_CreateCaseDialog_input_field" label={_t("Pain")}
+                                   type="text" value={this.state.pain} autoComplete="off"
+                                   onChange={this._onPainChanged} /><br/>
+                    <Field id="profileDisplayName" className="amp_CreateCaseDialog_input_field" label={_t("Last defecation")}
+                                   type="datetime-local" value={this.state.lastDefecation} autoComplete="off"
+                                   onChange={this._onLastDefecationChanged} />
+                </div>
+                <div className="mx_ProfileSettings_profile">
+                    <Field id="profileDisplayName" className="amp_CreateCaseDialog_input_field" label={_t("Misc")}
+                                   type="text" value={this.state.misc} autoComplete="off"
+                                   onChange={this._onMiscChanged} /><br/>
+                </div>
             </div>
         );
     }

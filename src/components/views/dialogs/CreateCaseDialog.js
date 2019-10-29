@@ -27,6 +27,7 @@ import MedicationData from '../cases/MedicationData';
 import Field from "../elements/Field";
 import Modal from "../../../Modal";
 import MatrixClientPeg from '../../../MatrixClientPeg';
+import colorVariables from '../../../../res/themes/light/css/light.scss';
 
 export default createReactClass({
     displayName: 'CreateCaseDialog',
@@ -458,6 +459,23 @@ export default createReactClass({
         this.setState({
             caseSeverity: e.target.value,
         });
+
+        switch (e.target.value) {
+            case "info":
+                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_info_color;
+                break;
+            case "request":
+                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_request_color;
+                break;
+            case "urgent":
+                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_urgent_color;
+                break;
+            case "critical":
+                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_critical_color;
+                break;
+            default:
+                break;
+        }
     },
 
     _onAddRecipientClicked: function() {
@@ -507,29 +525,30 @@ export default createReactClass({
                 <form onSubmit={this.onOk}>
                     <div className="amp_Dialog_content">
                       <div>
-                          <div className="amp_CreateCaseDialog_label">
-                              <label htmlFor="textinput"> { _t('Title') } </label>
-                          </div>
-
-                          <div className="amp_CreateCaseDialog_input_container">
-                              <input id="caseTitle" className="aw_CreateCaseDialog_input"
+                        <div className="amp_CaseTab_section">
+                              <Field id="caseTitle" className="amp_CreateCaseDialog_input_field"
                                   autoFocus={true} size="64"
-                                  placeholder={_t('Case title')}
+                                  label={_t('Case title')}
+                                  autoComplete="off"
+                                  type="text"
                                   onChange={this._onCaseTitleChanged}
                                   value={this.state.caseTitle}
                               />
+                              <Field id="severity" ref="caseSeverity" className="amp_CreateCaseDialog_input_field" label={_t("Severity")} element="select" onChange={this._onCaseSeverityChanged} value={this.state.caseSeverity} >
+                                  <option id="severityInfo" value="info"         className="amp_Severity_info" >{_t("Info")}</option>
+                                  <option id="severityRequest" value="request"   className="amp_Severity_request" >{_t("Request")}</option>
+                                  <option id="severityUrgent" value="urgent"     className="amp_Severity_urgent" >{_t("Urgent")}</option>
+                                  <option id="severityCritical" value="critical" className="amp_Severity_critical" >{_t("Critical")}</option>
+                              </Field>
                           </div>
 
-                          <div className="amp_CreateCaseDialog_label">
-                              <label htmlFor="textinput"> { _t('Message') } </label>
-                          </div>
-                          <div className="amp_CreateCaseDialog_input_container">
-                            <input id="caseNote" className="aw_CreateCaseDialog_input"
-                                size="64"
-                                placeholder={_t('Case note')}
-                                onChange={this._onCaseNoteChanged}
-                                value={this.state.caseNote}
-                            />
+                          <div className="amp_CaseTab_section">
+                              <Field id="caseNote" className="amp_CreateCaseDialog_input_field"
+                                  label={_t('Case note')}
+                                  element="textarea"
+                                  onChange={this._onCaseNoteChanged}
+                                  value={this.state.caseNote}
+                              />
                           </div>
 
                           <div className="amp_CaseTab_section">
@@ -542,41 +561,26 @@ export default createReactClass({
                               />
                           </div>
 
-                          <div className="amp_CreateCaseDialog_label">
+                          <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
                               <label htmlFor="textinput"> { _t('Recipient') } </label>
                           </div>
-                          <div className="amp_CreateCaseDialog_input_container">
-                            <AdressPicker focus={false} onSelectedListChanged={this._onRecipientChanged} placeholder={ _t('Name or AMP.care ID') }/>
-                          </div>
-
-                          <br />
-                          <Field id="severity" ref="caseSeverity" label={_t("Severity")} element="select" onChange={this._onCaseSeverityChanged} value={this.state.caseSeverity} >
-                              <option value="info">{_t("Info")}</option>
-                              <option value="request">{_t("Request")}</option>
-                              <option value="urgent">{_t("Urgent")}</option>
-                              <option value="critical">{_t("Critical")}</option>
-                          </Field>
+                          <AdressPicker focus={false} onSelectedListChanged={this._onRecipientChanged} placeholder={ _t('Name or AMP.care ID') }/>
                       </div>
+                    <br/>
                     </div>
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Patient data') }</summary>
-                        <div className="amp_CaseTab_section">
-                            <PatientData onDataChanged={this._onDataChanged} />
-                        </div>
+                        <PatientData onDataChanged={this._onDataChanged} />
                     </details>
 
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Vital data') }</summary>
-                        <div className="amp_CaseTab_section">
-                            <VitalData onDataChanged={this._onDataChanged} />
-                        </div>
+                        <VitalData onDataChanged={this._onDataChanged} />
                     </details>
 
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Anamnesis') }</summary>
-                        <div className="amp_CaseTab_section">
-                            <AnamnesisData onDataChanged={this._onDataChanged} />
-                        </div>
+                        <AnamnesisData onDataChanged={this._onDataChanged} />
                     </details>
                 </form>
                 <div style={noRecipientSelected}  className="amp_CreateCaseDialog_error">

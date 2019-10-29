@@ -305,6 +305,13 @@ $amp_case_closed_warning_color: #eb3b59;
 // AMP.care case create dialog
 $amp_no_recipient_warning_color: #eb3b59;
 
+:export {
+    amp_case_severity_critical_color: $amp_case_severity_critical_color;
+    amp_case_severity_urgent_color: $amp_case_severity_urgent_color;
+    amp_case_severity_request_color: $amp_case_severity_request_color;
+    amp_case_severity_info_color: $amp_case_severity_info_color;
+}
+
 // ***** Mixins! *****
 
 @define-mixin mx_DialogButton {

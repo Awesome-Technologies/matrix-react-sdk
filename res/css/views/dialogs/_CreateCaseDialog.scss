@@ -19,11 +19,14 @@ limitations under the License.
 }
 
 .amp_Dialog_content {
-
+    flex: 50%;
+    margin: 6px;
 }
 
 .amp_CreateCaseDialog_details {
-
+    //border: 1px solid $input-border-color;
+    //border-radius: 3px;
+    padding: 9px;
 }
 
 .amp_CreateCaseDialog_details_summary {
@@ -32,10 +35,14 @@ limitations under the License.
 
 .amp_CaseTab_section {
     display: flex;
+    font-size: 17px;
+    user-select: none;
+    min-width: auto;
 }
 
 .amp_VitalData_section {
-  
+    margin: 0px;
+    padding: 0px;
 }
 
 .amp_CreateCaseDialog_label {
@@ -64,4 +71,42 @@ limitations under the License.
     font-family: Arial;
     font-size: 17px;
     color: $amp_no_recipient_warning_color;
+}
+
+
+.amp_CreateCaseDialog_input_field {
+    margin: 0.5em !important;
+    padding: 0px;
+    width: 50px;
+}
+
+.amp_CreateCaseDialog_display_field {
+    margin: 0.5em !important;
+    padding: 0px;
+    width: 50px;
+    border: 0px !important;
+}
+
+.amp_Severity_info {
+    background-color: $amp_case_severity_info_color !important
+}
+
+.amp_Severity_request {
+    background-color: $amp_case_severity_request_color !important
+}
+
+.amp_Severity_urgent {
+    background-color: $amp_case_severity_urgent_color !important
+}
+
+.amp_Severity_critical {
+    background-color: $amp_case_severity_critical_color !important
+}
+
+.amp_Flex_column {
+    flex-direction: column
+}
+
+.amp_Textarea_noresize {
+    resize: none
 }
