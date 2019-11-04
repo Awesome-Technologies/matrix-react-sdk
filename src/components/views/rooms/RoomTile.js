@@ -305,6 +305,18 @@ module.exports = createReactClass({
             subtext = this.state.statusMessage;
         }
 
+        // check if room has a severity
+        let severity;
+        for (let i=0; i <= this.props.room.timeline.length-1; i++) {
+            if (this.props.room.timeline[i].event.type === 'care.amp.case') {
+                severity = this.props.room.timeline[i].event.content.severity;
+            } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
+                if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.case') {
+                    severity = this.props.room.timeline[i]._clearEvent.content.severity;
+                }
+            }
+        }
+
         const classes = classNames({
             'mx_RoomTile': true,
             'mx_RoomTile_selected': this.state.selected,
@@ -316,6 +328,10 @@ module.exports = createReactClass({
             'mx_RoomTile_noBadges': !badges,
             'mx_RoomTile_transparent': this.props.transparent,
             'mx_RoomTile_hasSubtext': subtext && !this.props.collapsed,
+            'amp_RoomTile_background_info': severity == "info",
+            'amp_RoomTile_background_request': severity == "request",
+            'amp_RoomTile_background_urgent': severity == "urgent",
+            'amp_RoomTile_background_critical': severity == "critical",
         });
 
         const avatarClasses = classNames({
@@ -382,6 +398,7 @@ module.exports = createReactClass({
         }
 
         const RoomAvatar = sdk.getComponent('avatars.RoomAvatar');
+        let roomAvatar = <RoomAvatar room={this.props.room} width={24} height={24} />;
 
         let dmIndicator;
         if (this._isDirectMessageRoom(this.props.room.roomId)) {
@@ -394,17 +411,6 @@ module.exports = createReactClass({
             />;
         }
 
-        // check if room has a severity
-        let severity;
-        for (let i=0; i <= this.props.room.timeline.length-1; i++) {
-            if (this.props.room.timeline[i].event.type === 'care.amp.case') {
-                severity = this.props.room.timeline[i].event.content.severity;
-            } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
-                if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.case') {
-                    severity = this.props.room.timeline[i]._clearEvent.content.severity;
-                }
-            }
-        }
         if (severity) {
             let severityIcon;
             switch (severity){
@@ -418,18 +424,18 @@ module.exports = createReactClass({
                     severityIcon = require("../../../../res/img/icon_severity_request.svg");
                     break;
                 case 'info':
-                default:
                     severityIcon = require("../../../../res/img/icon_severity_info.svg");
                     break;
             }
 
-            dmIndicator = <img
+            roomAvatar = <img
                 src={severityIcon}
-                className="mx_RoomTile_dm"
-                width="13"
-                height="13"
+                className="mx_RoomTile_avatar"
+                width="24"
+                height="24"
                 alt={severity}
             />;
+            dmIndicator = "";
         }
 
         return <AccessibleButton tabIndex="0"
@@ -441,7 +447,7 @@ module.exports = createReactClass({
         >
             <div className={avatarClasses}>
                 <div className="mx_RoomTile_avatar_container">
-                    <RoomAvatar room={this.props.room} width={24} height={24} />
+                    { roomAvatar }
                     { dmIndicator }
                 </div>
             </div>

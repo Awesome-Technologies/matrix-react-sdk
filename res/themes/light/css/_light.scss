@@ -306,6 +306,12 @@ $amp_case_closed_warning_color: #eb3b59;
 // AMP.care case create dialog
 $amp_no_recipient_warning_color: #eb3b59;
 
+// AMP.care case list
+$amp_case_severity_critical_color_opaque: #eb3b5930;
+$amp_case_severity_urgent_color_opaque: #f7c93030;
+$amp_case_severity_request_color_opaque: #26de8230;
+$amp_case_severity_info_color_opaque: #45abf230;
+
 :export {
     amp_case_severity_critical_color: $amp_case_severity_critical_color;
     amp_case_severity_urgent_color: $amp_case_severity_urgent_color;

@@ -219,3 +219,19 @@ limitations under the License.
     right: 0px;
     bottom: -7px;
 }
+
+.amp_RoomTile_background_info {
+    background-color: $amp_case_severity_info_color_opaque;
+}
+
+.amp_RoomTile_background_request {
+    background-color: $amp_case_severity_request_color_opaque;
+}
+
+.amp_RoomTile_background_urgent {
+    background-color: $amp_case_severity_urgent_color_opaque;
+}
+
+.amp_RoomTile_background_critical {
+    background-color: $amp_case_severity_critical_color_opaque;
+}
