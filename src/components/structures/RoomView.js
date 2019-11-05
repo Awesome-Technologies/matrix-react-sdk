@@ -1705,7 +1705,7 @@ module.exports = createReactClass({
         let aux = null;
         let previewBar;
         let hideCancel = false;
-        let hideRightPanel = false;
+        let hideRightPanel = true;
         if (this.state.forwardingEvent !== null) {
             aux = <ForwardMessage onCancelClick={this.onCancelClick} />;
         } else if (this.state.searching) {
