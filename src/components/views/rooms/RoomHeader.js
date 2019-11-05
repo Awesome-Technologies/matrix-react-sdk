@@ -361,11 +361,6 @@ module.exports = createReactClass({
             <div className="mx_RoomHeader_buttons">
                 { closeCaseButton }
                 { archiveCaseButton }
-                { settingsButton }
-                { pinnedEventsButton }
-                { manageIntegsButton }
-                { forgetButton }
-                { searchButton }
             </div>;
 
         return (
@@ -376,7 +371,6 @@ module.exports = createReactClass({
                     { topicElement }
                     { cancelButton }
                     { rightRow }
-                    <RoomHeaderButtons collapsedRhs={this.props.collapsedRhs} />
                 </div>
             </div>
         );
