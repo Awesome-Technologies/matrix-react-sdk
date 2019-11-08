@@ -557,7 +557,6 @@ module.exports = createReactClass({
                onPhoneCountryChanged={this.onPhoneCountryChanged}
                onPhoneNumberChanged={this.onPhoneNumberChanged}
                onPhoneNumberBlur={this.onPhoneNumberBlur}
-               onForgotPasswordClick={this.props.onForgotPasswordClick}
                loginIncorrect={this.state.loginIncorrect}
                serverConfig={this.props.serverConfig}
                disableSubmit={this.isBusy()}
@@ -635,9 +634,6 @@ module.exports = createReactClass({
                     { serverDeadSection }
                     { this.renderServerComponent() }
                     { this.renderLoginComponentForStep() }
-                    <a className="mx_AuthBody_changeFlow" onClick={this.onRegisterClick} href="#">
-                        { _t('Create account') }
-                    </a>
                 </AuthBody>
             </AuthPage>
         );
