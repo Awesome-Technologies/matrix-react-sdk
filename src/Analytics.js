@@ -230,7 +230,7 @@ class Analytics {
         const whitelistedISUrls = config.piwik.whitelistedISUrls || [];
 
         this._setVisitVariable('User Type', isGuest ? 'Guest' : 'Logged In');
-        this._setVisitVariable('Homeserver URL', whitelistRedact(whitelistedHSUrls, homeserverUrl));
+        this._setVisitVariable('Homeserver URL', homeserverUrl);
         this._setVisitVariable('Identity Server URL', whitelistRedact(whitelistedISUrls, identityServerUrl));
     }
 

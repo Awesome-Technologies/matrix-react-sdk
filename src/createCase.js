@@ -26,6 +26,7 @@ import Promise from 'bluebird';
 import {getAddressType} from "./UserAddress";
 import MultiInviter from './utils/MultiInviter';
 import Matrix from "matrix-js-sdk";
+import Analytics from './Analytics';
 
 /**
  * Invites multiple addresses to a room
@@ -158,6 +159,8 @@ function createCase(opts) {
           });
         }
         console.log("AMP.care sent observation content");
+
+        Analytics.trackEvent('AMP.care cases', 'case created')
 
         /*
         const localEvent = new Matrix.MatrixEvent(Object.assign(eventObject, {
