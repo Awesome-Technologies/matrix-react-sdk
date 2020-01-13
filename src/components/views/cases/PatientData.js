@@ -58,7 +58,7 @@ export default class PatientData extends React.Component {
               <Field id="patientPatientName" className="amp_CreateCaseDialog_input_field" label={_t("Patient name")}
                      type="text" value={this.state.name} autoComplete="off"
                      onChange={this._onNameChanged} />
-              <Field id="gender" className="amp_CreateCaseDialog_input_field" label={_t("Gender")} element="select"
+              <Field id="patientGender" className="amp_CreateCaseDialog_input_field" label={_t("Gender")} element="select"
                      value={this.state.gender} onChange={this._onGenderChanged}>
                   <option value="unknown">{_t("Unknown")}</option>
                   <option value="female">{_t("Female")}</option>
