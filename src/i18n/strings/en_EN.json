@@ -1825,7 +1825,7 @@
     "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.": "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.",
     "Share keys": "Share keys",
     "New device": "New device",
-    
+
     "Cases": "Cases",
     "New cases": "New cases",
     "New case": "New case",
@@ -1905,6 +1905,7 @@
     "This case has been closed. Editing is not possible anymore.": "This case has been closed. Editing is not possible anymore.",
     "Archive case": "Archive case",
     "Archive case?": "Archive case?",
-    "After archiving the case all the included data will not be accesible anymore.": "After archiving the case all the included data will not be accesible anymore."
+    "After archiving the case all the included data will not be accesible anymore.": "After archiving the case all the included data will not be accesible anymore.",
+    "You cannot send messages to a closed case!": "You cannot send messages to a closed case!"
 
 }

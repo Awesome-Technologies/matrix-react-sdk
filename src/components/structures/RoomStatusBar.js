@@ -48,6 +48,9 @@ module.exports = createReactClass({
         // Used to suggest to the user to invite someone
         sentMessageAndIsAlone: PropTypes.bool,
 
+        // This is true when the user sent a message to a closed case
+        sentMessageAndIsClosed: PropTypes.bool,
+
         // true if there is an active call in this room (means we show
         // the 'Active Call' text in the status bar if there is nothing
         // more interesting)
@@ -330,6 +333,18 @@ module.exports = createReactClass({
             return (
                 <div className="mx_RoomStatusBar_callBar">
                     <b>{ _t('Active call') }</b>
+                </div>
+            );
+        }
+
+        // If you sent a message to a closed case raise an error
+        if (this.props.sentMessageAndIsClosed && !this.props.isPeeking) {
+            return (
+                <div className="mx_RoomStatusBar_isAlone">
+                    { _t("You cannot send messages to a closed case!",
+                        {},
+                        {},
+                    ) }
                 </div>
             );
         }
