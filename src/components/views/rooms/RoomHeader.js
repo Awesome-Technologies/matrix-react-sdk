@@ -32,6 +32,7 @@ import SettingsStore from "../../../settings/SettingsStore";
 import RoomHeaderButtons from '../right_panel/RoomHeaderButtons';
 import E2EIcon from './E2EIcon';
 import dis from "../../../dispatcher";
+import Analytics from '../../Analytics';
 
 module.exports = createReactClass({
     displayName: 'RoomHeader',
@@ -131,6 +132,7 @@ module.exports = createReactClass({
                 let doneContent = {};
                 doneContent["done"] = true;
                 client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).done(() => {
+                    Analytics.trackEvent('AMP.care cases', 'case closed')
                     dis.dispatch({action: 'message_sent'});
                 }, (err) => {
                     dis.dispatch({action: 'message_send_failed'});
