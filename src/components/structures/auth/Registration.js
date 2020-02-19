@@ -661,7 +661,6 @@ export default createReactClass({
                 <h2>{ _t('Create your account') }</h2>
                 { errorText }
                 { serverDeadSection }
-                { this.renderServerComponent() }
                 { this.renderRegisterComponent() }
                 { goBack }
                 { signIn }
