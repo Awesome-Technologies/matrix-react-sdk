@@ -1599,6 +1599,23 @@
     "Go": "Ok",
     "Recent Conversations": "Letzte Unterhaltungen",
     "Suggestions": "Vorschläge",
-    "Show more": "mehr"
+    "Show more": "mehr",
+    "<requestLink>Re-request encryption keys</requestLink> from your other sessions.": "<requestLink>Fordere Schlüssel</requestLink> von einer deiner anderen Sitzungen an.",
+    "This message cannot be decrypted": "Diese Nachricht kann nicht entschlüsselt werden",
+    "Connect this session to Key Backup": "Verbinde diese Sitzung mit der Schlüsselsicherung",
+    "Your key share request has been sent - please check your other sessions for key share requests.": "Deine Schlüsselanfrage wurde gesendet - sieh in deinen anderen Sitzungen nach der Schlüsselanfrage.",
+    "Key share requests are sent to your other sessions automatically. If you rejected or dismissed the key share request on your other sessions, click here to request the keys for this session again.": "Schlüsselanfragen werden automatisch an deine anderen Sitzungen gesendet. Wenn du sie abgelehnt oder ignoriert hast klicke hier um die Schlüssel erneut anzufordern.",
+    "If your other sessions do not have the key for this message you will not be able to decrypt them.": "Wenn deine Sitzung die Schlüssel für diese Nachrichten nicht besitzt wird sie sie nicht entschlüsseln können.",
+    "Key request sent.": "Schlüsselanfrage gesendet.",
+    "Enter recovery passphrase": "Gib die Wiederherstellungspassphrase ein",
+    "<b>Warning</b>: You should only set up key backup from a trusted computer.": "<b>Warnung</b>: Du solltest die Schlüsselsicherung nur auf einem vertrauenswürdigen Gerät einrichten.",
+    "If you've forgotten your recovery key you can <button>set up new recovery options</button>": "Wenn du deine Wiederherstellungspassphrase vergessen hast kannst du <button>neue Wiederherstellungsoptionen einstellen</button>.",
+    "Set up with a recovery key": "Mit einem Wiederherstellungsschlüssel einrichten",
+    "Make a copy of your recovery key": "Speichere deinen Wiederherstellungsschlüssel",
+    "Your recovery key": "Dein Wiederherstellungsschlüssel",
+    "Keep a copy of it somewhere secure, like a password manager or even a safe.": "Bewahre ihn sicher auf, wie in einem Passwort-Manager oder einem Safe.",
+    "Copy": "In Zwischenablage kopieren",
+    "Enter recovery key": "Wiederherstellungspassphrase eingeben"
+
 
 }
