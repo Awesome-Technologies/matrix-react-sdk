@@ -115,7 +115,7 @@ export default class TopLeftMenu extends React.Component {
 
         return <div className="mx_TopLeftMenu" ref={this.props.containerRef} role="menu">
             <div className="mx_TopLeftMenu_section_noIcon" aria-readonly={true} tabIndex={-1}>
-                <div>{this.props.displayName}</div>
+                <div onClick={this.onDisplaynameClicked}>{this.props.displayName}</div>
                 <div className="mx_TopLeftMenu_greyedText" aria-hidden={true}>{this.props.userId}</div>
                 {hostingSignup}
             </div>
@@ -132,6 +132,13 @@ export default class TopLeftMenu extends React.Component {
         this.closeMenu();
         const RedesignFeedbackDialog = sdk.getComponent("views.dialogs.RedesignFeedbackDialog");
         Modal.createTrackedDialog('Report bugs & give feedback', '', RedesignFeedbackDialog);
+    };
+
+    onDisplaynameClicked = () => {
+        const SetDisplaynameDialog = sdk.getComponent('views.dialogs.SetDisplaynameDialog');
+        Modal.createTrackedDialog('Set Displayname Dialog', '', SetDisplaynameDialog, {
+            title: _t('Set displayname'),
+        });
     };
 
     viewHomePage() {

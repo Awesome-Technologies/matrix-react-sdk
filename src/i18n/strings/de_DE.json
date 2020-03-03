@@ -1615,7 +1615,10 @@
     "Your recovery key": "Dein Wiederherstellungsschlüssel",
     "Keep a copy of it somewhere secure, like a password manager or even a safe.": "Bewahre ihn sicher auf, wie in einem Passwort-Manager oder einem Safe.",
     "Copy": "In Zwischenablage kopieren",
-    "Enter recovery key": "Wiederherstellungspassphrase eingeben"
-
+    "Enter recovery key": "Wiederherstellungspassphrase eingeben",
+    "Show more": "mehr",
+    "This will allow others to identify you and your account.": "Dies ermöglicht anderen dich und dein Konto zu identifizieren.",
+    "Displayname": "Anzeigename",
+    "Set displayname": "Anzeigename setzen"
 
 }
