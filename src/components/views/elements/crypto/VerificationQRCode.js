@@ -1,5 +1,6 @@
 /*
 Copyright 2020 The Matrix.org Foundation C.I.C.
+Copyright 2020 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -30,6 +31,7 @@ export default class VerificationQRCode extends React.PureComponent {
         keys: PropTypes.array.isRequired, // array of [Key ID, Base64 Key] pairs
         action: PropTypes.string.isRequired,
         keyholderUserId: PropTypes.string.isRequired,
+        hs_domain: PropTypes.string.isRequired,
 
         // User verification use case only
         secret: PropTypes.string,
@@ -53,6 +55,7 @@ export default class VerificationQRCode extends React.PureComponent {
         const qrProps = {
             secret: verificationRequest.encodedSharedSecret,
             keyholderUserId: myUserId,
+            hs_domain: cli.getDomain(),
             action: "verify",
             keys: [], // array of pairs: keyId, base64Key
             otherUserKey: "", // base64key
@@ -120,8 +123,8 @@ export default class VerificationQRCode extends React.PureComponent {
             query[`key_${key[0]}`] = key[1];
         }
 
-        const uri = `https://matrix.to/#/${this.props.keyholderUserId}?${qs.stringify(query)}`;
+        const uri = `https://${this.props.hs_domain}/#/${this.props.keyholderUserId}?${qs.stringify(query)}`;
 
-        return <QRCode value={uri} size={512} logoWidth={64} logo={require("../../../../../res/img/matrix-m.svg")} />;
+        return <QRCode value={uri} size={512} logoWidth={64} logo={require("../../../../../res/img/amp.svg")} />;
     }
 }

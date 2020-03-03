@@ -214,7 +214,6 @@ export default class ShareDialog extends React.Component {
 
                 <div className="mx_ShareDialog_split">
                     <div className="mx_ShareDialog_qrcode_container">
-                        <QRCode value={matrixToUrl} size={256} logoWidth={48} logo={require("../../../../res/img/matrix-m.svg")} />
                     </div>
                     <div className="mx_ShareDialog_social_container">
                         {
@@ -228,6 +227,7 @@ export default class ShareDialog extends React.Component {
                                 <img src={social.img} alt={social.name} height={64} width={64} />
                             </a>)
                         }
+                        <QRCode value={matrixToUrl} size={256} logoWidth={48} logo={require("../../../../res/img/amp.svg")} />
                     </div>
                 </div>
             </div>
