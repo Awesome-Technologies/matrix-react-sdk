@@ -1,24 +1,27 @@
 /*
- Copyright 2017 Michael Telatynski <7t3chguy@gmail.com>
+Copyright 2017 Michael Telatynski <7t3chguy@gmail.com>
+Copyright 2020 The Matrix.org Foundation C.I.C.
 
- Licensed under the Apache License, Version 2.0 (the "License");
- you may not use this file except in compliance with the License.
- You may obtain a copy of the License at
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
- http://www.apache.org/licenses/LICENSE-2.0
+    http://www.apache.org/licenses/LICENSE-2.0
 
- Unless required by applicable law or agreed to in writing, software
- distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
- */
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
 
-import { getCurrentLanguage, _t, _td } from './languageHandler';
-import PlatformPeg from './PlatformPeg';
-import SdkConfig from './SdkConfig';
-import Modal from './Modal';
-import sdk from './index';
+import React from "react";
+
+import { getCurrentLanguage, _t, _td } from "./languageHandler";
+import PlatformPeg from "./PlatformPeg";
+import SdkConfig from "./SdkConfig";
+import Modal from "./Modal";
+import * as sdk from "./index";
 
 const hashRegex = /#\/(groups?|room|user|settings|register|login|forgot_password|home|directory)/;
 const hashVarRegex = /#\/(group|room|user)\/.*$/;
@@ -29,7 +32,7 @@ function getRedactedHash(hash) {
     const match = hashRegex.exec(hash);
     if (!match) {
         console.warn(`Unexpected hash location "${hash}"`);
-        return '#/<unexpected hash location>';
+        return "#/<unexpected hash location>";
     }
 
     if (hashVarRegex.test(hash)) {
@@ -46,7 +49,7 @@ function getRedactedUrl() {
     let { pathname } = window.location;
 
     // Redact paths which could contain unexpected PII
-    if (origin.startsWith('file://')) {
+    if (origin.startsWith("file://")) {
         pathname = "/<redacted>/";
     }
 
@@ -54,134 +57,229 @@ function getRedactedUrl() {
 }
 
 const customVariables = {
-    'App Platform': {
+    "App Platform": {
         id: 1,
-        expl: _td('The platform you\'re on'),
-        example: 'Electron Platform',
+        expl: _td("The platform you're on"),
+        example: "Electron Platform"
     },
-    'App Version': {
+    "App Version": {
         id: 2,
-        expl: _td('The version of AMP.care'),
-        example: '15.0.0',
+        expl: _td("The version of Riot"),
+        example: "15.0.0"
     },
-    'User Type': {
+    "User Type": {
         id: 3,
-        expl: _td('Whether or not you\'re logged in (we don\'t record your username)'),
-        example: 'Logged In',
+        expl: _td(
+            "Whether or not you're logged in (we don't record your username)"
+        ),
+        example: "Logged In"
     },
-    'Chosen Language': {
+    "Chosen Language": {
         id: 4,
-        expl: _td('Your language of choice'),
-        example: 'en',
+        expl: _td("Your language of choice"),
+        example: "en"
     },
-    'Instance': {
+    Instance: {
         id: 5,
-        expl: _td('Which officially provided instance you are using, if any'),
-        example: 'app',
+        expl: _td("Which officially provided instance you are using, if any"),
+        example: "app"
     },
-    'RTE: Uses Richtext Mode': {
+    "RTE: Uses Richtext Mode": {
         id: 6,
-        expl: _td('Whether or not you\'re using the Richtext mode of the Rich Text Editor'),
-        example: 'off',
+        expl: _td(
+            "Whether or not you're using the Richtext mode of the Rich Text Editor"
+        ),
+        example: "off"
     },
-    'Breadcrumbs': {
+    Breadcrumbs: {
         id: 9,
-        expl: _td("Whether or not you're using the 'breadcrumbs' feature (avatars above the room list)"),
-        example: 'disabled',
+        expl: _td(
+            "Whether or not you're using the 'breadcrumbs' feature (avatars above the room list)"
+        ),
+        example: "disabled"
     },
-    'Homeserver URL': {
+    "Homeserver URL": {
         id: 7,
-        expl: _td('Your homeserver\'s URL'),
-        example: 'https://test.amp.care',
+        expl: _td("Your homeserver's URL"),
+        example: "https://test.amp.care"
     },
-    'Identity Server URL': {
+    "Identity Server URL": {
         id: 8,
-        expl: _td('Your identity server\'s URL'),
-        example: 'https://test.amp.care',
-    },
+        expl: _td("Your identity server's URL"),
+        example: "https://test.amp.care"
+    }
 };
 
 function whitelistRedact(whitelist, str) {
     if (whitelist.includes(str)) return str;
-    return '<redacted>';
+    return "<redacted>";
 }
+
+const UID_KEY = "mx_Riot_Analytics_uid";
+const CREATION_TS_KEY = "mx_Riot_Analytics_cts";
+const VISIT_COUNT_KEY = "mx_Riot_Analytics_vc";
+const LAST_VISIT_TS_KEY = "mx_Riot_Analytics_lvts";
+
+function getUid() {
+    try {
+        let data = localStorage.getItem(UID_KEY);
+        if (!data) {
+            localStorage.setItem(
+                UID_KEY,
+                (data = [...Array(16)]
+                    .map(() => Math.random().toString(16)[2])
+                    .join(""))
+            );
+        }
+        return data;
+    } catch (e) {
+        console.error("Analytics error: ", e);
+        return "";
+    }
+}
+
+const HEARTBEAT_INTERVAL = 30 * 1000; // seconds
 
 class Analytics {
     constructor() {
-        this._paq = null;
-        this.disabled = true;
+        this.baseUrl = null;
+        this.siteId = null;
+        this.visitVariables = {};
+
         this.firstPage = true;
+        this._heartbeatIntervalID = null;
+
+        this.creationTs = localStorage.getItem(CREATION_TS_KEY);
+        if (!this.creationTs) {
+            localStorage.setItem(
+                CREATION_TS_KEY,
+                (this.creationTs = new Date().getTime())
+            );
+        }
+
+        this.lastVisitTs = localStorage.getItem(LAST_VISIT_TS_KEY);
+        this.visitCount = localStorage.getItem(VISIT_COUNT_KEY) || 0;
+        localStorage.setItem(
+            VISIT_COUNT_KEY,
+            parseInt(this.visitCount, 10) + 1
+        );
+    }
+
+    get disabled() {
+        return !this.baseUrl;
     }
 
     /**
      * Enable Analytics if initialized but disabled
      * otherwise try and initalize, no-op if piwik config missing
      */
-    enable() {
-        if (this._paq || this._init()) {
-            this.disabled = false;
+    async enable() {
+        if (!this.disabled) return;
+
+        const config = SdkConfig.get();
+        if (
+            !config ||
+            !config.piwik ||
+            !config.piwik.url ||
+            !config.piwik.siteId
+        )
+            return;
+
+        this.baseUrl = new URL("piwik.php", config.piwik.url);
+        // set constants
+        this.baseUrl.searchParams.set("rec", 1); // rec is required for tracking
+        this.baseUrl.searchParams.set("idsite", config.piwik.siteId); // rec is required for tracking
+        this.baseUrl.searchParams.set("apiv", 1); // API version to use
+        this.baseUrl.searchParams.set("send_image", 0); // we want a 204, not a tiny GIF
+        // set user parameters
+        this.baseUrl.searchParams.set("_id", getUid()); // uuid
+        this.baseUrl.searchParams.set("_idts", this.creationTs); // first ts
+        this.baseUrl.searchParams.set(
+            "_idvc",
+            parseInt(this.visitCount, 10) + 1
+        ); // visit count
+        if (this.lastVisitTs) {
+            this.baseUrl.searchParams.set("_viewts", this.lastVisitTs); // last visit ts
         }
+
+        const platform = PlatformPeg.get();
+        this._setVisitVariable("App Platform", platform.getHumanReadableName());
+        try {
+            this._setVisitVariable(
+                "App Version",
+                await platform.getAppVersion()
+            );
+        } catch (e) {
+            this._setVisitVariable("App Version", "unknown");
+        }
+
+        this._setVisitVariable("Chosen Language", getCurrentLanguage());
+
+        if (window.location.hostname === "riot.im") {
+            this._setVisitVariable("Instance", window.location.pathname);
+        }
+
+        // start heartbeat
+        this._heartbeatIntervalID = window.setInterval(
+            this.ping.bind(this),
+            HEARTBEAT_INTERVAL
+        );
     }
 
     /**
-     * Disable Analytics calls, will not fully unload Piwik until a refresh,
-     * but this is second best, Piwik should not pull anything implicitly.
+     * Disable Analytics, stop the heartbeat and clear identifiers from localStorage
      */
     disable() {
-        this.trackEvent('Analytics', 'opt-out');
-        // disableHeartBeatTimer is undocumented but exists in the piwik code
-        // the _paq.push method will result in an error being printed in the console
-        // if an unknown method signature is passed
-        this._paq.push(['disableHeartBeatTimer']);
-        this.disabled = true;
+        if (this.disabled) return;
+        this.trackEvent("Analytics", "opt-out");
+        window.clearInterval(this._heartbeatIntervalID);
+        this.baseUrl = null;
+        this.visitVariables = {};
+        localStorage.removeItem(UID_KEY);
+        localStorage.removeItem(CREATION_TS_KEY);
+        localStorage.removeItem(VISIT_COUNT_KEY);
+        localStorage.removeItem(LAST_VISIT_TS_KEY);
     }
 
-    _init() {
-        const config = SdkConfig.get();
-        if (!config || !config.piwik || !config.piwik.url || !config.piwik.siteId) return;
+    async _track(data) {
+        if (this.disabled) return;
 
-        const url = config.piwik.url;
-        const siteId = config.piwik.siteId;
-        const self = this;
+        const now = new Date();
+        const params = {
+            ...data,
+            url: getRedactedUrl(),
 
-        window._paq = this._paq = window._paq || [];
+            _cvar: JSON.stringify(this.visitVariables), // user custom vars
+            res: `${window.screen.width}x${window.screen.height}`, // resolution as WWWWxHHHH
+            rand: String(Math.random()).slice(2, 8), // random nonce to cache-bust
+            h: now.getHours(),
+            m: now.getMinutes(),
+            s: now.getSeconds()
+        };
 
-        this._paq.push(['setTrackerUrl', url+'piwik.php']);
-        this._paq.push(['setSiteId', siteId]);
-
-        this._paq.push(['trackAllContentImpressions']);
-        this._paq.push(['discardHashTag', false]);
-        this._paq.push(['enableHeartBeatTimer']);
-        // this._paq.push(['enableLinkTracking', true]);
-
-        const platform = PlatformPeg.get();
-        this._setVisitVariable('App Platform', platform.getHumanReadableName());
-        platform.getAppVersion().then((version) => {
-            this._setVisitVariable('App Version', version);
-        }).catch(() => {
-            this._setVisitVariable('App Version', 'unknown');
-        });
-
-        this._setVisitVariable('Chosen Language', getCurrentLanguage());
-
-        if (window.location.hostname === 'riot.im') {
-            this._setVisitVariable('Instance', window.location.pathname);
+        const url = new URL(this.baseUrl);
+        for (const key in params) {
+            url.searchParams.set(key, params[key]);
         }
 
-        (function() {
-            const g = document.createElement('script');
-            const s = document.getElementsByTagName('script')[0];
-            g.type='text/javascript'; g.async=true; g.defer=true; g.src=url+'piwik.js';
+        try {
+            await window.fetch(url, {
+                method: "GET",
+                mode: "no-cors",
+                cache: "no-cache",
+                redirect: "follow"
+            });
+        } catch (e) {
+            console.error("Analytics error: ", e);
+            window.err = e;
+        }
+    }
 
-            g.onload = function() {
-                console.log('Initialised anonymous analytics');
-                self._paq = window._paq;
-            };
-
-            s.parentNode.insertBefore(g, s);
-        })();
-
-        return true;
+    ping() {
+        this._track({
+            ping: 1
+        });
+        localStorage.setItem(LAST_VISIT_TS_KEY, new Date().getTime()); // update last visit ts
     }
 
     trackPageChange(generationTimeMs) {
@@ -193,31 +291,31 @@ class Analytics {
             return;
         }
 
-        if (typeof generationTimeMs === 'number') {
-            this._paq.push(['setGenerationTimeMs', generationTimeMs]);
-        } else {
-            console.warn('Analytics.trackPageChange: expected generationTimeMs to be a number');
+        if (typeof generationTimeMs !== "number") {
+            console.warn(
+                "Analytics.trackPageChange: expected generationTimeMs to be a number"
+            );
             // But continue anyway because we still want to track the change
         }
 
-        this._paq.push(['setCustomUrl', getRedactedUrl()]);
-        this._paq.push(['trackPageView']);
+        this._track({
+            gt_ms: generationTimeMs
+        });
     }
 
     trackEvent(category, action, name, value) {
         if (this.disabled) return;
-        this._paq.push(['setCustomUrl', getRedactedUrl()]);
-        this._paq.push(['trackEvent', category, action, name, value]);
-    }
-
-    logout() {
-        if (this.disabled) return;
-        this._paq.push(['deleteCookies']);
+        this._track({
+            e_c: category,
+            e_a: action,
+            e_n: name,
+            e_v: value
+        });
     }
 
     _setVisitVariable(key, value) {
         if (this.disabled) return;
-        this._paq.push(['setCustomVariable', customVariables[key].id, key, value, 'visit']);
+        this.visitVariables[customVariables[key].id] = [key, value];
     }
 
     setLoggedIn(isGuest, homeserverUrl, identityServerUrl) {
@@ -229,81 +327,91 @@ class Analytics {
         const whitelistedHSUrls = config.piwik.whitelistedHSUrls || [];
         const whitelistedISUrls = config.piwik.whitelistedISUrls || [];
 
-        this._setVisitVariable('User Type', isGuest ? 'Guest' : 'Logged In');
-        this._setVisitVariable('Homeserver URL', homeserverUrl);
-        this._setVisitVariable('Identity Server URL', whitelistRedact(whitelistedISUrls, identityServerUrl));
-    }
-
-    setRichtextMode(state) {
-        if (this.disabled) return;
-        this._setVisitVariable('RTE: Uses Richtext Mode', state ? 'on' : 'off');
+        this._setVisitVariable("User Type", isGuest ? "Guest" : "Logged In");
+        this._setVisitVariable("Homeserver URL", homeserverUrl);
+        this._setVisitVariable(
+            "Identity Server URL",
+            whitelistRedact(whitelistedISUrls, identityServerUrl)
+        );
     }
 
     setBreadcrumbs(state) {
         if (this.disabled) return;
-        this._setVisitVariable('Breadcrumbs', state ? 'enabled' : 'disabled');
+        this._setVisitVariable("Breadcrumbs", state ? "enabled" : "disabled");
     }
 
-    showDetailsModal() {
+    showDetailsModal = () => {
         let rows = [];
-        if (window.Piwik) {
-            const Tracker = window.Piwik.getAsyncTracker();
-            rows = Object.values(customVariables).map((v) => Tracker.getCustomVariable(v.id)).filter(Boolean);
+        if (!this.disabled) {
+            rows = Object.values(this.visitVariables);
         } else {
-            // Piwik may not have been enabled, so show example values
-            rows = Object.keys(customVariables).map(
-                (k) => [
-                    k,
-                    _t('e.g. %(exampleValue)s', { exampleValue: customVariables[k].example }),
-                ],
-            );
+            rows = Object.keys(customVariables).map(k => [
+                k,
+                _t("e.g. %(exampleValue)s", {
+                    exampleValue: customVariables[k].example
+                })
+            ]);
         }
 
         const resolution = `${window.screen.width}x${window.screen.height}`;
         const otherVariables = [
             {
-                expl: _td('Every page you use in the app'),
+                expl: _td("Every page you use in the app"),
                 value: _t(
-                    'e.g. <CurrentPageURL>',
+                    "e.g. <CurrentPageURL>",
                     {},
                     {
-                        CurrentPageURL: getRedactedUrl(),
-                    },
-                ),
+                        CurrentPageURL: getRedactedUrl()
+                    }
+                )
             },
-            { expl: _td('Your User Agent'), value: navigator.userAgent },
-            { expl: _td('Your device resolution'), value: resolution },
+            { expl: _td("Your User Agent"), value: navigator.userAgent },
+            { expl: _td("Your device resolution"), value: resolution }
         ];
 
-        const ErrorDialog = sdk.getComponent('dialogs.ErrorDialog');
-        Modal.createTrackedDialog('Analytics Details', '', ErrorDialog, {
-            title: _t('Analytics'),
-            description: <div className="mx_AnalyticsModal">
-                <div>
-                    { _t('The information being sent to us to help make AMP.care better includes:') }
+        const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
+        Modal.createTrackedDialog("Analytics Details", "", ErrorDialog, {
+            title: _t("Analytics"),
+            description: (
+                <div className="mx_AnalyticsModal">
+                    <div>
+                        {_t(
+                            "The information being sent to us to help make Riot.im better includes:"
+                        )}
+                    </div>
+                    <table>
+                        {rows.map(row => (
+                            <tr key={row[0]}>
+                                <td>{_t(customVariables[row[0]].expl)}</td>
+                                {row[1] !== undefined && (
+                                    <td>
+                                        <code>{row[1]}</code>
+                                    </td>
+                                )}
+                            </tr>
+                        ))}
+                        {otherVariables.map((item, index) => (
+                            <tr key={index}>
+                                <td>{_t(item.expl)}</td>
+                                <td>
+                                    <code>{item.value}</code>
+                                </td>
+                            </tr>
+                        ))}
+                    </table>
+                    <div>
+                        {_t(
+                            "Where this page includes identifiable information, such as a room, " +
+                                "user or group ID, that data is removed before being sent to the server."
+                        )}
+                    </div>
                 </div>
-                <table>
-                    { rows.map((row) => <tr key={row[0]}>
-                        <td>{ _t(customVariables[row[0]].expl) }</td>
-                        { row[1] !== undefined && <td><code>{ row[1] }</code></td> }
-                    </tr>) }
-                    { otherVariables.map((item, index) =>
-                        <tr key={index}>
-                            <td>{ _t(item.expl) }</td>
-                            <td><code>{ item.value }</code></td>
-                        </tr>,
-                    ) }
-                </table>
-                <div>
-                    { _t('Where this page includes identifiable information, such as a room, '
-                        + 'user or group ID, that data is removed before being sent to the server.') }
-                </div>
-            </div>,
+            )
         });
-    }
+    };
 }
 
 if (!global.mxAnalytics) {
     global.mxAnalytics = new Analytics();
 }
-module.exports = global.mxAnalytics;
+export default global.mxAnalytics;

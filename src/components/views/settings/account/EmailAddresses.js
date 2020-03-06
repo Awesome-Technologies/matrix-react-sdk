@@ -18,12 +18,12 @@ limitations under the License.
 import React from 'react';
 import PropTypes from 'prop-types';
 import {_t} from "../../../../languageHandler";
-import MatrixClientPeg from "../../../../MatrixClientPeg";
+import {MatrixClientPeg} from "../../../../MatrixClientPeg";
 import Field from "../../elements/Field";
 import AccessibleButton from "../../elements/AccessibleButton";
 import * as Email from "../../../../email";
 import AddThreepid from "../../../../AddThreepid";
-import sdk from '../../../../index';
+import * as sdk from '../../../../index';
 import Modal from '../../../../Modal';
 
 /*
@@ -193,9 +193,15 @@ export default class EmailAddresses extends React.Component {
             this.props.onEmailsChange(emails);
         }).catch((err) => {
             this.setState({continueDisabled: false});
-            if (err.errcode !== 'M_THREEPID_AUTH_FAILED') {
-                const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-                console.error("Unable to verify email address: " + err);
+            const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
+            if (err.errcode === 'M_THREEPID_AUTH_FAILED') {
+                Modal.createTrackedDialog("Email hasn't been verified yet", "", ErrorDialog, {
+                    title: _t("Your email address hasn't been verified yet"),
+                    description: _t("Click the link in the email you received to verify " +
+                        "and then click continue again."),
+                });
+            } else {
+                console.error("Unable to verify email address: ", err);
                 Modal.createTrackedDialog('Unable to verify email address', '', ErrorDialog, {
                     title: _t("Unable to verify email address."),
                     description: ((err && err.message) ? err.message : _t("Operation failed")),
@@ -229,7 +235,7 @@ export default class EmailAddresses extends React.Component {
         return (
             <div className="mx_EmailAddresses">
                 {existingEmailElements}
-                <form onSubmit={this._onAddClick} autoComplete={false}
+                <form onSubmit={this._onAddClick} autoComplete="off"
                       noValidate={true} className="mx_EmailAddresses_new">
                     <Field id="mx_EmailAddressses_newEmailAddress"
                         type="text"

@@ -20,8 +20,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import createReactClass from 'create-react-class';
 import { _t, _td } from '../../../languageHandler';
-import sdk from '../../../index';
-import MatrixClientPeg from '../../../MatrixClientPeg';
+import * as sdk from '../../../index';
+import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import Promise from 'bluebird';
 import { addressTypes, getAddressType } from '../../../UserAddress.js';
 import GroupStore from '../../../stores/GroupStore';
@@ -37,7 +37,7 @@ const addressTypeName = {
 };
 
 
-module.exports = createReactClass({
+const AddressPicker = createReactClass({
     displayName: "AddressPicker",
 
     propTypes: {
@@ -601,3 +601,5 @@ module.exports = createReactClass({
         );
     },
 });
+
+export default AddressPicker;

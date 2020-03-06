@@ -17,19 +17,19 @@ limitations under the License.
 */
 
 import { MatrixClient } from 'matrix-js-sdk';
-import React from 'react';
+import React, {createRef} from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import { DragDropContext } from 'react-beautiful-dnd';
 
-import { KeyCode, isOnlyCtrlOrCmdKeyEvent } from '../../Keyboard';
+import { Key, isOnlyCtrlOrCmdKeyEvent } from '../../Keyboard';
 import PageTypes from '../../PageTypes';
 import CallMediaHandler from '../../CallMediaHandler';
 import { fixupColorFonts } from '../../utils/FontManager';
-import sdk from '../../index';
+import * as sdk from '../../index';
 import dis from '../../dispatcher';
 import sessionStore from '../../stores/SessionStore';
-import MatrixClientPeg from '../../MatrixClientPeg';
+import {MatrixClientPeg} from '../../MatrixClientPeg';
 import SettingsStore from "../../settings/SettingsStore";
 import RoomListStore from "../../stores/RoomListStore";
 import { getHomePageUrl } from '../../utils/pages';
@@ -38,6 +38,7 @@ import TagOrderActions from '../../actions/TagOrderActions';
 import RoomListActions from '../../actions/RoomListActions';
 import ResizeHandle from '../views/elements/ResizeHandle';
 import {Resizer, CollapseDistributor} from '../../resizer';
+import MatrixClientContext from "../../contexts/MatrixClientContext";
 // We need to fetch each pinned message individually (if we don't already have it)
 // so each pinned message may trigger a request. Limit the number per room for sanity.
 // NB. this is just for server notices rather than pinned messages in general.
@@ -70,27 +71,11 @@ const LoggedInView = createReactClass({
         // Called with the credentials of a registered user (if they were a ROU that
         // transitioned to PWLU)
         onRegistered: PropTypes.func,
-        collapsedRhs: PropTypes.bool,
 
         // Used by the RoomView to handle joining rooms
         viaServers: PropTypes.arrayOf(PropTypes.string),
 
         // and lots and lots of other stuff.
-    },
-
-    childContextTypes: {
-        matrixClient: PropTypes.instanceOf(MatrixClient),
-        authCache: PropTypes.object,
-    },
-
-    getChildContext: function() {
-        return {
-            matrixClient: this._matrixClient,
-            authCache: {
-                auth: {},
-                lastUpdate: 0,
-            },
-        };
     },
 
     getInitialState: function() {
@@ -129,6 +114,8 @@ const LoggedInView = createReactClass({
         this._matrixClient.on("RoomState.events", this.onRoomStateEvents);
 
         fixupColorFonts();
+
+        this._roomView = createRef();
     },
 
     componentDidUpdate(prevProps) {
@@ -165,10 +152,10 @@ const LoggedInView = createReactClass({
     },
 
     canResetTimelineInRoom: function(roomId) {
-        if (!this.refs.roomView) {
+        if (!this._roomView.current) {
             return true;
         }
-        return this.refs.roomView.canResetTimeline();
+        return this._roomView.current.canResetTimeline();
     },
 
     _setStateFromSessionStore() {
@@ -351,25 +338,25 @@ const LoggedInView = createReactClass({
         let handled = false;
         const ctrlCmdOnly = isOnlyCtrlOrCmdKeyEvent(ev);
         const hasModifier = ev.altKey || ev.ctrlKey || ev.metaKey || ev.shiftKey ||
-            ev.key === "Alt" || ev.key === "Control" || ev.key === "Meta" || ev.key === "Shift";
+            ev.key === Key.ALT || ev.key === Key.CONTROL || ev.key === Key.META || ev.key === Key.SHIFT;
 
-        switch (ev.keyCode) {
-            case KeyCode.PAGE_UP:
-            case KeyCode.PAGE_DOWN:
+        switch (ev.key) {
+            case Key.PAGE_UP:
+            case Key.PAGE_DOWN:
                 if (!hasModifier) {
                     this._onScrollKeyPressed(ev);
                     handled = true;
                 }
                 break;
 
-            case KeyCode.HOME:
-            case KeyCode.END:
+            case Key.HOME:
+            case Key.END:
                 if (ev.ctrlKey && !ev.shiftKey && !ev.altKey && !ev.metaKey) {
                     this._onScrollKeyPressed(ev);
                     handled = true;
                 }
                 break;
-            case KeyCode.KEY_K:
+            case Key.K:
                 if (ctrlCmdOnly) {
                     dis.dispatch({
                         action: 'focus_room_filter',
@@ -377,7 +364,9 @@ const LoggedInView = createReactClass({
                     handled = true;
                 }
                 break;
-            case KeyCode.KEY_BACKTICK:
+            case Key.BACKTICK:
+                if (ev.key !== "`") break;
+
                 // Ideally this would be CTRL+P for "Profile", but that's
                 // taken by the print dialog. CTRL+I for "Information"
                 // was previously chosen but conflicted with italics in
@@ -397,9 +386,14 @@ const LoggedInView = createReactClass({
             ev.preventDefault();
         } else if (!hasModifier) {
             const isClickShortcut = ev.target !== document.body &&
-                (ev.key === "Space" || ev.key === "Enter");
+                (ev.key === Key.SPACE || ev.key === Key.ENTER);
 
-            if (!isClickShortcut && !canElementReceiveInput(ev.target)) {
+            // Do not capture the context menu key to improve keyboard accessibility
+            if (ev.key === Key.CONTEXT_MENU) {
+                return;
+            }
+
+            if (!isClickShortcut && ev.key !== Key.TAB && !canElementReceiveInput(ev.target)) {
                 // synchronous dispatch so we focus before key generates input
                 dis.dispatch({action: 'focus_composer'}, true);
                 ev.stopPropagation();
@@ -414,8 +408,8 @@ const LoggedInView = createReactClass({
      * @param {Object} ev The key event
      */
     _onScrollKeyPressed: function(ev) {
-        if (this.refs.roomView) {
-            this.refs.roomView.handleScrollKey(ev);
+        if (this._roomView.current) {
+            this._roomView.current.handleScrollKey(ev);
         }
     },
 
@@ -516,6 +510,7 @@ const LoggedInView = createReactClass({
         const EmbeddedPage = sdk.getComponent('structures.EmbeddedPage');
         const GroupView = sdk.getComponent('structures.GroupView');
         const MyGroups = sdk.getComponent('structures.MyGroups');
+        const ToastContainer = sdk.getComponent('structures.ToastContainer');
         const MatrixToolbar = sdk.getComponent('globals.MatrixToolbar');
         const CookieBar = sdk.getComponent('globals.CookieBar');
         const NewVersionBar = sdk.getComponent('globals.NewVersionBar');
@@ -528,7 +523,7 @@ const LoggedInView = createReactClass({
         switch (this.props.page_type) {
             case PageTypes.RoomView:
                 pageElement = <RoomView
-                        ref='roomView'
+                        ref={this._roomView}
                         autoJoin={this.props.autoJoin}
                         onRegistered={this.props.onRegistered}
                         thirdPartyInvite={this.props.thirdPartyInvite}
@@ -537,7 +532,6 @@ const LoggedInView = createReactClass({
                         eventPixelOffset={this.props.initialEventPixelOffset}
                         key={this.props.currentRoomId || 'roomview'}
                         disabled={this.props.middleDisabled}
-                        collapsedRhs={this.props.collapsedRhs}
                         ConferenceHandler={this.props.ConferenceHandler}
                         resizeNotifier={this.props.resizeNotifier}
                     />;
@@ -568,7 +562,6 @@ const LoggedInView = createReactClass({
                 pageElement = <GroupView
                     groupId={this.props.currentGroupId}
                     isNew={this.props.currentGroupIsNew}
-                    collapsedRhs={this.props.collapsedRhs}
                 />;
                 break;
         }
@@ -617,20 +610,30 @@ const LoggedInView = createReactClass({
         }
 
         return (
-            <div onPaste={this._onPaste} onKeyDown={this._onReactKeyDown} className='mx_MatrixChat_wrapper' aria-hidden={this.props.hideToSRUsers} onMouseDown={this._onMouseDown} onMouseUp={this._onMouseUp}>
-                { topBar }
-                <DragDropContext onDragEnd={this._onDragEnd}>
-                    <div ref={this._setResizeContainerRef} className={bodyClasses}>
-                        <LeftPanel
-                            resizeNotifier={this.props.resizeNotifier}
-                            collapsed={this.props.collapseLhs || false}
-                            disabled={this.props.leftDisabled}
-                        />
-                        <ResizeHandle />
-                        { pageElement }
-                    </div>
-                </DragDropContext>
-            </div>
+            <MatrixClientContext.Provider value={this._matrixClient}>
+                <div
+                    onPaste={this._onPaste}
+                    onKeyDown={this._onReactKeyDown}
+                    className='mx_MatrixChat_wrapper'
+                    aria-hidden={this.props.hideToSRUsers}
+                    onMouseDown={this._onMouseDown}
+                    onMouseUp={this._onMouseUp}
+                >
+                    { topBar }
+                    <ToastContainer />
+                    <DragDropContext onDragEnd={this._onDragEnd}>
+                        <div ref={this._setResizeContainerRef} className={bodyClasses}>
+                            <LeftPanel
+                                resizeNotifier={this.props.resizeNotifier}
+                                collapsed={this.props.collapseLhs || false}
+                                disabled={this.props.leftDisabled}
+                            />
+                            <ResizeHandle />
+                            { pageElement }
+                        </div>
+                    </DragDropContext>
+                </div>
+            </MatrixClientContext.Provider>
         );
     },
 });

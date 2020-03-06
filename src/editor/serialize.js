@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 import Markdown from '../Markdown';
+import {makeGenericPermalink} from "../utils/permalinks/Permalinks";
 
 export function mdSerialize(model) {
     return model.parts.reduce((html, part) => {
@@ -29,7 +30,7 @@ export function mdSerialize(model) {
                 return html + part.text;
             case "room-pill":
             case "user-pill":
-                return html + `[${part.text}](https://matrix.to/#/${part.resourceId})`;
+                return html + `[${part.text}](${makeGenericPermalink(part.resourceId)})`;
         }
     }, "");
 }
@@ -60,18 +61,26 @@ export function textSerialize(model) {
 }
 
 export function containsEmote(model) {
+    return startsWith(model, "/me ");
+}
+
+export function startsWith(model, prefix) {
     const firstPart = model.parts[0];
     // part type will be "plain" while editing,
     // and "command" while composing a message.
     return firstPart &&
         (firstPart.type === "plain" || firstPart.type === "command") &&
-        firstPart.text.startsWith("/me ");
+        firstPart.text.startsWith(prefix);
 }
 
 export function stripEmoteCommand(model) {
     // trim "/me "
+    return stripPrefix(model, "/me ");
+}
+
+export function stripPrefix(model, prefix) {
     model = model.clone();
-    model.removeText({index: 0, offset: 0}, 4);
+    model.removeText({index: 0, offset: 0}, prefix.length);
     return model;
 }
 

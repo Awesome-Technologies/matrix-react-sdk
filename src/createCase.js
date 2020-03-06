@@ -15,9 +15,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import MatrixClientPeg from './MatrixClientPeg';
+import {MatrixClientPeg} from './MatrixClientPeg';
 import Modal from './Modal';
-import sdk from './index';
+import * as sdk from './index';
 import { _t } from './languageHandler';
 import dis from "./dispatcher";
 import * as Rooms from "./Rooms";
@@ -57,7 +57,7 @@ function afterCreation(caseData, roomId) {
  * @returns {Promise} which resolves to the room id, or null if the
  * action was aborted or failed.
  */
-function createCase(opts) {
+export default function createCase(opts) {
     opts = opts || {};
 
     const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
@@ -227,5 +227,3 @@ function createCase(opts) {
         return null;
     });
 }
-
-module.exports = createCase;

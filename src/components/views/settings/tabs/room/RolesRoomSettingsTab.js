@@ -17,8 +17,8 @@ limitations under the License.
 import React from 'react';
 import PropTypes from 'prop-types';
 import {_t, _td} from "../../../../../languageHandler";
-import MatrixClientPeg from "../../../../../MatrixClientPeg";
-import sdk from "../../../../..";
+import {MatrixClientPeg} from "../../../../../MatrixClientPeg";
+import * as sdk from "../../../../..";
 import AccessibleButton from "../../../elements/AccessibleButton";
 import Modal from "../../../../../Modal";
 
@@ -63,13 +63,10 @@ export class BannedUser extends React.Component {
         member: PropTypes.object.isRequired, // js-sdk RoomMember
         by: PropTypes.string.isRequired,
         reason: PropTypes.string,
-        onUnbanned: PropTypes.func.isRequired,
     };
 
     _onUnbanClick = (e) => {
-        MatrixClientPeg.get().unban(this.props.member.roomId, this.props.member.userId).then(() => {
-            this.props.onUnbanned();
-        }).catch((err) => {
+        MatrixClientPeg.get().unban(this.props.member.roomId, this.props.member.userId).catch((err) => {
             const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
             console.error("Failed to unban: " + err);
             Modal.createTrackedDialog('Failed to unban', '', ErrorDialog, {
@@ -108,6 +105,22 @@ export default class RolesRoomSettingsTab extends React.Component {
     static propTypes = {
         roomId: PropTypes.string.isRequired,
     };
+
+    componentDidMount(): void {
+        MatrixClientPeg.get().on("RoomState.members", this._onRoomMembership.bind(this));
+    }
+
+    componentWillUnmount(): void {
+        const client = MatrixClientPeg.get();
+        if (client) {
+            client.removeListener("RoomState.members", this._onRoomMembership.bind(this));
+        }
+    }
+
+    _onRoomMembership(event, state, member) {
+        if (state.roomId !== this.props.roomId) return;
+        this.forceUpdate();
+    }
 
     _populateDefaultPlEvents(eventsSection, stateLevel, eventsLevel) {
         for (const desiredEvent of Object.keys(plEventsToShow)) {
@@ -326,7 +339,7 @@ export default class RolesRoomSettingsTab extends React.Component {
                             return (
                                 <BannedUser key={member.userId} canUnban={canBanUsers}
                                             member={member} reason={banEvent.reason}
-                                            by={bannedBy} onUnbanned={this.forceUpdate} />
+                                            by={bannedBy} />
                             );
                         })}
                     </ul>

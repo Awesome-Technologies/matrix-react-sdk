@@ -28,16 +28,17 @@ import {
     replaceRangeAndMoveCaret,
 } from '../../../editor/operations';
 import {getCaretOffsetAndText, getRangeForSelection} from '../../../editor/dom';
-import Autocomplete from '../rooms/Autocomplete';
+import Autocomplete, {generateCompletionDomId} from '../rooms/Autocomplete';
 import {autoCompleteCreator} from '../../../editor/parts';
 import {parsePlainTextMessage} from '../../../editor/deserialize';
 import {renderModel} from '../../../editor/render';
 import {Room} from 'matrix-js-sdk';
 import TypingStore from "../../../stores/TypingStore";
-import EMOJIBASE from 'emojibase-data/en/compact.json';
 import SettingsStore from "../../../settings/SettingsStore";
 import EMOTICON_REGEX from 'emojibase-regex/emoticon';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
+import {Key} from "../../../Keyboard";
+import {EMOTICON_TO_EMOJI} from "../../../emoji";
 
 const REGEX_EMOTICON_WHITESPACE = new RegExp('(?:^|\\s)(' + EMOTICON_REGEX.source + ')\\s$');
 
@@ -79,8 +80,8 @@ export default class BasicMessageEditor extends React.Component {
         initialCaret: PropTypes.object, // See DocumentPosition in editor/model.js
     };
 
-    constructor(props, context) {
-        super(props, context);
+    constructor(props) {
+        super(props);
         this.state = {
             autoComplete: null,
         };
@@ -90,6 +91,18 @@ export default class BasicMessageEditor extends React.Component {
         this._modifiedFlag = false;
         this._isIMEComposing = false;
         this._hasTextSelected = false;
+        this._emoticonSettingHandle = null;
+    }
+
+    componentDidUpdate(prevProps) {
+        if (this.props.placeholder !== prevProps.placeholder && this.props.placeholder) {
+            const {isEmpty} = this.props.model;
+            if (isEmpty) {
+                this._showPlaceholder();
+            } else {
+                this._hidePlaceholder();
+            }
+        }
     }
 
     _replaceEmoticon = (caretPosition, inputType, diff) => {
@@ -105,8 +118,10 @@ export default class BasicMessageEditor extends React.Component {
         });
         const emoticonMatch = REGEX_EMOTICON_WHITESPACE.exec(range.text);
         if (emoticonMatch) {
-            const query = emoticonMatch[1].toLowerCase().replace("-", "");
-            const data = EMOJIBASE.find(e => e.emoticon ? e.emoticon.toLowerCase() === query : false);
+            const query = emoticonMatch[1].replace("-", "");
+            // try both exact match and lower-case, this means that xd won't match xD but :P will match :p
+            const data = EMOTICON_TO_EMOJI.get(query) || EMOTICON_TO_EMOJI.get(query.toLowerCase());
+
             if (data) {
                 const {partCreator} = model;
                 const hasPrecedingSpace = emoticonMatch[0][0] === " ";
@@ -197,17 +212,49 @@ export default class BasicMessageEditor extends React.Component {
         return !!(this._isIMEComposing || (event.nativeEvent && event.nativeEvent.isComposing));
     }
 
+    _onCutCopy = (event, type) => {
+        const selection = document.getSelection();
+        const text = selection.toString();
+        if (text) {
+            const {model} = this.props;
+            const range = getRangeForSelection(this._editorRef, model, selection);
+            const selectedParts = range.parts.map(p => p.serialize());
+            event.clipboardData.setData("application/x-riot-composer", JSON.stringify(selectedParts));
+            event.clipboardData.setData("text/plain", text); // so plain copy/paste works
+            if (type === "cut") {
+                // Remove the text, updating the model as appropriate
+                this._modifiedFlag = true;
+                replaceRangeAndMoveCaret(range, []);
+            }
+            event.preventDefault();
+        }
+    }
+
+    _onCopy = (event) => {
+        this._onCutCopy(event, "copy");
+    }
+
+    _onCut = (event) => {
+        this._onCutCopy(event, "cut");
+    }
+
     _onPaste = (event) => {
         const {model} = this.props;
         const {partCreator} = model;
-        const text = event.clipboardData.getData("text/plain");
-        if (text) {
-            this._modifiedFlag = true;
-            const range = getRangeForSelection(this._editorRef, model, document.getSelection());
-            const parts = parsePlainTextMessage(text, partCreator);
-            replaceRangeAndMoveCaret(range, parts);
-            event.preventDefault();
+        const partsText = event.clipboardData.getData("application/x-riot-composer");
+        let parts;
+        if (partsText) {
+            const serializedTextParts = JSON.parse(partsText);
+            const deserializedParts = serializedTextParts.map(p => partCreator.deserializePart(p));
+            parts = deserializedParts;
+        } else {
+            const text = event.clipboardData.getData("text/plain");
+            parts = parsePlainTextMessage(text, partCreator);
         }
+        this._modifiedFlag = true;
+        const range = getRangeForSelection(this._editorRef, model, document.getSelection());
+        replaceRangeAndMoveCaret(range, parts);
+        event.preventDefault();
     }
 
     _onInput = (event) => {
@@ -226,8 +273,8 @@ export default class BasicMessageEditor extends React.Component {
         const {caret, text} = getCaretOffsetAndText(this._editorRef, sel);
         const newText = text.substr(0, caret.offset) + textToInsert + text.substr(caret.offset);
         caret.offset += textToInsert.length;
-        this.props.model.update(newText, inputType, caret);
         this._modifiedFlag = true;
+        this.props.model.update(newText, inputType, caret);
     }
 
     // this is used later to see if we need to recalculate the caret
@@ -312,19 +359,19 @@ export default class BasicMessageEditor extends React.Component {
         const modKey = IS_MAC ? event.metaKey : event.ctrlKey;
         let handled = false;
         // format bold
-        if (modKey && event.key === "b") {
+        if (modKey && event.key === Key.B) {
             this._onFormatAction("bold");
             handled = true;
         // format italics
-        } else if (modKey && event.key === "i") {
+        } else if (modKey && event.key === Key.I) {
             this._onFormatAction("italics");
             handled = true;
         // format quote
-        } else if (modKey && event.key === ">") {
+        } else if (modKey && event.key === Key.GREATER_THAN) {
             this._onFormatAction("quote");
             handled = true;
         // undo
-        } else if (modKey && event.key === "z") {
+        } else if (modKey && event.key === Key.Z) {
             if (this.historyManager.canUndo()) {
                 const {parts, caret} = this.historyManager.undo(this.props.model);
                 // pass matching inputType so historyManager doesn't push echo
@@ -333,7 +380,7 @@ export default class BasicMessageEditor extends React.Component {
             }
             handled = true;
         // redo
-        } else if (modKey && event.key === "y") {
+        } else if (modKey && event.key === Key.Y) {
             if (this.historyManager.canRedo()) {
                 const {parts, caret} = this.historyManager.redo();
                 // pass matching inputType so historyManager doesn't push echo
@@ -342,7 +389,7 @@ export default class BasicMessageEditor extends React.Component {
             }
             handled = true;
         // insert newline on Shift+Enter
-        } else if (event.key === "Enter" && (event.shiftKey || (IS_MAC && event.altKey))) {
+        } else if (event.key === Key.ENTER && (event.shiftKey || (IS_MAC && event.altKey))) {
             this._insertText("\n");
             handled = true;
         // autocomplete or enter to send below shouldn't have any modifier keys pressed.
@@ -352,25 +399,25 @@ export default class BasicMessageEditor extends React.Component {
             if (model.autoComplete && model.autoComplete.hasCompletions()) {
                 const autoComplete = model.autoComplete;
                 switch (event.key) {
-                    case "ArrowUp":
+                    case Key.ARROW_UP:
                         if (!modifierPressed) {
                             autoComplete.onUpArrow(event);
                             handled = true;
                         }
                         break;
-                    case "ArrowDown":
+                    case Key.ARROW_DOWN:
                         if (!modifierPressed) {
                             autoComplete.onDownArrow(event);
                             handled = true;
                         }
                         break;
-                    case "Tab":
+                    case Key.TAB:
                         if (!metaOrAltPressed) {
                             autoComplete.onTab(event);
                             handled = true;
                         }
                         break;
-                    case "Escape":
+                    case Key.ESCAPE:
                         if (!modifierPressed) {
                             autoComplete.onEscape(event);
                             handled = true;
@@ -379,7 +426,7 @@ export default class BasicMessageEditor extends React.Component {
                     default:
                         return; // don't preventDefault on anything else
                 }
-            } else if (event.key === "Tab") {
+            } else if (event.key === Key.TAB) {
                 this._tabCompleteName();
                 handled = true;
             }
@@ -432,22 +479,30 @@ export default class BasicMessageEditor extends React.Component {
         this.props.model.autoComplete.onComponentConfirm(completion);
     }
 
-    _onAutoCompleteSelectionChange = (completion) => {
+    _onAutoCompleteSelectionChange = (completion, completionIndex) => {
         this.props.model.autoComplete.onComponentSelectionChange(completion);
+        this.setState({completionIndex});
+    }
+
+    _configureEmoticonAutoReplace() {
+        const shouldReplace = SettingsStore.getValue('MessageComposerInput.autoReplaceEmoji');
+        this.props.model.setTransformCallback(shouldReplace ? this._replaceEmoticon : null);
     }
 
     componentWillUnmount() {
         this._editorRef.removeEventListener("input", this._onInput, true);
         this._editorRef.removeEventListener("compositionstart", this._onCompositionStart, true);
         this._editorRef.removeEventListener("compositionend", this._onCompositionEnd, true);
+        SettingsStore.unwatchSetting(this._emoticonSettingHandle);
     }
 
     componentDidMount() {
         const model = this.props.model;
         model.setUpdateCallback(this._updateEditorState);
-        if (SettingsStore.getValue('MessageComposerInput.autoReplaceEmoji')) {
-            model.setTransformCallback(this._replaceEmoticon);
-        }
+        this._emoticonSettingHandle = SettingsStore.watchSetting('MessageComposerInput.autoReplaceEmoji', null, () => {
+            this._configureEmoticonAutoReplace();
+        });
+        this._configureEmoticonAutoReplace();
         const partCreator = model.partCreator;
         // TODO: does this allow us to get rid of EditorStateTransfer?
         // not really, but we could not serialize the parts, and just change the autoCompleter
@@ -535,20 +590,31 @@ export default class BasicMessageEditor extends React.Component {
             quote: ctrlShortcutLabel(">"),
         };
 
+        const {completionIndex} = this.state;
+
         return (<div className={classes}>
             { autoComplete }
             <MessageComposerFormatBar ref={ref => this._formatBarRef = ref} onAction={this._onFormatAction} shortcuts={shortcuts} />
             <div
                 className="mx_BasicMessageComposer_input"
                 contentEditable="true"
-                tabIndex="1"
+                tabIndex="0"
                 onBlur={this._onBlur}
                 onFocus={this._onFocus}
+                onCopy={this._onCopy}
+                onCut={this._onCut}
                 onPaste={this._onPaste}
                 onKeyDown={this._onKeyDown}
                 ref={ref => this._editorRef = ref}
                 aria-label={this.props.label}
-            ></div>
+                role="textbox"
+                aria-multiline="true"
+                aria-autocomplete="both"
+                aria-haspopup="listbox"
+                aria-expanded={Boolean(this.state.autoComplete)}
+                aria-activedescendant={completionIndex >= 0 ? generateCompletionDomId(completionIndex) : undefined}
+                dir="auto"
+            />
         </div>);
     }
 

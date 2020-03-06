@@ -16,7 +16,7 @@ limitations under the License.
 
 import React from 'react';
 import {_t} from "../../../languageHandler";
-import sdk from "../../../index";
+import * as sdk from "../../../index";
 import PropTypes from "prop-types";
 import {ValidatedServerConfig} from "../../../utils/AutoDiscoveryUtils";
 
@@ -27,13 +27,13 @@ export default class SignInToText extends React.PureComponent {
     };
 
     render() {
-        let signInToText = _t('Sign in to your AMP.care account on %(serverName)s', {
+        let signInToText = _t('Sign in to your Matrix account on %(serverName)s', {
             serverName: this.props.serverConfig.hsName,
         });
         if (this.props.serverConfig.hsNameIsDifferent) {
             const TextWithTooltip = sdk.getComponent("elements.TextWithTooltip");
 
-            signInToText = _t('Sign in to your AMP.care account on <underlinedServerName />', {}, {
+            signInToText = _t('Sign in to your Matrix account on <underlinedServerName />', {}, {
                 'underlinedServerName': () => {
                     return <TextWithTooltip
                         class="mx_Login_underlinedServerName"

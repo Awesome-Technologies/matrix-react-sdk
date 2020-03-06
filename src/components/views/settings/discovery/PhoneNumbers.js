@@ -19,8 +19,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import { _t } from "../../../../languageHandler";
-import MatrixClientPeg from "../../../../MatrixClientPeg";
-import sdk from '../../../../index';
+import {MatrixClientPeg} from "../../../../MatrixClientPeg";
+import * as sdk from '../../../../index';
 import Modal from '../../../../Modal';
 import AddThreepid from '../../../../AddThreepid';
 
@@ -207,11 +207,7 @@ export class PhoneNumber extends React.Component {
                     <br />
                     {this.state.verifyError}
                 </span>
-                <form
-                    onSubmit={this.onContinueClick}
-                    autoComplete={false}
-                    noValidate={true}
-                >
+                <form onSubmit={this.onContinueClick} autoComplete="off" noValidate={true}>
                     <Field id="mx_PhoneNumbers_newPhoneNumberCode"
                         type="text"
                         label={_t("Verification code")}

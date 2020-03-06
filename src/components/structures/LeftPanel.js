@@ -1,5 +1,6 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
+Copyright 2019 The Matrix.org Foundation C.I.C.
 Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,12 +20,10 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { MatrixClient } from 'matrix-js-sdk';
-import { KeyCode } from '../../Keyboard';
-import sdk from '../../index';
+import { Key } from '../../Keyboard';
+import * as sdk from '../../index';
 import dis from '../../dispatcher';
-import VectorConferenceHandler from '../../VectorConferenceHandler';
-import TagPanelButtons from './TagPanelButtons';
+import * as VectorConferenceHandler from '../../VectorConferenceHandler';
 import SettingsStore from '../../settings/SettingsStore';
 import {_t} from "../../languageHandler";
 import Analytics from "../../Analytics";
@@ -39,10 +38,6 @@ const LeftPanel = createReactClass({
         collapsed: PropTypes.bool.isRequired,
     },
 
-    contextTypes: {
-        matrixClient: PropTypes.instanceOf(MatrixClient),
-    },
-
     getInitialState: function() {
         return {
             searchFilter: '',
@@ -53,8 +48,10 @@ const LeftPanel = createReactClass({
     componentWillMount: function() {
         this.focusedElement = null;
 
-        this._settingWatchRef = SettingsStore.watchSetting(
+        this._breadcrumbsWatcherRef = SettingsStore.watchSetting(
             "breadcrumbs", null, this._onBreadcrumbsChanged);
+        this._tagPanelWatcherRef = SettingsStore.watchSetting(
+            "TagPanel.enableTagPanel", null, () => this.forceUpdate());
 
         const useBreadcrumbs = !!SettingsStore.getValue("breadcrumbs");
         Analytics.setBreadcrumbs(useBreadcrumbs);
@@ -62,7 +59,8 @@ const LeftPanel = createReactClass({
     },
 
     componentWillUnmount: function() {
-        SettingsStore.unwatchSetting(this._settingWatchRef);
+        SettingsStore.unwatchSetting(this._breadcrumbsWatcherRef);
+        SettingsStore.unwatchSetting(this._tagPanelWatcherRef);
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
@@ -113,37 +111,35 @@ const LeftPanel = createReactClass({
         this.focusedElement = null;
     },
 
-    _onKeyDown: function(ev) {
+    _onFilterKeyDown: function(ev) {
         if (!this.focusedElement) return;
-        let handled = true;
 
-        switch (ev.keyCode) {
-            case KeyCode.TAB:
-                this._onMoveFocus(ev.shiftKey);
-                break;
-            case KeyCode.UP:
-                this._onMoveFocus(true);
-                break;
-            case KeyCode.DOWN:
-                this._onMoveFocus(false);
-                break;
-            case KeyCode.ENTER:
-                this._onMoveFocus(false);
-                if (this.focusedElement) {
-                    this.focusedElement.click();
+        switch (ev.key) {
+            // On enter of rooms filter select and activate first room if such one exists
+            case Key.ENTER: {
+                const firstRoom = ev.target.closest(".mx_LeftPanel").querySelector(".mx_RoomTile");
+                if (firstRoom) {
+                    firstRoom.click();
                 }
                 break;
-            default:
-                handled = false;
-        }
-
-        if (handled) {
-            ev.stopPropagation();
-            ev.preventDefault();
+            }
         }
     },
 
-    _onMoveFocus: function(up) {
+    _onKeyDown: function(ev) {
+        if (!this.focusedElement) return;
+
+        switch (ev.key) {
+            case Key.ARROW_UP:
+                this._onMoveFocus(ev, true, true);
+                break;
+            case Key.ARROW_DOWN:
+                this._onMoveFocus(ev, false, true);
+                break;
+        }
+    },
+
+    _onMoveFocus: function(ev, up, trap) {
         let element = this.focusedElement;
 
         // unclear why this isn't needed
@@ -177,26 +173,22 @@ const LeftPanel = createReactClass({
 
             if (element) {
                 classes = element.classList;
-                if (classes.contains("mx_LeftPanel")) { // we hit the top
-                    element = up ? element.lastElementChild : element.firstElementChild;
-                    descending = true;
-                }
             }
         } while (element && !(
             classes.contains("mx_RoomTile") ||
-            classes.contains("mx_textinput_search")));
+            classes.contains("mx_RoomSubList_label") ||
+            classes.contains("mx_LeftPanel_filterRooms")));
 
         if (element) {
+            ev.stopPropagation();
+            ev.preventDefault();
             element.focus();
             this.focusedElement = element;
-            this.focusedDescending = descending;
+        } else if (trap) {
+            // if navigation is via up/down arrow-keys, trap in the widget so it doesn't send to composer
+            ev.stopPropagation();
+            ev.preventDefault();
         }
-    },
-
-    onHideClick: function() {
-        dis.dispatch({
-            action: 'hide_left_panel',
-        });
     },
 
     onSearch: function(term) {
@@ -243,7 +235,6 @@ const LeftPanel = createReactClass({
             tagPanelContainer = (<div className="mx_LeftPanel_tagPanelContainer">
                 <TagPanel />
                 { isCustomTagsEnabled ? <CustomRoomTagPanel /> : undefined }
-                <TagPanelButtons />
             </div>);
         }
 
@@ -266,9 +257,11 @@ const LeftPanel = createReactClass({
         }
 
         const searchBox = (<SearchBox
+            className="mx_LeftPanel_filterRooms"
             enableRoomSearchFocus={true}
             blurredPlaceholder={ _t('Filter') }
-            placeholder={ _t('Filter cases…') }
+            placeholder={ _t('Filter rooms…') }
+            onKeyDown={this._onFilterKeyDown}
             onSearch={ this.onSearch }
             onCleared={ this.onSearchCleared }
             onFocus={this._onSearchFocus}
@@ -282,13 +275,19 @@ const LeftPanel = createReactClass({
 
         return (
             <div className={containerClasses}>
-                <aside className={"mx_LeftPanel dark-panel"} onKeyDown={ this._onKeyDown } onFocus={ this._onFocus } onBlur={ this._onBlur }>
-                    <TopLeftMenuButton collapsed={ this.props.collapsed } />
-                    <div className="mx_LeftPanel_exploreAndFilterRow">
+                { tagPanelContainer }
+                <aside className="mx_LeftPanel dark-panel">
+                    <TopLeftMenuButton collapsed={this.props.collapsed} />
+                    { breadcrumbs }
+                    <CallPreview ConferenceHandler={VectorConferenceHandler} />
+                    <div className="mx_LeftPanel_exploreAndFilterRow" onKeyDown={this._onKeyDown} onFocus={this._onFocus} onBlur={this._onBlur}>
+                        { exploreButton }
                         { searchBox }
                     </div>
-                    <CallPreview ConferenceHandler={VectorConferenceHandler} />
                     <RoomList
+                        onKeyDown={this._onKeyDown}
+                        onFocus={this._onFocus}
+                        onBlur={this._onBlur}
                         ref={this.collectRoomList}
                         resizeNotifier={this.props.resizeNotifier}
                         collapsed={this.props.collapsed}
@@ -300,4 +299,4 @@ const LeftPanel = createReactClass({
     },
 });
 
-module.exports = LeftPanel;
+export default LeftPanel;

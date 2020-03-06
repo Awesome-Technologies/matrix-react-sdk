@@ -1,6 +1,7 @@
 /*
 Copyright 2017 Vector Creations Ltd
 Copyright 2018 New Vector Ltd
+Copyright 2019 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,29 +17,28 @@ limitations under the License.
 */
 import React from 'react';
 import createReactClass from 'create-react-class';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import dis from '../../../dispatcher';
 import classNames from 'classnames';
-import { Room, RoomMember, MatrixClient } from 'matrix-js-sdk';
+import { Room, RoomMember } from 'matrix-js-sdk';
 import PropTypes from 'prop-types';
-import MatrixClientPeg from '../../../MatrixClientPeg';
-import { MATRIXTO_URL_PATTERN } from '../../../linkify-matrix';
+import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import { getDisplayAliasForRoom } from '../../../Rooms';
 import FlairStore from "../../../stores/FlairStore";
-
-const REGEX_MATRIXTO = new RegExp(MATRIXTO_URL_PATTERN);
+import {getPrimaryPermalinkEntity} from "../../../utils/permalinks/Permalinks";
+import MatrixClientContext from "../../../contexts/MatrixClientContext";
 
 // For URLs of matrix.to links in the timeline which have been reformatted by
 // HttpUtils transformTags to relative links. This excludes event URLs (with `[^\/]*`)
-const REGEX_LOCAL_MATRIXTO = /^#\/(?:user|room|group)\/(([#!@+])[^/]*)$/;
+const REGEX_LOCAL_PERMALINK = /^#\/(?:user|room|group)\/(([#!@+])[^/]*)$/;
 
 const Pill = createReactClass({
     statics: {
         isPillUrl: (url) => {
-            return !!REGEX_MATRIXTO.exec(url);
+            return !!getPrimaryPermalinkEntity(url);
         },
         isMessagePillUrl: (url) => {
-            return !!REGEX_LOCAL_MATRIXTO.exec(url);
+            return !!REGEX_LOCAL_PERMALINK.exec(url);
         },
         roomNotifPos: (text) => {
             return text.indexOf("@room");
@@ -67,17 +67,6 @@ const Pill = createReactClass({
         isSelected: PropTypes.bool,
     },
 
-
-    childContextTypes: {
-        matrixClient: PropTypes.instanceOf(MatrixClient),
-    },
-
-    getChildContext() {
-        return {
-            matrixClient: this._matrixClient,
-        };
-    },
-
     getInitialState() {
         return {
             // ID/alias of the room/user
@@ -95,22 +84,21 @@ const Pill = createReactClass({
     },
 
     async componentWillReceiveProps(nextProps) {
-        let regex = REGEX_MATRIXTO;
-        if (nextProps.inMessage) {
-            regex = REGEX_LOCAL_MATRIXTO;
-        }
-
-        let matrixToMatch;
         let resourceId;
         let prefix;
 
         if (nextProps.url) {
-            // Default to the empty array if no match for simplicity
-            // resource and prefix will be undefined instead of throwing
-            matrixToMatch = regex.exec(nextProps.url) || [];
+            if (nextProps.inMessage) {
+                // Default to the empty array if no match for simplicity
+                // resource and prefix will be undefined instead of throwing
+                const matrixToMatch = REGEX_LOCAL_PERMALINK.exec(nextProps.url) || [];
 
-            resourceId = matrixToMatch[1]; // The room/user ID
-            prefix = matrixToMatch[2]; // The first character of prefix
+                resourceId = matrixToMatch[1]; // The room/user ID
+                prefix = matrixToMatch[2]; // The first character of prefix
+            } else {
+                resourceId = getPrimaryPermalinkEntity(nextProps.url);
+                prefix = resourceId ? resourceId[0] : undefined;
+            }
         }
 
         const pillType = this.props.type || {
@@ -129,7 +117,7 @@ const Pill = createReactClass({
             }
                 break;
             case Pill.TYPE_USER_MENTION: {
-                const localMember = nextProps.room.getMember(resourceId);
+                const localMember = nextProps.room ? nextProps.room.getMember(resourceId) : undefined;
                 member = localMember;
                 if (!localMember) {
                     member = new RoomMember(null, resourceId);
@@ -223,7 +211,7 @@ const Pill = createReactClass({
                 if (room) {
                     linkText = "@room";
                     if (this.props.shouldShowPillAvatar) {
-                        avatar = <RoomAvatar room={room} width={16} height={16} />;
+                        avatar = <RoomAvatar room={room} width={16} height={16} aria-hidden="true" />;
                     }
                     pillClass = 'mx_AtRoomPill';
                 }
@@ -237,7 +225,7 @@ const Pill = createReactClass({
                         member.rawDisplayName = member.rawDisplayName || '';
                         linkText = member.rawDisplayName;
                         if (this.props.shouldShowPillAvatar) {
-                            avatar = <MemberAvatar member={member} width={16} height={16} />;
+                            avatar = <MemberAvatar member={member} width={16} height={16} aria-hidden="true" />;
                         }
                         pillClass = 'mx_UserPill';
                         href = null;
@@ -250,7 +238,7 @@ const Pill = createReactClass({
                 if (room) {
                     linkText = (room ? getDisplayAliasForRoom(room) : null) || resource;
                     if (this.props.shouldShowPillAvatar) {
-                        avatar = <RoomAvatar room={room} width={16} height={16} />;
+                        avatar = <RoomAvatar room={room} width={16} height={16} aria-hidden="true" />;
                     }
                     pillClass = 'mx_RoomPill';
                 }
@@ -263,7 +251,7 @@ const Pill = createReactClass({
 
                     linkText = groupId;
                     if (this.props.shouldShowPillAvatar) {
-                        avatar = <BaseAvatar name={name || groupId} width={16} height={16}
+                        avatar = <BaseAvatar name={name || groupId} width={16} height={16} aria-hidden="true"
                                              url={avatarUrl ? cli.mxcUrlToHttp(avatarUrl, 16, 16) : null} />;
                     }
                     pillClass = 'mx_GroupPill';
@@ -273,20 +261,22 @@ const Pill = createReactClass({
         }
 
         const classes = classNames("mx_Pill", pillClass, {
-            "mx_UserPill_me": userId === MatrixClientPeg.get().credentials.userId,
+            "mx_UserPill_me": userId === MatrixClientPeg.get().getUserId(),
             "mx_UserPill_selected": this.props.isSelected,
         });
 
         if (this.state.pillType) {
-            return this.props.inMessage ?
-                <a className={classes} href={href} onClick={onClick} title={resource} data-offset-key={this.props.offsetKey}>
-                    { avatar }
-                    { linkText }
-                </a> :
-                <span className={classes} title={resource} data-offset-key={this.props.offsetKey}>
-                    { avatar }
-                    { linkText }
-                </span>;
+            return <MatrixClientContext.Provider value={this._matrixClient}>
+                { this.props.inMessage ?
+                    <a className={classes} href={href} onClick={onClick} title={resource} data-offset-key={this.props.offsetKey}>
+                        { avatar }
+                        { linkText }
+                    </a> :
+                    <span className={classes} title={resource} data-offset-key={this.props.offsetKey}>
+                        { avatar }
+                        { linkText }
+                    </span> }
+            </MatrixClientContext.Provider>;
         } else {
             // Deliberately render nothing if the URL isn't recognised
             return null;

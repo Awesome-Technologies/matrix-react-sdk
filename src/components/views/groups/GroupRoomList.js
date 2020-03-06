@@ -16,7 +16,7 @@ limitations under the License.
 import React from 'react';
 import createReactClass from 'create-react-class';
 import { _t } from '../../../languageHandler';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import GroupStore from '../../../stores/GroupStore';
 import PropTypes from 'prop-types';
 import { showGroupAddRoomDialog } from '../../../GroupAddressPicker';
@@ -153,7 +153,7 @@ export default createReactClass({
         const GeminiScrollbarWrapper = sdk.getComponent("elements.GeminiScrollbarWrapper");
         const TruncatedList = sdk.getComponent("elements.TruncatedList");
         return (
-            <div className="mx_GroupRoomList">
+            <div className="mx_GroupRoomList" role="tabpanel">
                 { inviteButton }
                 <GeminiScrollbarWrapper autoshow={true} className="mx_GroupRoomList_joined mx_GroupRoomList_outerWrapper">
                     <TruncatedList className="mx_GroupRoomList_wrapper" truncateAt={this.state.truncateAt}

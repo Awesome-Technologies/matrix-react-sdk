@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import React from 'react';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
 import {ValidatedServerConfig} from "../../../utils/AutoDiscoveryUtils";
 import SdkConfig from "../../../SdkConfig";
@@ -104,7 +104,7 @@ export default class ModularServerConfig extends ServerConfig {
                         </a>,
                     },
                 )}
-                <form onSubmit={this.onSubmit} autoComplete={false} action={null}>
+                <form onSubmit={this.onSubmit} autoComplete="off" action={null}>
                     <div className="mx_ServerConfig_fields">
                         <Field id="mx_ServerConfig_hsUrl"
                             label={_t("Server Name")}

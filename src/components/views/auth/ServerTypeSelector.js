@@ -17,7 +17,7 @@ limitations under the License.
 import React from 'react';
 import PropTypes from 'prop-types';
 import { _t } from '../../../languageHandler';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import classnames from 'classnames';
 import {ValidatedServerConfig} from "../../../utils/AutoDiscoveryUtils";
 import {makeType} from "../../../utils/TypeUtils";
@@ -35,7 +35,7 @@ export const TYPES = {
         logo: () => <img src={require('../../../../res/img/matrix-org-bw-logo.svg')} />,
         description: () => _t('Join millions for free on the largest public server'),
         serverConfig: makeType(ValidatedServerConfig, {
-            hsUrl: "https://matrix.org",
+            hsUrl: "https://matrix-client.matrix.org",
             hsName: "matrix.org",
             hsNameIsDifferent: false,
             isUrl: "https://vector.im",

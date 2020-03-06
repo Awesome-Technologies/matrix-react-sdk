@@ -16,13 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import React from 'react';
+import React, {createRef} from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import url from 'url';
 import classnames from 'classnames';
 
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
 import SettingsStore from "../../../settings/SettingsStore";
 
@@ -124,6 +124,7 @@ export const PasswordAuthEntry = createReactClass({
                 <input type="submit"
                     className="mx_Dialog_primary"
                     disabled={!this.state.password}
+                    value={_t("Continue")}
                 />
             );
         }
@@ -141,7 +142,7 @@ export const PasswordAuthEntry = createReactClass({
 
         return (
             <div>
-                <p>{ _t("To continue, please enter your password.") }</p>
+                <p>{ _t("Confirm your identity by entering your account password below.") }</p>
                 <form onSubmit={this._onSubmit} className="mx_InteractiveAuthEntryComponents_passwordSection">
                     <Field
                         id="mx_InteractiveAuthEntryComponents_password"
@@ -190,14 +191,24 @@ export const RecaptchaAuthEntry = createReactClass({
             return <Loader />;
         }
 
+        let errorText = this.props.errorText;
+
         const CaptchaForm = sdk.getComponent("views.auth.CaptchaForm");
-        const sitePublicKey = this.props.stageParams.public_key;
+        let sitePublicKey;
+        if (!this.props.stageParams || !this.props.stageParams.public_key) {
+            errorText = _t(
+                "Missing captcha public key in homeserver configuration. Please report " +
+                "this to your homeserver administrator.",
+            );
+        } else {
+            sitePublicKey = this.props.stageParams.public_key;
+        }
 
         let errorSection;
-        if (this.props.errorText) {
+        if (errorText) {
             errorSection = (
                 <div className="error" role="alert">
-                    { this.props.errorText }
+                    { errorText }
                 </div>
             );
         }
@@ -319,7 +330,7 @@ export const TermsAuthEntry = createReactClass({
 
             checkboxes.push(
                 <label key={"policy_checkbox_" + policy.id} className="mx_InteractiveAuthEntryComponents_termsPolicy">
-                    <input type="checkbox" onClick={() => this._togglePolicy(policy.id)} checked={checked} />
+                    <input type="checkbox" onChange={() => this._togglePolicy(policy.id)} checked={checked} />
                     <a href={policy.url} target="_blank" rel="noopener">{ policy.name }</a>
                 </label>,
             );
@@ -430,7 +441,7 @@ export const MsisdnAuthEntry = createReactClass({
             this.props.fail(e);
         }).finally(() => {
             this.setState({requestingToken: false});
-        }).done();
+        });
     },
 
     /*
@@ -464,22 +475,26 @@ export const MsisdnAuthEntry = createReactClass({
         });
 
         try {
+            const requiresIdServerParam =
+                await this.props.matrixClient.doesServerRequireIdServerParam();
             let result;
             if (this._submitUrl) {
                 result = await this.props.matrixClient.submitMsisdnTokenOtherUrl(
                     this._submitUrl, this._sid, this.props.clientSecret, this.state.token,
                 );
-            } else {
+            } else if (requiresIdServerParam) {
                 result = await this.props.matrixClient.submitMsisdnToken(
                     this._sid, this.props.clientSecret, this.state.token,
                 );
+            } else {
+                throw new Error("The registration with MSISDN flow is misconfigured");
             }
             if (result.success) {
                 const creds = {
                     sid: this._sid,
                     client_secret: this.props.clientSecret,
                 };
-                if (await this.props.matrixClient.doesServerRequireIdServerParam()) {
+                if (requiresIdServerParam) {
                     const idServerParsedUrl = url.parse(
                         this.props.matrixClient.getIdentityServerUrl(),
                     );
@@ -566,6 +581,8 @@ export const FallbackAuthEntry = createReactClass({
         // the popup if we open it immediately.
         this._popupWindow = null;
         window.addEventListener("message", this._onReceiveMessage);
+
+        this._fallbackButton = createRef();
     },
 
     componentWillUnmount: function() {
@@ -576,8 +593,8 @@ export const FallbackAuthEntry = createReactClass({
     },
 
     focus: function() {
-        if (this.refs.fallbackButton) {
-            this.refs.fallbackButton.focus();
+        if (this._fallbackButton.current) {
+            this._fallbackButton.current.focus();
         }
     },
 
@@ -609,7 +626,7 @@ export const FallbackAuthEntry = createReactClass({
         }
         return (
             <div>
-                <a ref="fallbackButton" onClick={this._onShowFallbackClick}>{ _t("Start authentication") }</a>
+                <a ref={this._fallbackButton} onClick={this._onShowFallbackClick}>{ _t("Start authentication") }</a>
                 {errorSection}
             </div>
         );
@@ -624,7 +641,7 @@ const AuthEntryComponents = [
     TermsAuthEntry,
 ];
 
-export function getEntryComponentForLoginType(loginType) {
+export default function getEntryComponentForLoginType(loginType) {
     for (const c of AuthEntryComponents) {
         if (c.LOGIN_TYPE == loginType) {
             return c;

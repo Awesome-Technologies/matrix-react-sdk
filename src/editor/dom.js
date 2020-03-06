@@ -21,8 +21,8 @@ import DocumentOffset from "./offset";
 export function walkDOMDepthFirst(rootNode, enterNodeCallback, leaveNodeCallback) {
     let node = rootNode.firstChild;
     while (node && node !== rootNode) {
-        const shouldDecend = enterNodeCallback(node);
-        if (shouldDecend && node.firstChild) {
+        const shouldDescend = enterNodeCallback(node);
+        if (shouldDescend && node.firstChild) {
             node = node.firstChild;
         } else if (node.nextSibling) {
             node = node.nextSibling;
@@ -92,6 +92,10 @@ function getSelectionOffsetAndText(editor, selectionNode, selectionOffset) {
 // gets the caret position details, ignoring and adjusting to
 // the ZWS if you're typing in a caret node
 function getCaret(node, offsetToNode, offsetWithinNode) {
+    // if no node is selected, return an offset at the start
+    if (!node) {
+        return new DocumentOffset(0, false);
+    }
     let atNodeEnd = offsetWithinNode === node.textContent.length;
     if (node.nodeType === Node.TEXT_NODE && isCaretNode(node.parentElement)) {
         const zwsIdx = node.nodeValue.indexOf(CARET_NODE_CHAR);

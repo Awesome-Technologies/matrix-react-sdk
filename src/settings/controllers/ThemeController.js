@@ -16,12 +16,19 @@ limitations under the License.
 */
 
 import SettingController from "./SettingController";
-import {DEFAULT_THEME, THEMES} from "../../themes";
+import {DEFAULT_THEME, enumerateThemes} from "../../theme";
 
 export default class ThemeController extends SettingController {
+    static isLogin = false;
+
     getValueOverride(level, roomId, calculatedValue, calculatedAtLevel) {
+        if (!calculatedValue) return null; // Don't override null themes
+
+        if (ThemeController.isLogin) return 'light';
+
+        const themes = enumerateThemes();
         // Override in case some no longer supported theme is stored here
-        if (!THEMES[calculatedValue]) {
+        if (!themes[calculatedValue]) {
             return DEFAULT_THEME;
         }
 

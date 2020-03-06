@@ -17,7 +17,7 @@ limitations under the License.
 import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import SdkConfig from '../../../SdkConfig';
 import { _t } from '../../../languageHandler';
 import PatientData from '../cases/PatientData';
@@ -26,7 +26,7 @@ import AnamnesisData from '../cases/AnamnesisData';
 import MedicationData from '../cases/MedicationData';
 import Field from "../elements/Field";
 import Modal from "../../../Modal";
-import MatrixClientPeg from '../../../MatrixClientPeg';
+import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import colorVariables from '../../../../res/themes/light/css/light.scss';
 
 export default createReactClass({

@@ -1,6 +1,7 @@
 /*
 Copyright 2017 OpenMarket Ltd
 Copyright 2018 New Vector Ltd
+Copyright 2019 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,17 +17,17 @@ limitations under the License.
 */
 
 import pako from 'pako';
-import Promise from 'bluebird';
 
-import MatrixClientPeg from '../MatrixClientPeg';
+import {MatrixClientPeg} from '../MatrixClientPeg';
 import PlatformPeg from '../PlatformPeg';
 import { _t } from '../languageHandler';
 
-import rageshake from './rageshake';
+import * as rageshake from './rageshake';
 
 
 // polyfill textencoder if necessary
 import * as TextEncodingUtf8 from 'text-encoding-utf-8';
+import SettingsStore from "../settings/SettingsStore";
 let TextEncoder = window.TextEncoder;
 if (!TextEncoder) {
     TextEncoder = TextEncodingUtf8.TextEncoder;
@@ -81,6 +82,16 @@ export default async function sendBugReport(bugReportEndpoint, opts) {
         body.append('device_id', client.deviceId);
     }
 
+    if (opts.label) {
+        body.append('label', opts.label);
+    }
+
+    // add labs options
+    const enabledLabs = SettingsStore.getLabsFeatures().filter(SettingsStore.isFeatureEnabled);
+    if (enabledLabs.length) {
+        body.append('enabled_labs', enabledLabs.join(', '));
+    }
+
     if (opts.sendLogs) {
         progressCallback(_t("Collecting logs"));
         const logs = await rageshake.getLogsForReport();
@@ -100,26 +111,22 @@ export default async function sendBugReport(bugReportEndpoint, opts) {
 }
 
 function _submitReport(endpoint, body, progressCallback) {
-    const deferred = Promise.defer();
-
-    const req = new XMLHttpRequest();
-    req.open("POST", endpoint);
-    req.timeout = 5 * 60 * 1000;
-    req.onreadystatechange = function() {
-        if (req.readyState === XMLHttpRequest.LOADING) {
-            progressCallback(_t("Waiting for response from server"));
-        } else if (req.readyState === XMLHttpRequest.DONE) {
-            on_done();
-        }
-    };
-    req.send(body);
-    return deferred.promise;
-
-    function on_done() {
-        if (req.status < 200 || req.status >= 400) {
-            deferred.reject(new Error(`HTTP ${req.status}`));
-            return;
-        }
-        deferred.resolve();
-    }
+    return new Promise((resolve, reject) => {
+        const req = new XMLHttpRequest();
+        req.open("POST", endpoint);
+        req.timeout = 5 * 60 * 1000;
+        req.onreadystatechange = function() {
+            if (req.readyState === XMLHttpRequest.LOADING) {
+                progressCallback(_t("Waiting for response from server"));
+            } else if (req.readyState === XMLHttpRequest.DONE) {
+                // on done
+                if (req.status < 200 || req.status >= 400) {
+                    reject(new Error(`HTTP ${req.status}`));
+                    return;
+                }
+                resolve();
+            }
+        };
+        req.send(body);
+    });
 }

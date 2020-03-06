@@ -2,6 +2,7 @@
 Copyright 2017 OpenMarket Ltd
 Copyright 2018 New Vector Ltd
 Copyright 2019 Michael Telatynski <7t3chguy@gmail.com>
+Copyright 2019 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,14 +19,15 @@ limitations under the License.
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import SdkConfig from '../../../SdkConfig';
 import Modal from '../../../Modal';
 import { _t } from '../../../languageHandler';
+import sendBugReport from '../../../rageshake/submit-rageshake';
 
 export default class BugReportDialog extends React.Component {
-    constructor(props, context) {
-        super(props, context);
+    constructor(props) {
+        super(props);
         this.state = {
             sendLogs: true,
             busy: false,
@@ -66,31 +68,30 @@ export default class BugReportDialog extends React.Component {
         this.setState({ busy: true, progress: null, err: null });
         this._sendProgressCallback(_t("Preparing to send logs"));
 
-        require(['../../../rageshake/submit-rageshake'], (s) => {
-            s(SdkConfig.get().bug_report_endpoint_url, {
-                userText,
-                sendLogs: true,
-                progressCallback: this._sendProgressCallback,
-            }).then(() => {
-                if (!this._unmounted) {
-                    this.props.onFinished(false);
-                    const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
-                    // N.B. first param is passed to piwik and so doesn't want i18n
-                    Modal.createTrackedDialog('Bug report sent', '', QuestionDialog, {
-                        title: _t('Logs sent'),
-                        description: _t('Thank you!'),
-                        hasCancelButton: false,
-                    });
-                }
-            }, (err) => {
-                if (!this._unmounted) {
-                    this.setState({
-                        busy: false,
-                        progress: null,
-                        err: _t("Failed to send logs: ") + `${err.message}`,
-                    });
-                }
-            });
+        sendBugReport(SdkConfig.get().bug_report_endpoint_url, {
+            userText,
+            sendLogs: true,
+            progressCallback: this._sendProgressCallback,
+            label: this.props.label,
+        }).then(() => {
+            if (!this._unmounted) {
+                this.props.onFinished(false);
+                const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
+                // N.B. first param is passed to piwik and so doesn't want i18n
+                Modal.createTrackedDialog('Bug report sent', '', QuestionDialog, {
+                    title: _t('Logs sent'),
+                    description: _t('Thank you!'),
+                    hasCancelButton: false,
+                });
+            }
+        }, (err) => {
+            if (!this._unmounted) {
+                this.setState({
+                    busy: false,
+                    progress: null,
+                    err: _t("Failed to send logs: ") + `${err.message}`,
+                });
+            }
         });
     }
 
@@ -174,6 +175,7 @@ export default class BugReportDialog extends React.Component {
                         placeholder="https://github.com/vector-im/riot-web/issues/..."
                     />
                     <Field
+                        id="mx_BugReportDialog_notes"
                         className="mx_BugReportDialog_field_input"
                         element="textarea"
                         label={_t("Notes")}

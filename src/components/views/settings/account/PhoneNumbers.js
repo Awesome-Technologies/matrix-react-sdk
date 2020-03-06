@@ -18,12 +18,12 @@ limitations under the License.
 import React from 'react';
 import PropTypes from 'prop-types';
 import {_t} from "../../../../languageHandler";
-import MatrixClientPeg from "../../../../MatrixClientPeg";
+import {MatrixClientPeg} from "../../../../MatrixClientPeg";
 import Field from "../../elements/Field";
 import AccessibleButton from "../../elements/AccessibleButton";
 import AddThreepid from "../../../../AddThreepid";
 import CountryDropdown from "../../auth/CountryDropdown";
-import sdk from '../../../../index';
+import * as sdk from '../../../../index';
 import Modal from '../../../../Modal';
 
 /*
@@ -231,7 +231,7 @@ export default class PhoneNumbers extends React.Component {
                         <br />
                         {this.state.verifyError}
                     </div>
-                    <form onSubmit={this._onContinueClick} autoComplete={false} noValidate={true}>
+                    <form onSubmit={this._onContinueClick} autoComplete="off" noValidate={true}>
                         <Field id="mx_PhoneNumbers_newPhoneNumberCode"
                             type="text"
                             label={_t("Verification code")}
@@ -260,8 +260,7 @@ export default class PhoneNumbers extends React.Component {
         return (
             <div className="mx_PhoneNumbers">
                 {existingPhoneElements}
-                <form onSubmit={this._onAddClick} autoComplete={false}
-                      noValidate={true} className="mx_PhoneNumbers_new">
+                <form onSubmit={this._onAddClick} autoComplete="off" noValidate={true} className="mx_PhoneNumbers_new">
                     <div className="mx_PhoneNumbers_input">
                         <Field id="mx_PhoneNumbers_newPhoneNumber"
                             type="text"

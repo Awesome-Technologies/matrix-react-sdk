@@ -15,7 +15,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import React from 'react';
-import sdk from '../../../index';
+import * as sdk from '../../../index';
 import {_t} from '../../../languageHandler';
 import PropTypes from 'prop-types';
 import dis from '../../../dispatcher';
@@ -26,10 +26,11 @@ import {findEditableEvent} from '../../../utils/EventUtils';
 import {parseEvent} from '../../../editor/deserialize';
 import {PartCreator} from '../../../editor/parts';
 import EditorStateTransfer from '../../../utils/EditorStateTransfer';
-import {MatrixClient} from 'matrix-js-sdk';
 import classNames from 'classnames';
 import {EventStatus} from 'matrix-js-sdk';
 import BasicMessageComposer from "./BasicMessageComposer";
+import {Key} from "../../../Keyboard";
+import MatrixClientContext from "../../../contexts/MatrixClientContext";
 
 function _isReply(mxEvent) {
     const relatesTo = mxEvent.getContent()["m.relates_to"];
@@ -74,7 +75,7 @@ function createEditContent(model, editedEvent) {
 
     const newContent = {
         "msgtype": isEmote ? "m.emote" : "m.text",
-        "body": plainPrefix + body,
+        "body": body,
     };
     const contentBody = {
         msgtype: newContent.msgtype,
@@ -84,7 +85,7 @@ function createEditContent(model, editedEvent) {
     const formattedBody = htmlSerializeIfNeeded(model, {forceHTML: isReply});
     if (formattedBody) {
         newContent.format = "org.matrix.custom.html";
-        newContent.formatted_body = htmlPrefix + formattedBody;
+        newContent.formatted_body = formattedBody;
         contentBody.format = newContent.format;
         contentBody.formatted_body = `${htmlPrefix} * ${formattedBody}`;
     }
@@ -104,12 +105,10 @@ export default class EditMessageComposer extends React.Component {
         editState: PropTypes.instanceOf(EditorStateTransfer).isRequired,
     };
 
-    static contextTypes = {
-        matrixClient: PropTypes.instanceOf(MatrixClient).isRequired,
-    };
+    static contextType = MatrixClientContext;
 
-    constructor(props, context) {
-        super(props, context);
+    constructor(props) {
+        super(props);
         this.model = null;
         this._editorRef = null;
 
@@ -123,7 +122,7 @@ export default class EditMessageComposer extends React.Component {
     };
 
     _getRoom() {
-        return this.context.matrixClient.getRoom(this.props.editState.getEvent().getRoomId());
+        return this.context.getRoom(this.props.editState.getEvent().getRoomId());
     }
 
     _onKeyDown = (event) => {
@@ -134,12 +133,12 @@ export default class EditMessageComposer extends React.Component {
         if (event.metaKey || event.altKey || event.shiftKey) {
             return;
         }
-        if (event.key === "Enter") {
+        if (event.key === Key.ENTER) {
             this._sendEdit();
             event.preventDefault();
-        } else if (event.key === "Escape") {
+        } else if (event.key === Key.ESCAPE) {
             this._cancelEdit();
-        } else if (event.key === "ArrowUp") {
+        } else if (event.key === Key.ARROW_UP) {
             if (this._editorRef.isModified() || !this._editorRef.isCaretAtStart()) {
                 return;
             }
@@ -148,7 +147,7 @@ export default class EditMessageComposer extends React.Component {
                 dis.dispatch({action: 'edit_event', event: previousEvent});
                 event.preventDefault();
             }
-        } else if (event.key === "ArrowDown") {
+        } else if (event.key === Key.ARROW_DOWN) {
             if (this._editorRef.isModified() || !this._editorRef.isCaretAtEnd()) {
                 return;
             }
@@ -189,7 +188,7 @@ export default class EditMessageComposer extends React.Component {
         if (this._isContentModified(newContent)) {
             const roomId = editedEvent.getRoomId();
             this._cancelPreviousPendingEdit();
-            this.context.matrixClient.sendMessage(roomId, editContent);
+            this.context.sendMessage(roomId, editContent);
         }
 
         // close the event editing and focus composer
@@ -204,14 +203,23 @@ export default class EditMessageComposer extends React.Component {
             previousEdit.status === EventStatus.QUEUED ||
             previousEdit.status === EventStatus.NOT_SENT
         )) {
-            this.context.matrixClient.cancelPendingEvent(previousEdit);
+            this.context.cancelPendingEvent(previousEdit);
         }
     }
 
     componentWillUnmount() {
+        // store caret and serialized parts in the
+        // editorstate so it can be restored when the remote echo event tile gets rendered
+        // in case we're currently editing a pending event
         const sel = document.getSelection();
-        const {caret} = getCaretOffsetAndText(this._editorRef, sel);
+        let caret;
+        if (sel.focusNode) {
+            caret = getCaretOffsetAndText(this._editorRef, sel).caret;
+        }
         const parts = this.model.serializeParts();
+        // if caret is undefined because for some reason there isn't a valid selection,
+        // then when mounting the editor again with the same editor state,
+        // it will set the cursor at the end.
         this.props.editState.setEditorState(caret, parts);
     }
 
@@ -222,7 +230,7 @@ export default class EditMessageComposer extends React.Component {
     _createEditorModel() {
         const {editState} = this.props;
         const room = this._getRoom();
-        const partCreator = new PartCreator(room, this.context.matrixClient);
+        const partCreator = new PartCreator(room, this.context);
         let parts;
         if (editState.hasEditorState()) {
             // if restoring state from a previous editor,
@@ -238,7 +246,7 @@ export default class EditMessageComposer extends React.Component {
     _getInitialCaretPosition() {
         const {editState} = this.props;
         let caretPosition;
-        if (editState.hasEditorState()) {
+        if (editState.hasEditorState() && editState.getCaret()) {
             // if restoring state from a previous editor,
             // restore caret position from the state
             const caret = editState.getCaret();
