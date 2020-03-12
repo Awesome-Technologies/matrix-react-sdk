@@ -57,6 +57,10 @@ limitations under the License.
             mask-image: url('$(res)/img/feather-customised/life-buoy.svg');
         }
 
+        .mx_TopLeftMenu_icon_privacy::after {
+            mask-image: url('$(res)/img/feather-customised/paragraph.svg');
+        }
+
         .mx_TopLeftMenu_icon_settings::after {
             mask-image: url('$(res)/img/feather-customised/settings.svg');
         }
