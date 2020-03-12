@@ -2214,5 +2214,6 @@
     "Archive case": "Archive case",
     "Archive case?": "Archive case?",
     "After archiving the case all the included data will not be accesible anymore.": "After archiving the case all the included data will not be accesible anymore.",
-    "You cannot send messages to a closed case!": "You cannot send messages to a closed case!"
+    "You cannot send messages to a closed case!": "You cannot send messages to a closed case!",
+    "Privacy": "Privacy"
 }

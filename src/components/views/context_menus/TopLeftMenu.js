@@ -107,6 +107,12 @@ export default class TopLeftMenu extends React.Component {
             </MenuItem>
         );
 
+        const privacyItem = (
+            <MenuItem className="mx_TopLeftMenu_icon_privacy" onClick={this.openPrivacyDeclaration}>
+                {_t("Privacy")}
+            </MenuItem>
+        );
+
         const settingsItem = (
             <MenuItem className="mx_TopLeftMenu_icon_settings" onClick={this.openSettings}>
                 {_t("Settings")}
@@ -123,6 +129,7 @@ export default class TopLeftMenu extends React.Component {
                 {homePageItem}
                 {settingsItem}
                 {helpItem}
+                {privacyItem}
                 {signInOutItem}
             </ul>
         </div>;
@@ -132,6 +139,14 @@ export default class TopLeftMenu extends React.Component {
         this.closeMenu();
         const RedesignFeedbackDialog = sdk.getComponent("views.dialogs.RedesignFeedbackDialog");
         Modal.createTrackedDialog('Report bugs & give feedback', '', RedesignFeedbackDialog);
+    };
+
+    openPrivacyDeclaration = () => {
+        this.closeMenu();
+        window.open(
+          'https://amp.care/privacy',
+          '_blank'
+        );
     };
 
     viewHomePage() {
