@@ -258,6 +258,9 @@ limitations under the License.
     @extend .amp_RoomHeader_button;
 }
 
+.amp_RoomHeader_share_button {
+    @extend .amp_RoomHeader_button;
+}
 
 .amp_RoomHeader_archive_button_active {
     @extend .amp_RoomHeader_button;

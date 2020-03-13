@@ -328,10 +328,11 @@ export default createReactClass({
         let shareRoomButton;
         if (this.props.inRoom) {
             shareRoomButton =
-                <AccessibleButton className="mx_RoomHeader_button mx_RoomHeader_shareButton"
+                <AccessibleButton className="amp_RoomHeader_share_button"
                     onClick={this.onShareRoomClick}
-                    title={_t('Share room')}
+                    title={_t('Create invite')}
                 >
+                    <span>{ _t('Create invite') }</span>
                 </AccessibleButton>;
         }
 
@@ -378,6 +379,7 @@ export default createReactClass({
 
         const rightRow =
             <div className="mx_RoomHeader_buttons">
+                { shareRoomButton }
                 { closeCaseButton }
                 { archiveCaseButton }
             </div>;

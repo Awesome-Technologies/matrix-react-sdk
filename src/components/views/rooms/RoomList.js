@@ -727,6 +727,13 @@ export default createReactClass({
                 onAddRoom: () => {dis.dispatch({action: 'view_create_case'})},
                 addRoomLabel: _t("New case"),
             },
+            {
+                list: this.state.lists['im.vector.fake.recent'],
+                label: _t('Anonymous cases'),
+                order: "recent",
+                incomingCall: incomingCallIfTaggedAs('im.vector.fake.recent'),
+                onAddRoom: () => {dis.dispatch({action: 'view_create_room'});},
+            },
         ];
         const tagSubLists = Object.keys(this.state.lists)
             .filter((tagName) => {

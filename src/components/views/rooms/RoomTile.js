@@ -481,7 +481,7 @@ export default createReactClass({
         let sender;
         const selfId = MatrixClientPeg.get().getUserId();
         const otherMember = this.props.room.currentState.getMembersExcept([selfId])[0];
-        if (otherMember.user !== undefined && otherMember.user !== null) {
+        if (otherMember !== undefined && otherMember.user !== undefined && otherMember.user !== null) {
             sender = <span className="amp_RoomTile_sender">{ otherMember.user.displayName }</span>;
         }
 

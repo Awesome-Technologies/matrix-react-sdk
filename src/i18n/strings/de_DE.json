@@ -1636,5 +1636,8 @@
     "Archive case?": "Fall archivieren?",
     "After archiving the case all the included data will not be accesible anymore.": "Nach der Archivierung des Falles sind die Fall-Daten in AMP.care nicht mehr verfügbar.",
     "You cannot send messages to a closed case!": "Du kannst keine Nachrichten in einen abgeschlossenen Fall senden!",
-    "Privacy": "Datenschutz"
+    "Privacy": "Datenschutz",
+    "New anonymous case": "Anonyme Videosprechstunde",
+    "Anonymous cases": "Anonyme Videosprechstunden",
+    "Create invite": "Einladung generieren"
 }
