@@ -160,6 +160,15 @@ export default class HelpUserSettingsTab extends React.Component {
         );
     }
 
+    _renderFunding() {
+        return (
+            <div className='mx_SettingsTab_section'>
+                <span className='mx_SettingsTab_subheading'>{_t("Funded by")}</span>
+                <img src={require(`../../../../../../res/img/funding.png`)} alt="Bayerisches Staatsministerium für Wirtschaft, Landesentwicklung und Energie" width="100%" />
+            </div>
+        );
+    }
+
     render() {
         let faqText = _t('For help with using Riot, click <a>here</a>.', {}, {
             'a': (sub) => <a href="https://amp.care/help/" rel='noopener' target='_blank'>{sub}</a>,
@@ -236,6 +245,7 @@ export default class HelpUserSettingsTab extends React.Component {
                         </AccessibleButton>
                     </div>
                 </div>
+                {this._renderFunding()}
             </div>
         );
     }
