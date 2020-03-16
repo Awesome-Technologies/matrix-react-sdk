@@ -82,7 +82,11 @@ export default class TopLeftMenuButton extends React.Component {
 
     _getDisplayName() {
         if (MatrixClientPeg.get().isGuest()) {
-            return _t("Guest");
+            let displayName = _t("Guest");
+            if (this.state.profileInfo) {
+                displayName += " - " + this.state.profileInfo.name;
+            }
+            return displayName;
         } else if (this.state.profileInfo) {
             return this.state.profileInfo.name;
         } else {

@@ -121,7 +121,7 @@ export default class TopLeftMenu extends React.Component {
 
         return <div className="mx_TopLeftMenu" ref={this.props.containerRef} role="menu">
             <div className="mx_TopLeftMenu_section_noIcon" aria-readonly={true} tabIndex={-1}>
-                <div>{this.props.displayName}</div>
+                <div onClick={this.onDisplaynameClicked}>{this.props.displayName}</div>
                 <div className="mx_TopLeftMenu_greyedText" aria-hidden={true}>{this.props.userId}</div>
                 {hostingSignup}
             </div>
@@ -147,6 +147,13 @@ export default class TopLeftMenu extends React.Component {
           'https://amp.care/privacy',
           '_blank'
         );
+    };
+
+    onDisplaynameClicked = () => {
+        const SetDisplaynameDialog = sdk.getComponent('views.dialogs.SetDisplaynameDialog');
+        Modal.createTrackedDialog('Set Displayname Dialog', '', SetDisplaynameDialog, {
+            title: _t('Set displayname'),
+        });
     };
 
     viewHomePage() {

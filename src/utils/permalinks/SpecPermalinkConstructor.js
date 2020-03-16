@@ -1,5 +1,6 @@
 /*
 Copyright 2019 The Matrix.org Foundation C.I.C.
+Copyright 2020 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,39 +16,47 @@ limitations under the License.
 */
 
 import PermalinkConstructor, {PermalinkParts} from "./PermalinkConstructor";
+import {MatrixClientPeg} from "../../MatrixClientPeg";
 
 export const host = "matrix.to";
 export const baseUrl = `https://${host}`;
 
 /**
- * Generates matrix.to permalinks
+ * Generates permalinks
  */
 export default class SpecPermalinkConstructor extends PermalinkConstructor {
     constructor() {
         super();
     }
 
+    _getBaseUrl(){
+        const host = MatrixClientPeg.get().getDomain();
+        const baseUrl = `https://${host}`;
+        return baseUrl;
+    }
+
     forEvent(roomId: string, eventId: string, serverCandidates: string[]): string {
-        return `${baseUrl}/#/${roomId}/${eventId}${this.encodeServerCandidates(serverCandidates)}`;
+        return `${this._getBaseUrl()}/app/#/room/${roomId}/${eventId}${this.encodeServerCandidates(serverCandidates)}`;
     }
 
     forRoom(roomIdOrAlias: string, serverCandidates: string[]): string {
-        return `${baseUrl}/#/${roomIdOrAlias}${this.encodeServerCandidates(serverCandidates)}`;
+        return `${this._getBaseUrl()}/app/#/room/${roomIdOrAlias}${this.encodeServerCandidates(serverCandidates)}`;
     }
 
     forUser(userId: string): string {
-        return `${baseUrl}/#/${userId}`;
+        return `${this._getBaseUrl()}/app/#/${userId}`;
     }
 
     forGroup(groupId: string): string {
-        return `${baseUrl}/#/${groupId}`;
+        return `${this._getBaseUrl()}/app/#/${groupId}`;
     }
 
     forEntity(entityId: string): string {
-        return `${baseUrl}/#/${entityId}`;
+        return `${this._getBaseUrl()}/app/#/${entityId}`;
     }
 
     isPermalinkHost(testHost: string): boolean {
+        const host = MatrixClientPeg.get().getDomain();
         return testHost === host;
     }
 

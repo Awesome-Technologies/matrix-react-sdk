@@ -1011,64 +1011,33 @@ export default createReactClass({
     onJoinButtonClicked: function(ev) {
         const cli = MatrixClientPeg.get();
 
-        // If the user is a ROU, allow them to transition to a PWLU
         if (cli && cli.isGuest()) {
-            // Join this room once the user has registered and logged in
-            // (If we failed to peek, we may not have a valid room object.)
-            dis.dispatch({
-                action: 'do_after_sync_prepared',
-                deferred_action: {
-                    action: 'view_room',
-                    room_id: this._getRoomId(),
-                },
-            });
 
-            // Don't peek whilst registering otherwise getPendingEventList complains
-            // Do this by indicating our intention to join
+            const payload = {
+                action: 'view_room',
+                auto_join: true,
+            };
 
-            // XXX: ILAG is disabled for now,
-            // see https://github.com/vector-im/riot-web/issues/8222
-            dis.dispatch({action: 'require_registration'});
-            // dis.dispatch({
-            //     action: 'will_join',
-            // });
+            // It's not really possible to join Matrix rooms by ID because the HS has no way to know
+            // which servers to start querying. However, there's no other way to join rooms in
+            // this list without aliases at present, so if roomAlias isn't set here we have no
+            // choice but to supply the ID.
+            payload.room_id = this.state.roomId;
 
-            // const SetMxIdDialog = sdk.getComponent('views.dialogs.SetMxIdDialog');
-            // const close = Modal.createTrackedDialog('Set MXID', '', SetMxIdDialog, {
-            //     homeserverUrl: cli.getHomeserverUrl(),
-            //     onFinished: (submitted, credentials) => {
-            //         if (submitted) {
-            //             this.props.onRegistered(credentials);
-            //         } else {
-            //             dis.dispatch({
-            //                 action: 'cancel_after_sync_prepared',
-            //             });
-            //             dis.dispatch({
-            //                 action: 'cancel_join',
-            //             });
-            //         }
-            //     },
-            //     onDifferentServerClicked: (ev) => {
-            //         dis.dispatch({action: 'start_registration'});
-            //         close();
-            //     },
-            //     onLoginClick: (ev) => {
-            //         dis.dispatch({action: 'start_login'});
-            //         close();
-            //     },
-            // }).close;
-            // return;
-        } else {
-            Promise.resolve().then(() => {
-                const signUrl = this.props.thirdPartyInvite ?
-                    this.props.thirdPartyInvite.inviteSignUrl : undefined;
-                dis.dispatch({
-                    action: 'join_room',
-                    opts: { inviteSignUrl: signUrl, viaServers: this.props.viaServers },
-                });
-                return Promise.resolve();
-            });
+            dis.dispatch(payload);
+
+            return;
         }
+
+        Promise.resolve().then(() => {
+            const signUrl = this.props.thirdPartyInvite ?
+                this.props.thirdPartyInvite.inviteSignUrl : undefined;
+            dis.dispatch({
+                action: 'join_room',
+                opts: { inviteSignUrl: signUrl, viaServers: this.props.viaServers },
+            });
+            return Promise.resolve();
+        });
 
     },
 
@@ -1677,6 +1646,7 @@ export default createReactClass({
                                 oobData={this.props.oobData}
                                 signUrl={this.props.thirdPartyInvite ? this.props.thirdPartyInvite.inviteSignUrl : null}
                                 room={this.state.room}
+                                guest_can_join={true}
                             />
                         </ErrorBoundary>
                     </div>
