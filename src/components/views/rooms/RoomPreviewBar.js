@@ -83,6 +83,8 @@ export default createReactClass({
         // If given, this will be how the room is referred to (eg.
         // in error messages).
         roomAlias: PropTypes.string,
+        // Are guests allowed to enter the room?
+        guest_can_join: PropTypes.bool,
     },
 
     getDefaultProps: function() {
@@ -146,6 +148,9 @@ export default createReactClass({
         const isGuest = MatrixClientPeg.get().isGuest();
 
         if (isGuest) {
+            if (this.props.guest_can_join) {
+                return MessageCase.ViewingRoom;
+            }
             return MessageCase.NotLoggedIn;
         }
 

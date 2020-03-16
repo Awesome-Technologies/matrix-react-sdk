@@ -334,6 +334,11 @@ export default class MessagePanel extends React.Component {
             return false; // no tile = no show
         }
 
+        // AMP don't show local echoes as they are broken with guests
+        if (mxEv.status) {
+            return false;
+        }
+
         // Always show highlighted event
         if (this.props.highlightedEventId === mxEv.getId()) return true;
 
