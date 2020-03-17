@@ -1647,6 +1647,9 @@
     "Verify session": "Sitzung verifizieren",
     "To be secure, do this in person or use a trusted way to communicate.": "",
     "To verify that this session can be trusted, please contact its owner using some other means (e.g. in person or a phone call) and ask them whether the key they see in their User Settings for this session matches the key below:": "Um diese Sitzung zu verifizieren kontaktiere bitte den Benutzer über einen anderen Kanal (z.B. persönlich oder mit einem Telefonanruf) und frage ihn ob der Sitzungsschlüssel in seinen Benutzereinstellungen mit dem hier angezeigten übereinstimmt:",
-    "If it matches, press the verify button below. If it doesn't, then someone else is intercepting this session and you probably want to press the blacklist button instead.": "Wenn die Sitzungsschlüssel übereinstimmen, drücke den Knopf zur Bestätigung. Stimmen sie nicht überein versucht jemand diese Sitzung abzufangen und du solltest diese Sitzung blockieren."
-
+    "If it matches, press the verify button below. If it doesn't, then someone else is intercepting this session and you probably want to press the blacklist button instead.": "Wenn die Sitzungsschlüssel übereinstimmen, drücke den Knopf zur Bestätigung. Stimmen sie nicht überein versucht jemand diese Sitzung abzufangen und du solltest diese Sitzung blockieren.",
+    "Encryption enabled": "Verschlüsselung aktiviert",
+    "Messages in this room are end-to-end encrypted. Learn more & verify this user in their user profile.": "Nachrichten in diesem Raum sind Ende-zu-Ende verschlüsselt. Erfahre mehr und verifiziere diesen Benutzer in seinem Profil.",
+    "Encryption not enabled": "Verschlüsselung deaktiviert",
+    "The encryption used by this room isn't supported.": "Die Verschlüsselung, die dieser Raum verwendet, wird nicht unterstützt.",
 }
