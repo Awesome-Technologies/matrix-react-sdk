@@ -152,13 +152,7 @@ export default createReactClass({
         Modal.createTrackedDialog('Archive case', '', ArchiveDialog, {
             onFinished: (archiveCase) => {
                 if (!archiveCase) return;
-
-                // TODO archive case
-
-                // leave room
-
-                // forget room
-
+                dis.dispatch({action: 'view_create_report', room_id: this.props.room.roomId});
             },
             room: this.props.room,
         });

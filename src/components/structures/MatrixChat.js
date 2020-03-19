@@ -599,6 +599,47 @@ export default createReactClass({
             case 'view_create_case':
                 this._createCase();
                 break;
+            case 'view_create_report':
+                const CreateReportDialog = sdk.getComponent("dialogs.CreateReportDialog");
+                Modal.createTrackedDialog('Create report', '', CreateReportDialog, {
+                    room_id: payload.room_id,
+                    onFinished: (confirm) => {
+                        if (confirm) {
+                            // FIXME: controller shouldn't be loading a view :(
+                            const Loader = sdk.getComponent("elements.Spinner");
+                            const modal = Modal.createDialog(Loader, null, 'mx_Dialog_spinner');
+
+                            // leave room
+                            MatrixClientPeg.get().leave(payload.room_id).then(() => {
+                                modal.close();
+                                if (this.state.currentRoomId === payload.room_id) {
+                                    dis.dispatch({action: 'view_next_room'});
+                                }
+
+                                // forget room
+                                const modal2 = Modal.createDialog(Loader, null, 'mx_Dialog_spinner');
+
+                                MatrixClientPeg.get().forget(payload.room_id, true).then(() => {
+                                    modal2.close();
+                                }, (err) => {
+                                    modal2.close();
+                                    Modal.createTrackedDialog('Failed to forget case', '', ErrorDialog, {
+                                        title: _t('Failed to forget case'),
+                                        description: err.toString(),
+                                    });
+                                });
+                            }, (err) => {
+                                modal.close();
+                                Modal.createTrackedDialog('Failed to leave case', '', ErrorDialog, {
+                                    title: _t('Failed to leave case'),
+                                    description: err.toString(),
+                                });
+                            });
+                        }
+                    },
+                });
+
+                break;
             case 'view_create_group': {
                 const CreateGroupDialog = sdk.getComponent("dialogs.CreateGroupDialog");
                 Modal.createTrackedDialog('Create Community', '', CreateGroupDialog);
