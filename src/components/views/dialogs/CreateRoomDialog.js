@@ -62,6 +62,9 @@ export default createReactClass({
         if (this.state.noFederate) {
             createOpts.creation_content = {'m.federate': false};
         }
+        opts.encryption = true;
+        opts.guestAccess = true;
+
         return opts;
     },
 

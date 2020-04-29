@@ -96,6 +96,13 @@ export default function createRoom(opts) {
                 guest_access: 'can_join',
             },
         });
+        createOpts.initial_state.push({
+            type: 'm.room.join_rules',
+            state_key: '',
+            content: {
+                join_rule: 'public',
+            },
+        });
     }
 
     if (opts.encryption) {
