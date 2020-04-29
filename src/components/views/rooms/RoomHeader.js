@@ -326,7 +326,7 @@ export default createReactClass({
         }
 
         let shareRoomButton;
-        if (this.props.inRoom) {
+        if (this.props.inRoom && !dmUserId) {
             shareRoomButton =
                 <AccessibleButton className="amp_RoomHeader_share_button"
                     onClick={this.onShareRoomClick}
