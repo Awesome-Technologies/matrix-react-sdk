@@ -42,7 +42,6 @@ export default class PatientData extends React.Component {
             gender: e.target.value,
         });
         this.props.onDataChanged('patientData_gender', e.target.value);
-        document.getElementById("gender").style.color = "blue";
     };
 
     _onBirthdateChanged = (e) => {
