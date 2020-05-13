@@ -468,6 +468,7 @@ export default createReactClass({
                 <AccessibleButton className="mx_MemberList_invite" onClick={this.onInviteButtonClick} disabled={!canInvite}>
                     <span>{ _t('Invite to this room') }</span>
                 </AccessibleButton>;
+            inviteButton = null;
         }
 
         let invitedHeader;

@@ -342,7 +342,7 @@ export default class MessagePanel extends React.Component {
             case 'm.room.name': //Event.EVENT_TYPE_STATE_ROOM_NAME:
             case 'm.room.topic':
             //case '': //Event.EVENT_TYPE_STATE_ROOM_AVATAR:
-            case 'm.room.member': //Event.EVENT_TYPE_STATE_ROOM_MEMBER:
+            //case 'm.room.member': //Event.EVENT_TYPE_STATE_ROOM_MEMBER:
             case 'm.room.aliases': //Event.EVENT_TYPE_STATE_ROOM_ALIASES:
             case 'm.room.canonical_alias':
             case 'm.room.history_visibility': //Event.EVENT_TYPE_STATE_HISTORY_VISIBILITY:
