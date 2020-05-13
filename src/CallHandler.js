@@ -134,31 +134,8 @@ function _setCallListeners(call) {
     call.on("error", function(err) {
         console.error("Call error:", err);
         if (err.code === 'unknown_devices') {
-            const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
-
-            Modal.createTrackedDialog('Call Failed', '', QuestionDialog, {
-                title: _t('Call Failed'),
-                description: _t(
-                    "There are unknown sessions in this room: "+
-                    "if you proceed without verifying them, it will be "+
-                    "possible for someone to eavesdrop on your call.",
-                ),
-                button: _t('Review Sessions'),
-                onFinished: function(confirmed) {
-                    if (confirmed) {
-                        const room = MatrixClientPeg.get().getRoom(call.roomId);
-                        showUnknownDeviceDialogForCalls(
-                            MatrixClientPeg.get(),
-                            room,
-                            () => {
-                                _reAttemptCall(call);
-                            },
-                            call.direction === 'outbound' ? _t("Call Anyway") : _t("Answer Anyway"),
-                            call.direction === 'outbound' ? _t("Call") : _t("Answer"),
-                        );
-                    }
-                },
-            });
+            // call anyway
+            _reAttemptCall(call);
         } else {
             if (
                 MatrixClientPeg.get().getTurnServers().length === 0 &&
@@ -339,13 +316,11 @@ function _onAction(payload) {
                     const call = Matrix.createNewMatrixCall(MatrixClientPeg.get(), payload.room_id);
                     placeCall(call);
                 } else { // > 2
-                    dis.dispatch({
-                        action: "place_conference_call",
-                        room_id: payload.room_id,
-                        type: payload.type,
-                        remote_element: payload.remote_element,
-                        local_element: payload.local_element,
+                    const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
+                    Modal.createTrackedDialog('Call Handler', 'Conference calls disabled', ErrorDialog, {
+                        description: _t('Conference calls are diabled'),
                     });
+                    return;
                 }
             }
             break;
