@@ -326,7 +326,7 @@ export default createReactClass({
         }
 
         let shareRoomButton;
-        if (this.props.inRoom && !dmUserId) {
+        if (this.props.inRoom && !dmUserId && !MatrixClientPeg.get().isGuest()) {
             shareRoomButton =
                 <AccessibleButton className="amp_RoomHeader_share_button"
                     onClick={this.onShareRoomClick}
@@ -344,38 +344,42 @@ export default createReactClass({
         }
 
         let closeCaseButton;
-        closeCaseButton =
-            <AccessibleButton className="amp_RoomHeader_close_button"
-                              onClick={this.onCloseCaseClick}
-                              title={_t('Close case')}
-            >
-                <span>{ _t('Close case') }</span>
-            </AccessibleButton>;
+        if(!MatrixClientPeg.get().isGuest()){
+          closeCaseButton =
+              <AccessibleButton className="amp_RoomHeader_close_button"
+                                onClick={this.onCloseCaseClick}
+                                title={_t('Close case')}
+              >
+                  <span>{ _t('Close case') }</span>
+              </AccessibleButton>;
+        }
 
         let archiveCaseButton;
         let caseIsClosed = false;
 
-        // check if room is closed
-        for (let i=0; i <= this.props.room.timeline.length-1; i++) {
-            if (this.props.room.timeline[i].event.type === 'care.amp.done') {
-                caseIsClosed = this.props.room.timeline[i].event.content.done;
-                console.log("AMP.care case is closed")
-            } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
-                if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.done') {
-                    caseIsClosed = this.props.room.timeline[i]._clearEvent.content.done;
-                    console.log("AMP.care case is closed")
-                }
-            }
-        }
+        if(!MatrixClientPeg.get().isGuest()){
+          // check if room is closed
+          for (let i=0; i <= this.props.room.timeline.length-1; i++) {
+              if (this.props.room.timeline[i].event.type === 'care.amp.done') {
+                  caseIsClosed = this.props.room.timeline[i].event.content.done;
+                  console.log("AMP.care case is closed")
+              } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
+                  if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.done') {
+                      caseIsClosed = this.props.room.timeline[i]._clearEvent.content.done;
+                      console.log("AMP.care case is closed")
+                  }
+              }
+          }
 
-        archiveCaseButton =
-            <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
-                              onClick={this.onArchiveCaseClick}
-                              title={_t('Archive case')}
-                              disabled={!caseIsClosed}
-            >
-                <span>{ _t('Archive case') }</span>
-            </AccessibleButton>;
+          archiveCaseButton =
+              <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
+                                onClick={this.onArchiveCaseClick}
+                                title={_t('Archive case')}
+                                disabled={!caseIsClosed}
+              >
+                  <span>{ _t('Archive case') }</span>
+              </AccessibleButton>;
+        }
 
         const rightRow =
             <div className="mx_RoomHeader_buttons">
