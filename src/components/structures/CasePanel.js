@@ -1017,11 +1017,6 @@ const CasePanel = createReactClass({
             }
             this._reloadEvents();
 
-            // If we switched away from the room while there were pending
-            // outgoing events, the read-marker will be before those events.
-            // We need to skip over any which have subsequently been sent.
-            this._advanceReadMarkerPastMyEvents();
-
             this.setState({
                 canBackPaginate: this._timelineWindow.canPaginate(EventTimeline.BACKWARDS),
                 canForwardPaginate: this._timelineWindow.canPaginate(EventTimeline.FORWARDS),
