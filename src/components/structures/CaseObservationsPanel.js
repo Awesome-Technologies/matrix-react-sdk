@@ -179,6 +179,10 @@ const CaseObservationsPanel = createReactClass({
         }
 
         if (mxEv._clearEvent.type !== undefined) {
+            // non state events
+            if (mxEv._clearEvent.type === "care.amp.case" || mxEv._clearEvent.type === "care.amp.patient") {
+                return true;
+            }
             if (mxEv._clearEvent.type === "care.amp.observation") {
                 return true;
             }
@@ -213,6 +217,7 @@ const CaseObservationsPanel = createReactClass({
         let lastShownNonLocalEchoIndex = -1;
         for (i = this.props.events.length-1; i >= 0; i--) {
             const mxEv = this.props.events[i];
+
             if (!this._shouldShowEvent(mxEv)) {
                 continue;
             }
@@ -240,7 +245,7 @@ const CaseObservationsPanel = createReactClass({
         for (i = 0; i < this.props.events.length; i++) {
           const mxEv = this.props.events[i];
 
-          if (mxEv.event.state_key === "care.amp.case") {
+          if (mxEv.event.state_key === "care.amp.case" || mxEv.event.type === "care.amp.case" || mxEv._clearEvent.type === "care.amp.case") {
             caseEvents.push(mxEv);
 
             // get case severity
@@ -255,7 +260,7 @@ const CaseObservationsPanel = createReactClass({
             caseSeverity = local_event.content.severity;
           }
 
-          if (mxEv.event.state_key === "care.amp.patient") {
+          if (mxEv.event.state_key === "care.amp.patient" || mxEv.event.type === "care.amp.patient"  || mxEv._clearEvent.type === "care.amp.patient") {
             patientEvents.push(mxEv);
           }
 
@@ -270,11 +275,11 @@ const CaseObservationsPanel = createReactClass({
 
           // unencrypted events should not occure but are catched anyway
           if (mxEv.event.type === "care.amp.observation") {
-            console.log("AMP.care WARNING unencrypted observation events");
+            console.error("AMP.care ERROR unencrypted observation events");
             observationEvents.push(mxEv);
           }
           if (mxEv.event.type === "care.amp.done") {
-            console.log("AMP.care WARNING unencrypted done events");
+            console.error("AMP.care ERROR unencrypted done events");
             doneEvents.push(mxEv);
           }
         }
@@ -295,15 +300,16 @@ const CaseObservationsPanel = createReactClass({
         const caseStyle = ( caseEvents.length > 0 || patientEvents.length > 0 || observationEvents.length > 0 ) ? {} : { display: 'none' };
 
         // parse case events
-        for (i = 0; i < caseEvents.length; i++) {
-            const mxEv = caseEvents[i];
-            ret.push(this._parseCaseData(mxEv));
+        if (caseEvents.length > 0) {
+            // show only once
+            ret.push(this._parseCaseData(caseEvents[0]));
         }
 
         // parse patient events
         for (i = 0; i < patientEvents.length; i++) {
             const mxEv = patientEvents[i];
             ret.push(this._parsePatientData(mxEv));
+            break; // show only once
         }
 
         // parse observation events
@@ -443,7 +449,7 @@ const CaseObservationsPanel = createReactClass({
           caseRequester = local_event.content.requester.reference;
       }
 
-      return
+      return (
         <div className="amp_CaseObservationsPanel_CaseDetails">
             <table className="amp_CaseObservationsPanel_Table">
                 <tbody>
@@ -469,7 +475,8 @@ const CaseObservationsPanel = createReactClass({
                     </tr>
                 </tbody>
             </table>
-        </div>;
+        </div>
+      );
     },
 
     _parsePatientData: function(mxEv) {
@@ -505,7 +512,8 @@ const CaseObservationsPanel = createReactClass({
             patientBirthdate = date.toLocaleDateString();
         }
 
-        return  <div className="amp_CaseObservationsPanel_Patient">
+        return(
+            <div className="amp_CaseObservationsPanel_Patient">
                     <table className="amp_CaseObservationsPanel_Table_patientData">
                         <tbody>
                             <tr>
@@ -520,7 +528,8 @@ const CaseObservationsPanel = createReactClass({
                             </tr>
                         </tbody>
                     </table>
-                </div>;
+              </div>
+            );
       },
 
       _parseObservationData: function(observationEvents) {
@@ -653,7 +662,7 @@ const CaseObservationsPanel = createReactClass({
         const vitalDataStyle = hasVitalData ? {} : { display: 'none' };
         const anamnesisStyle = hasAnamnesisData ? {} : { display: 'none' };
 
-        return
+        return (
           <div className="amp_CaseObservationsPanel_Observations">
             <div style={vitalDataStyle}>
                   <span className="amp_CaseObservationsPanel_subheading">{_t("Vital data")}</span>
@@ -733,7 +742,8 @@ const CaseObservationsPanel = createReactClass({
                           </tbody>
                       </table>
                 </div>
-            </div>;
+            </div>
+          );
       },
 
     render: function() {
