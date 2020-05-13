@@ -1,6 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
-Copyright 2019 Awesome Technologies Innovationslabor GmbH
+Copyright 2019, 2020 The Matrix.org Foundation C.I.C.
+Copyright 2020 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,31 +22,10 @@ import * as sdk from './index';
 import { _t } from './languageHandler';
 import dis from "./dispatcher";
 import * as Rooms from "./Rooms";
-
-import Promise from 'bluebird';
+import DMRoomMap from "./utils/DMRoomMap";
 import {getAddressType} from "./UserAddress";
-import MultiInviter from './utils/MultiInviter';
-import Matrix from "matrix-js-sdk";
+import SettingsStore from "./settings/SettingsStore";
 import Analytics from './Analytics';
-
-/**
- * Invites multiple addresses to a room
- * Simpler interface to utils/MultiInviter but with
- * no option to cancel.
- *
- * @param {string} roomId The ID of the room to invite to
- * @param {string[]} addrs Array of strings of addresses to invite. May be matrix IDs or 3pids.
- * @returns {Promise} Promise
- */
-function inviteMultipleToRoom(roomId, addrs) {
-    const inviter = new MultiInviter(roomId);
-    return inviter.invite(addrs).then(states => Promise.resolve({states, inviter}));
-}
-
-function afterCreation(caseData, roomId) {
-  console.log("AMP.care room hast been created");
-  debugger;
-}
 
 /**
  * Create a new case, and switch to it.
@@ -53,12 +33,24 @@ function afterCreation(caseData, roomId) {
  * @param {object=} opts parameters for creating the room
  * @param {string=} opts.dmUserId If specified, make this a DM room for this user and invite them
  * @param {object=} opts.createOpts set of options to pass to createRoom call.
+ * @param {bool=} opts.spinner True to show a modal spinner while the room is created.
+ *     Default: True
+ * @param {bool=} opts.guestAccess Whether to enable guest access.
+ *     Default: False
+ * @param {bool=} opts.encryption Whether to enable encryption.
+ *     Default: False
+ * @param {bool=} opts.inlineErrors True to raise errors off the promise instead of resolving to null.
+ *     Default: False
  *
  * @returns {Promise} which resolves to the room id, or null if the
  * action was aborted or failed.
  */
 export default function createCase(opts) {
     opts = opts || {};
+    if (opts.spinner === undefined) opts.spinner = true;
+    // default: no guest access and encryption enabled
+    if (opts.guestAccess === undefined) opts.guestAccess = false;
+    if (opts.encryption === undefined) opts.encryption = true;
 
     const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
     const Loader = sdk.getComponent("elements.Spinner");
@@ -97,32 +89,44 @@ export default function createCase(opts) {
         opts.andView = true;
     }
 
+    createOpts.initial_state = createOpts.initial_state || [];
+
     // Allow guests by default since the room is private and they'd
     // need an invite. This means clicking on a 3pid invite email can
     // actually drop you right in to a chat.
-    createOpts.initial_state = createOpts.initial_state || [
-        {
-            content: {
-                guest_access: 'forbidden',
-            },
+    if (opts.guestAccess) {
+        createOpts.initial_state.push({
             type: 'm.room.guest_access',
             state_key: '',
-        },
-        {
+            content: {
+                guest_access: 'can_join',
+            },
+        });
+        createOpts.initial_state.push({
+            type: 'm.room.join_rules',
+            state_key: '',
+            content: {
+                join_rule: 'public',
+            },
+        });
+    }
+
+    if (opts.encryption) {
+        createOpts.initial_state.push({
+            type: 'm.room.encryption',
+            state_key: '',
             content: {
                 algorithm: 'm.megolm.v1.aes-sha2',
             },
-            type: 'm.room.encryption',
-            state_key: '',
-        },
-    ];
+        });
+    }
 
-    const modal = Modal.createDialog(Loader, null, 'mx_Dialog_spinner');
+    let modal;
+    if (opts.spinner) modal = Modal.createDialog(Loader, null, 'mx_Dialog_spinner');
 
     let roomId;
-
     return client.createRoom(createOpts).finally(function() {
-        modal.close();
+        if (modal) modal.close();
     }).then(function(res) {
         roomId = res.room_id;
         if (opts.dmUserId) {
@@ -130,66 +134,35 @@ export default function createCase(opts) {
         } else {
             return Promise.resolve();
         }
-    }).then(function() {
-
-        // TODO set room avatar corresponding to severity
-
-        // send state event case data
-        client._sendCompleteEvent(roomId, {
-          type: 'care.amp.case',
-          state_key: 'care.amp.case',
-          content: createOpts.caseData.caseContent,
-        });
-        console.log("AMP.care sent case content");
-
-        // send state event patient data
-        client._sendCompleteEvent(roomId, {
-          type: 'care.amp.patient',
-          state_key: 'care.amp.patient',
-          content: createOpts.caseData.patientContent,
-        });
-          console.log("AMP.care sent patient content");
-
-        // send observation message events
-        for(let i=0; i<=createOpts.caseData.observationsContent.length-1; i++){
-          client.sendEvent(roomId, 'care.amp.observation', createOpts.caseData.observationsContent[i]).done(() => {
-              dis.dispatch({action: 'message_sent'});
-          }, (err) => {
-              dis.dispatch({action: 'message_send_failed'});
+      }).then(function() {
+          // send state event case data
+          client._sendCompleteEvent(roomId, {
+            type: 'care.amp.case',
+            //state_key: 'care.amp.case',
+            content: opts.caseData.caseContent,
           });
-        }
-        console.log("AMP.care sent observation content");
+          console.log("AMP.care sent case content");
 
-        Analytics.trackEvent('AMP.care cases', 'case created')
+          // send state event patient data
+          if(opts.caseData.patientContent){ // check if patient data is provided
+            client._sendCompleteEvent(roomId, {
+              type: 'care.amp.patient',
+              //state_key: 'care.amp.patient',
+              content: opts.caseData.patientContent,
+            });
+            console.log("AMP.care sent patient content");
+          }
 
-        /*
-        const localEvent = new Matrix.MatrixEvent(Object.assign(eventObject, {
-            event_id: "~" + roomId + ":" + client.makeTxnId(),
-            user_id: client.credentials.userId,
-            room_id: roomId,
-            origin_server_ts: new Date().getTime(),
-        }));
-        let encryptedCaseEvent = client._crypto.encryptEvent(localEvent, roomId);
 
-        console.log("AMP.care: encrypted Event:");
-        console.log(encryptedCaseEvent);
+          // send observation message events
+          for(let i=0; i<=opts.caseData.observationsContent.length-1; i++){
+            client.sendEvent(roomId, 'care.amp.observation', opts.caseData.observationsContent[i]);
+          }
+          dis.dispatch({action: 'message_sent'});
+          console.log("AMP.care sent observation content");
 
-        client.sendStateEvent(roomId, 'm.room.encrypted', encryptedCaseEvent, 'care.amp.case');
-        */
+          Analytics.trackEvent('AMP.care cases', 'case created')
 
-        // state event patient data
-        //client.sendStateEvent(roomId, 'm.room.encrypted', patientContent, 'care.amp.patient');
-
-        // message event observation data
-        /*client.sendEvent(roomId, 'care.amp.observation', observationsContent).done(() => {
-            dis.dispatch({action: 'message_sent'});
-        }, (err) => {
-            dis.dispatch({action: 'message_send_failed'});
-        });
-        */
-        //client.sendEvent(roomId, 'care.amp.observation', observationsContent);
-
-        return Promise.resolve();
     }).then(function() {
         // NB createRoom doesn't block on the client seeing the echo that the
         // room has been created, so we race here with the client knowing that
@@ -208,6 +181,9 @@ export default function createCase(opts) {
         }
         return roomId;
     }, function(err) {
+        // Raise the error if the caller requested that we do so.
+        if (opts.inlineErrors) throw err;
+
         // We also failed to join the room (this sets joining to false in RoomViewStore)
         dis.dispatch({
             action: 'join_room_error',
@@ -226,4 +202,72 @@ export default function createCase(opts) {
         });
         return null;
     });
+}
+
+export function findDMForUser(client, userId) {
+    const roomIds = DMRoomMap.shared().getDMRoomsForUserId(userId);
+    const rooms = roomIds.map(id => client.getRoom(id));
+    const suitableDMRooms = rooms.filter(r => {
+        if (r && r.getMyMembership() === "join") {
+            const member = r.getMember(userId);
+            return member && (member.membership === "invite" || member.membership === "join");
+        }
+        return false;
+    });
+    if (suitableDMRooms.length) {
+        return suitableDMRooms[0];
+    }
+}
+
+/*
+ * Try to ensure the user is already in the megolm session before continuing
+ * NOTE: this assumes you've just created the room and there's not been an opportunity
+ * for other code to run, so we shouldn't miss RoomState.newMember when it comes by.
+ */
+export async function _waitForMember(client, roomId, userId, opts = { timeout: 1500 }) {
+    const { timeout } = opts;
+    let handler;
+    return new Promise((resolve) => {
+        handler = function(_event, _roomstate, member) {
+            if (member.userId !== userId) return;
+            if (member.roomId !== roomId) return;
+            resolve(true);
+        };
+        client.on("RoomState.newMember", handler);
+
+        /* We don't want to hang if this goes wrong, so we proceed and hope the other
+           user is already in the megolm session */
+        setTimeout(resolve, timeout, false);
+    }).finally(() => {
+        client.removeListener("RoomState.newMember", handler);
+    });
+}
+
+/*
+ * Ensure that for every user in a room, there is at least one device that we
+ * can encrypt to.
+ */
+export async function canEncryptToAllUsers(client, userIds) {
+    const usersDeviceMap = await client.downloadKeys(userIds);
+    // { "@user:host": { "DEVICE": {...}, ... }, ... }
+    return Object.values(usersDeviceMap).every((userDevices) =>
+        // { "DEVICE": {...}, ... }
+        Object.keys(userDevices).length > 0,
+    );
+}
+
+export async function ensureDMExists(client, userId) {
+    const existingDMRoom = findDMForUser(client, userId);
+    let roomId;
+    if (existingDMRoom) {
+        roomId = existingDMRoom.roomId;
+    } else {
+        let encryption;
+        if (SettingsStore.isFeatureEnabled("feature_cross_signing")) {
+            encryption = canEncryptToAllUsers(client, [userId]);
+        }
+        roomId = await createRoom({encryption, dmUserId: userId, spinner: false, andView: false});
+        await _waitForMember(client, roomId, userId);
+    }
+    return roomId;
 }

@@ -125,10 +125,17 @@ export default createReactClass({
         }
 
         // patient data
-        let patientContent = {
-            name: this.state.patientData_name,
-            gender: this.state.patientData_gender,
-            birthDate: this._formatDate(this.state.patientData_birthDate),
+        let patientContent;
+        if (this.state.patientData_name === '' &&
+            this.state.patientData_gender === 'unknown' &&
+            this.state.patientData_birthDate === ''){
+            patientContent = null;
+        } else {
+            patientContent = {
+                name: this.state.patientData_name,
+                gender: this.state.patientData_gender,
+                birthDate: this._formatDate(this.state.patientData_birthDate),
+            }
         }
 
         // observation data

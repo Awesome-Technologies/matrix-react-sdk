@@ -998,23 +998,22 @@ export default createReactClass({
         }
     },
 
-    _createCase: function() {
+    _createCase: async function() {
         const CreateCaseDialog = sdk.getComponent('dialogs.CreateCaseDialog');
-        Modal.createTrackedDialog('Create Case', '', CreateCaseDialog, {
-            onFinished: (shouldCreate, name, noFederate, invitees, caseData) => {
-                if (shouldCreate) {
-                    const createOpts = {};
-                    if (name) createOpts.name = name;
-                    if (noFederate) createOpts.creation_content = {'m.federate': false};
-                    if (invitees) createOpts.invitees = invitees;
-                    if (caseData) createOpts.caseData = caseData;
-                    if (invitees.length >= 1) {
-                        const dmUserId = invitees[0];
-                        createCase({createOpts, dmUserId}).done();
-                    }
-                }
-            },
-        });
+        const modal = Modal.createTrackedDialog('Create Case', '', CreateCaseDialog);
+
+        const [shouldCreate, name, noFederate, invitees, caseData] = await modal.finished;
+        if (shouldCreate) {
+            const createOpts = {};
+            if (name) createOpts.name = name;
+            if (noFederate) createOpts.creation_content = {'m.federate': false};
+            if (invitees) createOpts.invitees = invitees;
+            if (caseData) createOpts.caseData = caseData;
+            if (invitees.length >= 1) {
+                createOpts.dmUserId = invitees[0];
+                createCase(createOpts);
+            }
+        }
     },
 
     _chatCreateOrReuse: function(userId) {
