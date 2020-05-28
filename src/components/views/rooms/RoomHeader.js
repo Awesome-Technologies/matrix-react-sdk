@@ -337,19 +337,9 @@ export default createReactClass({
             />;
         }
 
-        let closeCaseButton;
-        if(!MatrixClientPeg.get().isGuest()){
-          closeCaseButton =
-              <AccessibleButton className="amp_RoomHeader_close_button"
-                                onClick={this.onCloseCaseClick}
-                                title={_t('Close case')}
-              >
-                  <span>{ _t('Close case') }</span>
-              </AccessibleButton>;
-        }
-
-        let archiveCaseButton;
         let caseIsClosed = false;
+        let closeCaseButton;
+        let archiveCaseButton;
 
         if(!MatrixClientPeg.get().isGuest()){
           // check if room is closed
@@ -363,6 +353,17 @@ export default createReactClass({
                       console.log("AMP.care case is closed")
                   }
               }
+          }
+
+          if(!MatrixClientPeg.get().isGuest()){
+            closeCaseButton =
+                <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
+                                  onClick={this.onCloseCaseClick}
+                                  title={caseIsClosed ? _t('Case closed') : _t('Close case')}
+                                  disabled={caseIsClosed}
+                >
+                    <span>{ caseIsClosed ? _t('Case closed') : _t('Close case') }</span>
+                </AccessibleButton>;
           }
 
           archiveCaseButton =

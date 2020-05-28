@@ -284,7 +284,7 @@ const LeftPanel = createReactClass({
                         { exploreButton }
                         { searchBox }
                     </div>
-                    <AccessibleButton className="amp_RoomHeader_close_button" onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}</AccessibleButton>
+                    <AccessibleButton className="amp_RoomHeader_button" onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}</AccessibleButton>
                     <RoomList
                         onKeyDown={this._onKeyDown}
                         onFocus={this._onFocus}

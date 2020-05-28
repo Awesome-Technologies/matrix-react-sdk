@@ -254,8 +254,14 @@ limitations under the License.
     background-color: $amp-roomheader-close-button-color;
 }
 
-.amp_RoomHeader_close_button {
+.amp_RoomHeader_close_button_active {
     @extend .amp_RoomHeader_button;
+}
+
+.amp_RoomHeader_close_button_inactive {
+    @extend .amp_RoomHeader_button;
+    cursor: not-allowed;
+    background-color: $amp-roomheader-isclosed-button-color;
 }
 
 .amp_RoomHeader_share_button {
