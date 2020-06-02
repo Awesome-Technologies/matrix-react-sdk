@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Awesome Technologies Innovationslabor GmbH
+Copyright 2019, 2020 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,24 +15,26 @@ limitations under the License.
 */
 
 import React from 'react';
+import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import {_t} from "../../../languageHandler";
 import * as sdk from "../../../index";
 
-export default class ConfirmCloseCaseDialog extends React.Component {
-    static propTypes = {
+export default createReactClass({
+    displayName: 'ConfirmCloseCaseDialog',
+    propTypes: {
         onFinished: PropTypes.func.isRequired,
-    };
+    },
 
-    _onConfirm = () => {
+    _onOk: function() {
         this.props.onFinished(true);
-    };
+    },
 
-    _onDecline = () => {
+    _onCancel: function() {
         this.props.onFinished(false);
-    };
+    },
 
-    render() {
+    render: function() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
 
@@ -49,12 +51,12 @@ export default class ConfirmCloseCaseDialog extends React.Component {
                 </div>
                 <DialogButtons
                     primaryButton={_t("Close case")}
-                    onPrimaryButtonClick={this._onConfirm}
+                    onPrimaryButtonClick={this._onOk}
                     primaryButtonClass="danger"
                     cancelButton={_t("Cancel")}
-                    onCancel={this._onDecline}
+                    onCancel={this._onCancel}
                 />
             </BaseDialog>
-        );
-    }
-}
+          );
+      },
+  });

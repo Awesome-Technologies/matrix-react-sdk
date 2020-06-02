@@ -126,25 +126,25 @@ export default createReactClass({
         });
     },
 
-    onCloseCaseClick: function(ev) {
+    onCloseCaseClick: async function(ev) {
         const CloseDialog = sdk.getComponent('dialogs.ConfirmCloseCaseDialog');
-        Modal.createTrackedDialog('Close case', '', CloseDialog, {
-            onFinished: (closeCase) => {
-                if (!closeCase) return;
+        const modal = Modal.createTrackedDialog('Close Case', '', CloseDialog);
 
-                // send case closed event
-                const client = MatrixClientPeg.get();
+        const closeCase = await modal.finished;
 
-                let doneContent = {};
-                doneContent["done"] = true;
-                client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).done(() => {
-                    Analytics.trackEvent('AMP.care cases', 'case closed')
-                    dis.dispatch({action: 'message_sent'});
-                }, (err) => {
-                    dis.dispatch({action: 'message_send_failed'});
-                });
-            },
-        });
+        if (closeCase) {
+          // send case closed event
+          const client = MatrixClientPeg.get();
+
+          let doneContent = {};
+          doneContent["done"] = true;
+          client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).done(() => {
+              Analytics.trackEvent('AMP.care cases', 'case closed')
+              dis.dispatch({action: 'message_sent'});
+          }, (err) => {
+              dis.dispatch({action: 'message_send_failed'});
+          });
+        }
     },
 
     onArchiveCaseClick: function(ev) {
