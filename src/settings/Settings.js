@@ -536,4 +536,34 @@ export const SETTINGS = {
             MatrixClient.prototype.setCryptoTrustCrossSignedDevices, true,
         ),
     },
+    "ampInterfacesEnabled": {
+        supportedLevels: LEVELS_ACCOUNT_SETTINGS,
+        displayName: _td("Interfaces to third party software are enabled"),
+        default: false,
+    },
+    "ampInterfacesVendor": {
+        supportedLevels: LEVELS_ACCOUNT_SETTINGS,
+        displayName: _td("Vendor of the third party software"),
+        default: 'none',
+    },
+    "ampInterfacesAdress": {
+        supportedLevels: LEVELS_ACCOUNT_SETTINGS,
+        displayName: _td("Adress to the API of the third party software"),
+        default: '',
+    },
+    "ampInterfacesLoginMethod": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        displayName: _td("Login method for the third party software"),
+        default: 'user',
+    },
+    "ampInterfacesUsername": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        displayName: _td("Username for the API of the third party software"),
+        default: '',
+    },
+    "ampInterfacesToken": {
+        supportedLevels: LEVELS_DEVICE_ONLY_SETTINGS,
+        displayName: _td("Token for the API of the third party software"),
+        default: '',
+    },
 };

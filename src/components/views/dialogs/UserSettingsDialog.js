@@ -28,6 +28,7 @@ import PreferencesUserSettingsTab from "../settings/tabs/user/PreferencesUserSet
 import VoiceUserSettingsTab from "../settings/tabs/user/VoiceUserSettingsTab";
 import HelpUserSettingsTab from "../settings/tabs/user/HelpUserSettingsTab";
 import FlairUserSettingsTab from "../settings/tabs/user/FlairUserSettingsTab";
+import InterfaceUserSettingsTab from "../settings/tabs/user/InterfaceUserSettingsTab";
 import * as sdk from "../../../index";
 import SdkConfig from "../../../SdkConfig";
 import MjolnirUserSettingsTab from "../settings/tabs/user/MjolnirUserSettingsTab";
@@ -100,6 +101,11 @@ export default class UserSettingsDialog extends React.Component {
                 <MjolnirUserSettingsTab />,
             ));
         }
+        tabs.push(new Tab(
+            _td("Interfaces"),
+            "amp_InterfaceSettingsDialog_interfaceIcon",
+            <InterfaceUserSettingsTab />,
+        ));
         tabs.push(new Tab(
             _td("Help & About"),
             "mx_UserSettingsDialog_helpIcon",

@@ -559,6 +559,25 @@ export function isLoggingOut() {
     return _isLoggingOut;
 }
 
+export function pinOverlay() {
+    if (!MatrixClientPeg.get()) return;
+
+    localStorage.setItem("amp_pin_overlay", "true");
+
+    console.log("Pin overlay will be displayed");
+
+    dis.dispatch({action: 'view_pin_overlay'}); // generic version of on_logged_out
+}
+
+export function endPinOverlay() {
+    localStorage.removeItem("amp_pin_overlay");
+    dis.dispatch({action: 'view_last_screen'});
+}
+
+export function isPinOverlay() {
+    return localStorage.getItem("amp_pin_overlay") === "true";
+}
+
 /**
  * Starts the matrix client and all other react-sdk services that
  * listen for events while a session is logged in.
@@ -610,6 +629,10 @@ async function startMatrixClient(startSyncing=true) {
 
     if (isSoftLogout()) {
         softLogout();
+    }
+
+    if (isPinOverlay()) {
+        pinOverlay();
     }
 }
 

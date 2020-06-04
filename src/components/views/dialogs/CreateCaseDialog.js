@@ -28,6 +28,8 @@ import Field from "../elements/Field";
 import Modal from "../../../Modal";
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import colorVariables from '../../../../res/themes/light/css/light.scss';
+import SettingsStore from "../../../settings/SettingsStore";
+import {SettingLevel} from "../../../settings/SettingsStore";
 
 export default createReactClass({
     displayName: 'CreateCaseDialog',
@@ -43,6 +45,7 @@ export default createReactClass({
             caseSeverity: 'info',
             caseRecipient: '',
             caseRequesterName: '',
+            caseRequesterDisabled: false,
             patientData_name: '',
             patientData_gender: 'unknown',
             patientData_birthDate: '',
@@ -76,6 +79,13 @@ export default createReactClass({
             medicationData_reason: '',
             noRecipientSelected: false,
         };
+    },
+
+    componentDidMount: function() {
+        const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
+        if (username) {
+            this.setState({caseRequesterName: username, caseRequesterDisabled: true});
+        }
     },
 
     _onOk: function() {
@@ -517,11 +527,23 @@ export default createReactClass({
       this.setState({[key]: value});
     },
 
+    _importData: function(shouldImport, data) {
+      if (shouldImport) {
+          console.log(data)
+          for (var key in data) {
+            this.setState({[key]: data[key]});
+          }
+      }
+    },
+
     render: function() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
-        const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
         const AdressPicker = sdk.getComponent('views.cases.AdressPicker');
+        const InterfaceImport = sdk.getComponent('views.cases.InterfaceImport');
+
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const importArea = interfaceEnabled ? <InterfaceImport onFinished={this._importData} /> : null;
 
         const noRecipientSelected = this.state.noRecipientSelected ? {} : { display: 'none' };
 
@@ -565,6 +587,7 @@ export default createReactClass({
                                   type="text"
                                   onChange={this._onCaseRequesterChanged}
                                   value={this.state.caseRequesterName}
+                                  disabled={this.state.caseRequesterDisabled}
                               />
                           </div>
 
@@ -575,14 +598,38 @@ export default createReactClass({
                       </div>
                     <br/>
                     </div>
+
+                    {importArea}
+
+                    <h2>{_t("Manual entry")}</h2>
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Patient data') }</summary>
-                        <PatientData onDataChanged={this._onDataChanged} />
+                        <PatientData
+                            onDataChanged={this._onDataChanged}
+                            name={this.state.patientData_name}
+                            gender={this.state.patientData_gender}
+                            birthdate={this.state.patientData_birthDate}
+                         />
                     </details>
 
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Vital data') }</summary>
-                        <VitalData onDataChanged={this._onDataChanged} />
+                        <VitalData
+                            onDataChanged={this._onDataChanged}
+                            bloodPressureSys={this.state.vitalData_bloodpressureSys}
+                            bloodPressureDia={this.state.vitalData_bloodpressureDia}
+                            bloodpressureDatetime={this.state.vitalData_bloodpressureDatetime}
+                            pulse={this.state.vitalData_pulse}
+                            pulseDatetime={this.state.vitalData_pulseDatetime}
+                            temperature={this.state.vitalData_temperature}
+                            temperatureDatetime={this.state.vitalData_temperatureDatetime}
+                            sugar={this.state.vitalData_sugar}
+                            sugarDatetime={this.state.vitalData_sugarDatetime}
+                            weight={this.state.vitalData_weight}
+                            weightDatetime={this.state.vitalData_weightDatetime}
+                            oxygen={this.state.vitalData_oxygen}
+                            oxygenDatetime={this.state.vitalData_oxygenDatetime}
+                        />
                     </details>
 
                     <details className="amp_CreateCaseDialog_details">

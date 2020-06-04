@@ -26,6 +26,7 @@ import { getHostingLink } from '../../../utils/HostingLink';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import {MenuItem} from "../../structures/ContextMenu";
 import * as sdk from "../../../index";
+import * as Lifecycle from '../../../Lifecycle';
 
 export default class TopLeftMenu extends React.Component {
     static propTypes = {
@@ -120,6 +121,12 @@ export default class TopLeftMenu extends React.Component {
             </MenuItem>
         );
 
+        const switchUserItem = (
+            <MenuItem className="mx_TopLeftMenu_icon_switchUser" onClick={this.switchUser}>
+                {_t("Switch user")}
+            </MenuItem>
+        );
+
         return <div className="mx_TopLeftMenu" ref={this.props.containerRef} role="menu">
             <div className="mx_TopLeftMenu_section_noIcon" aria-readonly={true} tabIndex={-1}>
                 <div onClick={this.onDisplaynameClicked}>{this.props.displayName}</div>
@@ -131,6 +138,7 @@ export default class TopLeftMenu extends React.Component {
                 {settingsItem}
                 {helpItem}
                 {privacyItem}
+                {switchUserItem}
                 {signInOutItem}
             </ul>
         </div>;
@@ -155,6 +163,11 @@ export default class TopLeftMenu extends React.Component {
         Modal.createTrackedDialog('Set Displayname Dialog', '', SetDisplaynameDialog, {
             title: _t('Set displayname'),
         });
+    };
+
+    switchUser = () => {
+        this.closeMenu();
+        Lifecycle.pinOverlay();
     };
 
     viewHomePage() {

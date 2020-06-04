@@ -19,6 +19,7 @@ limitations under the License.
 import {MatrixClientPeg} from "./MatrixClientPeg";
 import dis from "./dispatcher";
 import Timer from './utils/Timer';
+import * as Lifecycle from './Lifecycle';
 
  // Time in ms after that a user is considered as unavailable/away
 const UNAVAILABLE_TIME_MS = 3 * 60 * 1000; // 3 mins
@@ -98,6 +99,10 @@ class Presence {
         try {
             await MatrixClientPeg.get().setPresence(this.state);
             console.info("Presence: %s", newState);
+            // if user is away, show overlay to insert pin
+            if (this.state === "unavailable") {
+                Lifecycle.pinOverlay();
+            }
         } catch (err) {
             console.error("Failed to set presence: %s", err);
             this.state = oldState;

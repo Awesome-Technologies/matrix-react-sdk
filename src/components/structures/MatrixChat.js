@@ -102,6 +102,9 @@ export const VIEWS = {
     // We are logged out (invalid token) but have our local state again. The user
     // should log back in to rehydrate the client.
     SOFT_LOGOUT: 9,
+
+    // We show the pin overlay but the client is logged in with presence status 'unavailable'
+    PIN_OVERLAY: 10,
 };
 
 // Actions that are redirected through the onboarding process prior to being
@@ -640,6 +643,12 @@ export default createReactClass({
                 });
 
                 break;
+            case 'view_pin_overlay':
+                // check if pin or third-party-interface is set
+                if (SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled')) {
+                  this._viewPinOverlay();
+                }
+                break;
             case 'view_create_group': {
                 const CreateGroupDialog = sdk.getComponent("dialogs.CreateGroupDialog");
                 Modal.createTrackedDialog('Create Community', '', CreateGroupDialog);
@@ -970,6 +979,18 @@ export default createReactClass({
         this.notifyNewScreen('welcome');
         ThemeController.isLogin = true;
         this._themeWatcher.recheck();
+    },
+
+    _viewPinOverlay() {
+        this.notifyNewScreen('pin_overlay');
+        this.setStateForNewView({
+            view: VIEWS.PIN_OVERLAY,
+            ready: false,
+            collapseLhs: false,
+            currentRoomId: null,
+        });
+        this.subTitleStatus = '';
+        this._setPageSubtitle();
     },
 
     _viewHome: function() {
@@ -1652,6 +1673,10 @@ export default createReactClass({
                     params: params,
                 });
             }
+        } else if (screen == 'pin_overlay') {
+            dis.dispatch({
+                action: 'view_pin_overlay',
+            });
         } else if (screen == 'new') {
             dis.dispatch({
                 action: 'view_create_room',
@@ -2133,6 +2158,13 @@ export default createReactClass({
                 <SoftLogout
                     realQueryParams={this.props.realQueryParams}
                     onTokenLoginCompleted={this.props.onTokenLoginCompleted}
+                />
+            );
+        } else if (this.state.view === VIEWS.PIN_OVERLAY) {
+            const PinOverlay = sdk.getComponent('structures.auth.PinOverlay');
+            view = (
+                <PinOverlay
+                    realQueryParams={this.props.realQueryParams}
                 />
             );
         } else {

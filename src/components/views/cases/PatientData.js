@@ -1,5 +1,5 @@
 /*
-Copyright 2019 Awesome Technologies Innovationslabor GmbH
+Copyright 2019, 2020 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,11 +23,6 @@ import classNames from 'classnames';
 export default class PatientData extends React.Component {
     constructor(props, context) {
         super(props, context);
-        this.state = {
-            name: '',
-            gender: 'unknown',
-            birthdate: '',
-        };
     }
 
     _onNameChanged = (e) => {
@@ -55,17 +50,17 @@ export default class PatientData extends React.Component {
         return (
           <div className="mx_ProfileSettings_profile">
               <Field id="patientPatientName" className="amp_CreateCaseDialog_input_field" label={_t("Patient name")}
-                     type="text" value={this.state.name} autoComplete="off"
+                     type="text" value={this.props.name} autoComplete="off"
                      onChange={this._onNameChanged} />
               <Field id="patientGender" className="amp_CreateCaseDialog_input_field" label={_t("Gender")} element="select"
-                     value={this.state.gender} onChange={this._onGenderChanged}>
+                     value={this.props.gender} onChange={this._onGenderChanged}>
                   <option value="unknown">{_t("Unknown")}</option>
                   <option value="female">{_t("Female")}</option>
                   <option value="male">{_t("Male")}</option>
                   <option value="other">{_t("Other")}</option>
               </Field>
               <Field id="patientBirthday" className="amp_CreateCaseDialog_input_field" label={_t("Birthday")}
-                     type="date" value={this.state.birthdate} autoComplete="off"
+                     type="date" value={this.props.birthdate} autoComplete="off"
                      onChange={this._onBirthdateChanged} />
           </div>
         );
