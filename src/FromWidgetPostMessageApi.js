@@ -24,6 +24,7 @@ import {MatrixClientPeg} from "./MatrixClientPeg";
 import RoomViewStore from "./stores/RoomViewStore";
 import {IntegrationManagers} from "./integrations/IntegrationManagers";
 import SettingsStore from "./settings/SettingsStore";
+import {Capability} from "./widgets/WidgetApi";
 
 const WIDGET_API_VERSION = '0.0.2'; // Current API version
 const SUPPORTED_WIDGET_API_VERSIONS = [
@@ -213,7 +214,7 @@ export default class FromWidgetPostMessageApi {
             const data = event.data.data;
             const val = data.value;
 
-            if (ActiveWidgetStore.widgetHasCapability(widgetId, 'm.always_on_screen')) {
+            if (ActiveWidgetStore.widgetHasCapability(widgetId, Capability.AlwaysOnScreen)) {
                 ActiveWidgetStore.setWidgetPersistence(widgetId, val);
             }
         } else if (action === 'get_openid') {

@@ -279,6 +279,8 @@ export default class SecurityUserSettingsTab extends React.Component {
             );
         }
 
+        const E2eAdvancedPanel = sdk.getComponent('views.settings.E2eAdvancedPanel');
+
         return (
             <div className="mx_SettingsTab mx_SecurityUserSettingsTab">
                 <div className="mx_SettingsTab_heading">{_t("Security & Privacy")}</div>
@@ -309,6 +311,7 @@ export default class SecurityUserSettingsTab extends React.Component {
                 </div>
                 {this._renderIgnoredUsers()}
                 {this._renderManageInvites()}
+                <E2eAdvancedPanel />
             </div>
         );
     }

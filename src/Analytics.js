@@ -15,13 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import React from "react";
+import React from 'react';
 
-import { getCurrentLanguage, _t, _td } from "./languageHandler";
-import PlatformPeg from "./PlatformPeg";
-import SdkConfig from "./SdkConfig";
-import Modal from "./Modal";
-import * as sdk from "./index";
+import { getCurrentLanguage, _t, _td } from './languageHandler';
+import PlatformPeg from './PlatformPeg';
+import SdkConfig from './SdkConfig';
+import Modal from './Modal';
+import * as sdk from './index';
 
 const hashRegex = /#\/(groups?|room|user|settings|register|login|forgot_password|home|directory)/;
 const hashVarRegex = /#\/(group|room|user)\/.*$/;
@@ -32,7 +32,7 @@ function getRedactedHash(hash) {
     const match = hashRegex.exec(hash);
     if (!match) {
         console.warn(`Unexpected hash location "${hash}"`);
-        return "#/<unexpected hash location>";
+        return '#/<unexpected hash location>';
     }
 
     if (hashVarRegex.test(hash)) {
@@ -49,7 +49,7 @@ function getRedactedUrl() {
     let { pathname } = window.location;
 
     // Redact paths which could contain unexpected PII
-    if (origin.startsWith("file://")) {
+    if (origin.startsWith('file://')) {
         pathname = "/<redacted>/";
     }
 
@@ -57,62 +57,63 @@ function getRedactedUrl() {
 }
 
 const customVariables = {
-    "App Platform": {
+    // The Matomo installation at https://matomo.riot.im is currently configured
+    // with a limit of 10 custom variables.
+    'App Platform': {
         id: 1,
-        expl: _td("The platform you're on"),
-        example: "Electron Platform"
+        expl: _td('The platform you\'re on'),
+        example: 'Electron Platform',
     },
-    "App Version": {
+    'App Version': {
         id: 2,
-        expl: _td("The version of Riot"),
-        example: "15.0.0"
+        expl: _td('The version of Riot'),
+        example: '15.0.0',
     },
-    "User Type": {
+    'User Type': {
         id: 3,
-        expl: _td(
-            "Whether or not you're logged in (we don't record your username)"
-        ),
-        example: "Logged In"
+        expl: _td('Whether or not you\'re logged in (we don\'t record your username)'),
+        example: 'Logged In',
     },
-    "Chosen Language": {
+    'Chosen Language': {
         id: 4,
-        expl: _td("Your language of choice"),
-        example: "en"
+        expl: _td('Your language of choice'),
+        example: 'en',
     },
-    Instance: {
+    'Instance': {
         id: 5,
-        expl: _td("Which officially provided instance you are using, if any"),
-        example: "app"
+        expl: _td('Which officially provided instance you are using, if any'),
+        example: 'app',
     },
-    "RTE: Uses Richtext Mode": {
+    'RTE: Uses Richtext Mode': {
         id: 6,
-        expl: _td(
-            "Whether or not you're using the Richtext mode of the Rich Text Editor"
-        ),
-        example: "off"
+        expl: _td('Whether or not you\'re using the Richtext mode of the Rich Text Editor'),
+        example: 'off',
     },
-    Breadcrumbs: {
-        id: 9,
-        expl: _td(
-            "Whether or not you're using the 'breadcrumbs' feature (avatars above the room list)"
-        ),
-        example: "disabled"
-    },
-    "Homeserver URL": {
+    'Homeserver URL': {
         id: 7,
-        expl: _td("Your homeserver's URL"),
-        example: "https://test.amp.care"
+        expl: _td('Your homeserver\'s URL'),
+        example: 'https://test.amp.care',
     },
-    "Identity Server URL": {
+    'Touch Input': {
         id: 8,
-        expl: _td("Your identity server's URL"),
-        example: "https://test.amp.care"
-    }
+        expl: _td("Whether you're using Riot on a device where touch is the primary input mechanism"),
+        example: 'false',
+    },
+    'Breadcrumbs': {
+        id: 9,
+        expl: _td("Whether or not you're using the 'breadcrumbs' feature (avatars above the room list)"),
+        example: 'disabled',
+    },
+    'Installed PWA': {
+        id: 10,
+        expl: _td("Whether you're using Riot as an installed Progressive Web App"),
+        example: 'false',
+    },
 };
 
 function whitelistRedact(whitelist, str) {
     if (whitelist.includes(str)) return str;
-    return "<redacted>";
+    return '<redacted>';
 }
 
 const UID_KEY = "mx_Riot_Analytics_uid";
@@ -124,12 +125,7 @@ function getUid() {
     try {
         let data = localStorage.getItem(UID_KEY);
         if (!data) {
-            localStorage.setItem(
-                UID_KEY,
-                (data = [...Array(16)]
-                    .map(() => Math.random().toString(16)[2])
-                    .join(""))
-            );
+            localStorage.setItem(UID_KEY, data = [...Array(16)].map(() => Math.random().toString(16)[2]).join(''));
         }
         return data;
     } catch (e) {
@@ -151,18 +147,12 @@ class Analytics {
 
         this.creationTs = localStorage.getItem(CREATION_TS_KEY);
         if (!this.creationTs) {
-            localStorage.setItem(
-                CREATION_TS_KEY,
-                (this.creationTs = new Date().getTime())
-            );
+            localStorage.setItem(CREATION_TS_KEY, this.creationTs = new Date().getTime());
         }
 
         this.lastVisitTs = localStorage.getItem(LAST_VISIT_TS_KEY);
         this.visitCount = localStorage.getItem(VISIT_COUNT_KEY) || 0;
-        localStorage.setItem(
-            VISIT_COUNT_KEY,
-            parseInt(this.visitCount, 10) + 1
-        );
+        localStorage.setItem(VISIT_COUNT_KEY, parseInt(this.visitCount, 10) + 1);
     }
 
     get disabled() {
@@ -177,13 +167,7 @@ class Analytics {
         if (!this.disabled) return;
 
         const config = SdkConfig.get();
-        if (
-            !config ||
-            !config.piwik ||
-            !config.piwik.url ||
-            !config.piwik.siteId
-        )
-            return;
+        if (!config || !config.piwik || !config.piwik.url || !config.piwik.siteId) return;
 
         this.baseUrl = new URL("piwik.php", config.piwik.url);
         // set constants
@@ -194,36 +178,41 @@ class Analytics {
         // set user parameters
         this.baseUrl.searchParams.set("_id", getUid()); // uuid
         this.baseUrl.searchParams.set("_idts", this.creationTs); // first ts
-        this.baseUrl.searchParams.set(
-            "_idvc",
-            parseInt(this.visitCount, 10) + 1
-        ); // visit count
+        this.baseUrl.searchParams.set("_idvc", parseInt(this.visitCount, 10)+ 1); // visit count
         if (this.lastVisitTs) {
             this.baseUrl.searchParams.set("_viewts", this.lastVisitTs); // last visit ts
         }
 
         const platform = PlatformPeg.get();
-        this._setVisitVariable("App Platform", platform.getHumanReadableName());
+        this._setVisitVariable('App Platform', platform.getHumanReadableName());
         try {
-            this._setVisitVariable(
-                "App Version",
-                await platform.getAppVersion()
-            );
+            this._setVisitVariable('App Version', await platform.getAppVersion());
         } catch (e) {
-            this._setVisitVariable("App Version", "unknown");
+            this._setVisitVariable('App Version', 'unknown');
         }
 
-        this._setVisitVariable("Chosen Language", getCurrentLanguage());
+        this._setVisitVariable('Chosen Language', getCurrentLanguage());
 
-        if (window.location.hostname === "riot.im") {
-            this._setVisitVariable("Instance", window.location.pathname);
+        if (window.location.hostname === 'riot.im') {
+            this._setVisitVariable('Instance', window.location.pathname);
         }
+
+        let installedPWA = "unknown";
+        try {
+            // Known to work at least for desktop Chrome
+            installedPWA = window.matchMedia('(display-mode: standalone)').matches;
+        } catch (e) { }
+        this._setVisitVariable('Installed PWA', installedPWA);
+
+        let touchInput = "unknown";
+        try {
+            // MDN claims broad support across browsers
+            touchInput = window.matchMedia('(pointer: coarse)').matches;
+        } catch (e) { }
+        this._setVisitVariable('Touch Input', touchInput);
 
         // start heartbeat
-        this._heartbeatIntervalID = window.setInterval(
-            this.ping.bind(this),
-            HEARTBEAT_INTERVAL
-        );
+        this._heartbeatIntervalID = window.setInterval(this.ping.bind(this), HEARTBEAT_INTERVAL);
     }
 
     /**
@@ -231,7 +220,7 @@ class Analytics {
      */
     disable() {
         if (this.disabled) return;
-        this.trackEvent("Analytics", "opt-out");
+        this.trackEvent('Analytics', 'opt-out');
         window.clearInterval(this._heartbeatIntervalID);
         this.baseUrl = null;
         this.visitVariables = {};
@@ -254,7 +243,7 @@ class Analytics {
             rand: String(Math.random()).slice(2, 8), // random nonce to cache-bust
             h: now.getHours(),
             m: now.getMinutes(),
-            s: now.getSeconds()
+            s: now.getSeconds(),
         };
 
         const url = new URL(this.baseUrl);
@@ -267,17 +256,16 @@ class Analytics {
                 method: "GET",
                 mode: "no-cors",
                 cache: "no-cache",
-                redirect: "follow"
+                redirect: "follow",
             });
         } catch (e) {
             console.error("Analytics error: ", e);
-            window.err = e;
         }
     }
 
     ping() {
         this._track({
-            ping: 1
+            ping: 1,
         });
         localStorage.setItem(LAST_VISIT_TS_KEY, new Date().getTime()); // update last visit ts
     }
@@ -291,15 +279,13 @@ class Analytics {
             return;
         }
 
-        if (typeof generationTimeMs !== "number") {
-            console.warn(
-                "Analytics.trackPageChange: expected generationTimeMs to be a number"
-            );
+        if (typeof generationTimeMs !== 'number') {
+            console.warn('Analytics.trackPageChange: expected generationTimeMs to be a number');
             // But continue anyway because we still want to track the change
         }
 
         this._track({
-            gt_ms: generationTimeMs
+            gt_ms: generationTimeMs,
         });
     }
 
@@ -309,7 +295,7 @@ class Analytics {
             e_c: category,
             e_a: action,
             e_n: name,
-            e_v: value
+            e_v: value,
         });
     }
 
@@ -325,19 +311,14 @@ class Analytics {
         if (!config.piwik) return;
 
         const whitelistedHSUrls = config.piwik.whitelistedHSUrls || [];
-        const whitelistedISUrls = config.piwik.whitelistedISUrls || [];
 
-        this._setVisitVariable("User Type", isGuest ? "Guest" : "Logged In");
-        this._setVisitVariable("Homeserver URL", homeserverUrl);
-        this._setVisitVariable(
-            "Identity Server URL",
-            whitelistRedact(whitelistedISUrls, identityServerUrl)
-        );
+        this._setVisitVariable('User Type', isGuest ? 'Guest' : 'Logged In');
+        this._setVisitVariable('Homeserver URL', homeserverUrl);
     }
 
     setBreadcrumbs(state) {
         if (this.disabled) return;
-        this._setVisitVariable("Breadcrumbs", state ? "enabled" : "disabled");
+        this._setVisitVariable('Breadcrumbs', state ? 'enabled' : 'disabled');
     }
 
     showDetailsModal = () => {
@@ -345,68 +326,54 @@ class Analytics {
         if (!this.disabled) {
             rows = Object.values(this.visitVariables);
         } else {
-            rows = Object.keys(customVariables).map(k => [
-                k,
-                _t("e.g. %(exampleValue)s", {
-                    exampleValue: customVariables[k].example
-                })
-            ]);
+            rows = Object.keys(customVariables).map(
+                (k) => [
+                    k,
+                    _t('e.g. %(exampleValue)s', { exampleValue: customVariables[k].example }),
+                ],
+            );
         }
 
         const resolution = `${window.screen.width}x${window.screen.height}`;
         const otherVariables = [
             {
-                expl: _td("Every page you use in the app"),
+                expl: _td('Every page you use in the app'),
                 value: _t(
-                    "e.g. <CurrentPageURL>",
+                    'e.g. <CurrentPageURL>',
                     {},
                     {
-                        CurrentPageURL: getRedactedUrl()
-                    }
-                )
+                        CurrentPageURL: getRedactedUrl(),
+                    },
+                ),
             },
-            { expl: _td("Your User Agent"), value: navigator.userAgent },
-            { expl: _td("Your device resolution"), value: resolution }
+            { expl: _td('Your user agent'), value: navigator.userAgent },
+            { expl: _td('Your device resolution'), value: resolution },
         ];
 
-        const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-        Modal.createTrackedDialog("Analytics Details", "", ErrorDialog, {
-            title: _t("Analytics"),
-            description: (
-                <div className="mx_AnalyticsModal">
-                    <div>
-                        {_t(
-                            "The information being sent to us to help make Riot.im better includes:"
-                        )}
-                    </div>
-                    <table>
-                        {rows.map(row => (
-                            <tr key={row[0]}>
-                                <td>{_t(customVariables[row[0]].expl)}</td>
-                                {row[1] !== undefined && (
-                                    <td>
-                                        <code>{row[1]}</code>
-                                    </td>
-                                )}
-                            </tr>
-                        ))}
-                        {otherVariables.map((item, index) => (
-                            <tr key={index}>
-                                <td>{_t(item.expl)}</td>
-                                <td>
-                                    <code>{item.value}</code>
-                                </td>
-                            </tr>
-                        ))}
-                    </table>
-                    <div>
-                        {_t(
-                            "Where this page includes identifiable information, such as a room, " +
-                                "user or group ID, that data is removed before being sent to the server."
-                        )}
-                    </div>
+        const ErrorDialog = sdk.getComponent('dialogs.ErrorDialog');
+        Modal.createTrackedDialog('Analytics Details', '', ErrorDialog, {
+            title: _t('Analytics'),
+            description: <div className="mx_AnalyticsModal">
+                <div>
+                    { _t('The information being sent to us to help make Riot better includes:') }
                 </div>
-            )
+                <table>
+                    { rows.map((row) => <tr key={row[0]}>
+                        <td>{ _t(customVariables[row[0]].expl) }</td>
+                        { row[1] !== undefined && <td><code>{ row[1] }</code></td> }
+                    </tr>) }
+                    { otherVariables.map((item, index) =>
+                        <tr key={index}>
+                            <td>{ _t(item.expl) }</td>
+                            <td><code>{ item.value }</code></td>
+                        </tr>,
+                    ) }
+                </table>
+                <div>
+                    { _t('Where this page includes identifiable information, such as a room, '
+                        + 'user or group ID, that data is removed before being sent to the server.') }
+                </div>
+            </div>,
         });
     };
 }

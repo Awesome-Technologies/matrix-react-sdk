@@ -1,6 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2017, 2018 Vector Creations Ltd
+Copyright 2020 The Matrix.org Foundation C.I.C.
 Copyright 2019 Awesome Technologies Innovationslabor GmbH
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +30,7 @@ import rate_limited_func from "../../../ratelimitedfunc";
 import * as Rooms from '../../../Rooms';
 import DMRoomMap from '../../../utils/DMRoomMap';
 import TagOrderStore from '../../../stores/TagOrderStore';
-import RoomListStore from '../../../stores/RoomListStore';
+import RoomListStore, {TAG_DM} from '../../../stores/RoomListStore';
 import CustomRoomTagStore from '../../../stores/CustomRoomTagStore';
 import GroupStore from '../../../stores/GroupStore';
 import RoomSubList from '../../structures/RoomSubList';
@@ -41,6 +42,8 @@ import * as Receipt from "../../../utils/Receipt";
 import {Resizer} from '../../../resizer';
 import {Layout, Distributor} from '../../../resizer/distributors/roomsublist2';
 import {RovingTabIndexProvider} from "../../../accessibility/RovingTabIndex";
+import * as Unread from "../../../Unread";
+import RoomViewStore from "../../../stores/RoomViewStore";
 
 const HIDE_CONFERENCE_CHANS = true;
 const STANDARD_TAGS_REGEX = /^(m\.(favourite|lowpriority|server_notice)|im\.vector\.fake\.(invite|recent|direct|archived))$/;
@@ -243,6 +246,54 @@ export default createReactClass({
                     });
                 }
                 break;
+            case 'view_room_delta': {
+                const currentRoomId = RoomViewStore.getRoomId();
+                const {
+                    "im.vector.fake.invite": inviteRooms,
+                    "m.favourite": favouriteRooms,
+                    [TAG_DM]: dmRooms,
+                    "im.vector.fake.recent": recentRooms,
+                    "m.lowpriority": lowPriorityRooms,
+                    "im.vector.fake.archived": historicalRooms,
+                    "m.server_notice": serverNoticeRooms,
+                    ...tags
+                } = this.state.lists;
+
+                const shownCustomTagRooms = Object.keys(tags).filter(tagName => {
+                    return (!this.state.customTags || this.state.customTags[tagName]) &&
+                        !tagName.match(STANDARD_TAGS_REGEX);
+                }).map(tagName => tags[tagName]);
+
+                // this order matches the one when generating the room sublists below.
+                let rooms = this._applySearchFilter([
+                    ...inviteRooms,
+                    ...favouriteRooms,
+                    ...dmRooms,
+                    ...recentRooms,
+                    ...[].concat.apply([], shownCustomTagRooms), // eslint-disable-line prefer-spread
+                    ...lowPriorityRooms,
+                    ...historicalRooms,
+                    ...serverNoticeRooms,
+                ], this.props.searchFilter);
+
+                if (payload.unread) {
+                    // filter to only notification rooms (and our current active room so we can index properly)
+                    rooms = rooms.filter(room => {
+                        return room.roomId === currentRoomId || Unread.doesRoomHaveUnreadMessages(room);
+                    });
+                }
+
+                const currentIndex = rooms.findIndex(room => room.roomId === currentRoomId);
+                // use slice to account for looping around the start
+                const [room] = rooms.slice((currentIndex + payload.delta) % rooms.length);
+                if (room) {
+                    dis.dispatch({
+                        action: 'view_room',
+                        room_id: room.roomId,
+                    });
+                }
+                break;
+            }
         }
     },
 
@@ -597,8 +648,13 @@ export default createReactClass({
         // case insensitive if room name includes filter,
         // or if starts with `#` and one of room's aliases starts with filter
         return list.filter((room) => {
-            if (filter[0] === "#" && room.getAliases().some((alias) => alias.toLowerCase().startsWith(lcFilter))) {
-                return true;
+            if (filter[0] === "#") {
+                if (room.getCanonicalAlias() && room.getCanonicalAlias().toLowerCase().startsWith(lcFilter)) {
+                    return true;
+                }
+                if (room.getAltAliases().some((alias) => alias.toLowerCase().startsWith(lcFilter))) {
+                    return true;
+                }
             }
             return room.name && utils.removeHiddenChars(room.name.toLowerCase()).toLowerCase().includes(fuzzyFilter);
         });
@@ -701,13 +757,11 @@ export default createReactClass({
                 list: [],
                 extraTiles: this._makeGroupInviteTiles(this.props.searchFilter),
                 label: _t('Community Invites'),
-                order: "recent",
                 isInvite: true,
             },
             {
                 list: this.state.lists['im.vector.fake.invite'],
                 label: _t('New cases'),
-                order: "recent",
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.invite'),
                 isInvite: true,
             },
@@ -715,22 +769,19 @@ export default createReactClass({
                 list: this.state.lists['m.favourite'],
                 label: _t('Favourites'),
                 tagName: "m.favourite",
-                order: "manual",
                 incomingCall: incomingCallIfTaggedAs('m.favourite'),
             },
             {
-                list: this.state.lists['im.vector.fake.direct'],
+                list: this.state.lists[TAG_DM],
                 label: _t('Cases'),
-                tagName: "im.vector.fake.direct",
-                order: "recent",
-                incomingCall: incomingCallIfTaggedAs('im.vector.fake.direct'),
-                onAddRoom: () => {dis.dispatch({action: 'view_create_case'})},
+                tagName: TAG_DM,
+                incomingCall: incomingCallIfTaggedAs(TAG_DM),
+                onAddRoom: () => {dis.dispatch({action: 'view_create_case'});},
                 addRoomLabel: _t("New case"),
             },
             {
                 list: this.state.lists['im.vector.fake.recent'],
                 label: _t('Anonymous cases'),
-                order: "recent",
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.recent'),
                 onAddRoom: () => {dis.dispatch({action: 'view_create_room'});},
             },
@@ -745,7 +796,6 @@ export default createReactClass({
                     key: tagName,
                     label: labelForTagName(tagName),
                     tagName: tagName,
-                    order: "manual",
                     incomingCall: incomingCallIfTaggedAs(tagName),
                 };
             });
@@ -755,13 +805,11 @@ export default createReactClass({
                 list: this.state.lists['m.lowpriority'],
                 label: _t('Low priority'),
                 tagName: "m.lowpriority",
-                order: "recent",
                 incomingCall: incomingCallIfTaggedAs('m.lowpriority'),
             },
             {
                 list: this.state.lists['im.vector.fake.archived'],
                 label: _t('Historical'),
-                order: "recent",
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.archived'),
                 startAsHidden: true,
                 showSpinner: this.state.isLoadingLeftRooms,
@@ -771,7 +819,6 @@ export default createReactClass({
                 list: this.state.lists['m.server_notice'],
                 label: _t('System Alerts'),
                 tagName: "m.lowpriority",
-                order: "recent",
                 incomingCall: incomingCallIfTaggedAs('m.server_notice'),
             },
         ]);
@@ -788,6 +835,9 @@ export default createReactClass({
                     className="mx_RoomList"
                     role="tree"
                     aria-label={_t("Rooms")}
+                    // Firefox sometimes makes this element focusable due to
+                    // overflow:scroll;, so force it out of tab order.
+                    tabIndex="-1"
                     onMouseMove={this.onMouseMove}
                     onMouseLeave={this.onMouseLeave}
                 >

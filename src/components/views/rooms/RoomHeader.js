@@ -386,8 +386,9 @@ export default createReactClass({
 
         return (
             <div className="mx_RoomHeader light-panel">
-                <div className="mx_RoomHeader_wrapper">
+                <div className="mx_RoomHeader_wrapper" aria-owns="mx_RightPanel">
                     <div className="mx_RoomHeader_avatar">{ roomAvatar }</div>
+                    { privateIcon }
                     { name }
                     { topicElement }
                     { cancelButton }
