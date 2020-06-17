@@ -392,6 +392,7 @@ export default createReactClass({
                     { topicElement }
                     { cancelButton }
                     { rightRow }
+                    <RoomHeaderButtons />
                 </div>
             </div>
         );
