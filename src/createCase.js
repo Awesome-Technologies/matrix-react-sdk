@@ -89,6 +89,11 @@ export default function createCase(opts) {
         opts.andView = true;
     }
 
+    // set given roomname
+    if (opts.name) {
+        createOpts.name = opts.name;
+    }
+
     createOpts.initial_state = createOpts.initial_state || [];
 
     // Allow guests by default since the room is private and they'd
