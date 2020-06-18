@@ -50,6 +50,7 @@ export default createReactClass({
         onLeaveClick: PropTypes.func,
         onCancelClick: PropTypes.func,
         e2eStatus: PropTypes.string,
+        isCaseClosed: PropTypes.bool,
     },
 
     getDefaultProps: function() {
@@ -342,35 +343,23 @@ export default createReactClass({
         let archiveCaseButton;
 
         if(!MatrixClientPeg.get().isGuest()){
-          // check if room is closed
-          for (let i=0; i <= this.props.room.timeline.length-1; i++) {
-              if (this.props.room.timeline[i].event.type === 'care.amp.done') {
-                  caseIsClosed = this.props.room.timeline[i].event.content.done;
-                  console.log("AMP.care case is closed")
-              } else if (this.props.room.timeline[i].event.type === 'm.room.encrypted') {
-                  if (this.props.room.timeline[i]._clearEvent.type === 'care.amp.done') {
-                      caseIsClosed = this.props.room.timeline[i]._clearEvent.content.done;
-                      console.log("AMP.care case is closed")
-                  }
-              }
-          }
 
           if(!MatrixClientPeg.get().isGuest()){
             closeCaseButton =
-                <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
+                <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
                                   onClick={this.onCloseCaseClick}
-                                  title={caseIsClosed ? _t('Case closed') : _t('Close case')}
-                                  disabled={caseIsClosed}
+                                  title={this.props.isCaseClosed ? _t('Case closed') : _t('Close case')}
+                                  disabled={this.props.isCaseClosed}
                 >
-                    <span>{ caseIsClosed ? _t('Case closed') : _t('Close case') }</span>
+                    <span>{ this.props.isCaseClosed ? _t('Case closed') : _t('Close case') }</span>
                 </AccessibleButton>;
           }
 
           archiveCaseButton =
-              <AccessibleButton className={caseIsClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
+              <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
                                 onClick={this.onArchiveCaseClick}
                                 title={_t('Archive case')}
-                                disabled={!caseIsClosed}
+                                disabled={!this.props.isCaseClosed}
               >
                   <span>{ _t('Archive case') }</span>
               </AccessibleButton>;

@@ -95,6 +95,7 @@ export default class SendMessageComposer extends React.Component {
         room: PropTypes.object.isRequired,
         placeholder: PropTypes.string,
         permalinkCreator: PropTypes.object.isRequired,
+        isCaseClosed: PropTypes.bool.isRequired,
     };
 
     static contextType = MatrixClientContext;
@@ -258,6 +259,12 @@ export default class SendMessageComposer extends React.Component {
             return;
         }
 
+        // don't send messages if case is closed
+        if (this.props.isCaseClosed) {
+            dis.dispatch({action: "message_sent"});
+            return;
+        }
+
         let shouldSend = true;
 
         if (!containsEmote(this.model) && this._isSlashCommand()) {
@@ -307,6 +314,7 @@ export default class SendMessageComposer extends React.Component {
                     event: null,
                 });
             }
+            dis.dispatch({action: "message_sent"});
         }
 
         this.sendHistoryManager.save(this.model);

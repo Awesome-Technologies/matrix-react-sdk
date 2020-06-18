@@ -134,6 +134,7 @@ export default createReactClass({
             canPeek: false,
             showApps: false,
             isAlone: false,
+            isCaseClosed: false,
             isPeeking: false,
             showingPinned: false,
             showReadReceipts: true,
@@ -574,6 +575,7 @@ export default createReactClass({
             case 'message_send_failed':
             case 'message_sent':
                 this._checkIfAlone(this.state.room);
+                this._checkIfCaseClosed(this.state.room);
                 break;
             case 'post_sticker_message':
               this.injectSticker(
@@ -923,6 +925,7 @@ export default createReactClass({
             const me = this.context.getUserId();
             const canReact = room.getMyMembership() === "join" && room.currentState.maySendEvent("m.reaction", me);
             const canReply = room.maySendMessage();
+            const isCaseClosed = this._checkIfCaseClosed(room);
 
             this.setState({canReact, canReply});
         }
@@ -960,6 +963,24 @@ export default createReactClass({
         let joinedOrInvitedMemberCount = room.getJoinedMemberCount() + room.getInvitedMemberCount();
         if (countInfluence) joinedOrInvitedMemberCount += countInfluence;
         this.setState({isAlone: joinedOrInvitedMemberCount === 1});
+    },
+
+    _checkIfCaseClosed: function(room) {
+        // check if room is closed
+        if (!room) {
+            return;
+        }
+
+        for (let i=room.timeline.length-1; i >= 0 ; i--) { // search reverse as the done event should be near the end
+            console.log(room.timeline[i])
+            if (room.timeline[i].event.type === 'care.amp.done') {
+                this.setState({isCaseClosed: room.timeline[i].event.content.done});
+                return;
+            } else if (room.timeline[i].event.type === 'm.room.encrypted' && room.timeline[i]._clearEvent.type === 'care.amp.done') {
+                this.setState({isCaseClosed: room.timeline[i]._clearEvent.content.done});
+                return;
+            }
+        }
     },
 
     _updateConfCallNotification: function() {
@@ -1768,6 +1789,7 @@ export default createReactClass({
             statusBar = <RoomStatusBar
                 room={this.state.room}
                 sentMessageAndIsAlone={this.state.isAlone}
+                sentMessageAndIsClosed={this.state.isCaseClosed}
                 hasActiveCall={inCall}
                 isPeeking={myMembership !== "join"}
                 onInviteClick={this.onInviteButtonClick}
@@ -1884,6 +1906,7 @@ export default createReactClass({
                     showApps={this.state.showApps}
                     e2eStatus={this.state.e2eStatus}
                     permalinkCreator={this._getPermalinkCreatorForRoom(this.state.room)}
+                    isCaseClosed={this.state.isCaseClosed}
                 />;
         }
 
@@ -2063,6 +2086,7 @@ export default createReactClass({
                             onForgetClick={(myMembership === "leave") ? this.onForgetClick : null}
                             onLeaveClick={(myMembership === "join") ? this.onLeaveClick : null}
                             e2eStatus={this.state.e2eStatus}
+                            isCaseClosed={this.state.isCaseClosed}
                         />
                         <MainSplit
                             panel={rightPanel}

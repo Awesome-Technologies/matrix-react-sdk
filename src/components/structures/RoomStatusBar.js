@@ -331,10 +331,7 @@ export default createReactClass({
         if (this.props.sentMessageAndIsClosed && !this.props.isPeeking) {
             return (
                 <div className="mx_RoomStatusBar_isAlone">
-                    { _t("You cannot send messages to a closed case!",
-                        {},
-                        {},
-                    ) }
+                    { _t("You cannot send messages to a closed case!") }
                 </div>
             );
         }

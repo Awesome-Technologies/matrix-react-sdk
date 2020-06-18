@@ -72,6 +72,7 @@
     "Case note": "Case note",
     "Close case": "Close case",
     "Close case?": "Close case?",
+    "Case closed": "Case closed",
     "Closing the case is permanent. After closing the case will not be editable anymore.": "Closing the case is permanent. After closing the case will not be editable anymore.",
     "This case has been closed. Editing is not possible anymore.": "This case has been closed. Editing is not possible anymore.",
     "Archive case": "Archive case",
@@ -106,7 +107,7 @@
     "Failed to forget case": "Failed to forget case",
 
 
- "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).": "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).",
+    "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).": "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie (please see our <PolicyLink>Cookie Policy</PolicyLink>).",
     "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie.": "Please help improve AMP.care by sending <UsageDataLink>anonymous usage data</UsageDataLink>. This will use a cookie.",
     "The information being sent to us to help make AMP.care better includes:": "The information being sent to us to help make AMP.care better includes:",
     "The version of AMP.care": "The version of AMP.care",
