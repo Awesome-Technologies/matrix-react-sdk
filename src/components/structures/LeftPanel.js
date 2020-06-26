@@ -275,7 +275,6 @@ const LeftPanel = createReactClass({
 
         return (
             <div className={containerClasses}>
-                { tagPanelContainer }
                 <aside className="mx_LeftPanel dark-panel">
                     <TopLeftMenuButton collapsed={this.props.collapsed} />
                     { breadcrumbs }
