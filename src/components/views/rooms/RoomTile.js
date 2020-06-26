@@ -651,7 +651,6 @@ export default createReactClass({
                                 { subtextLabel }
                             </div>
                             { dmOnline }
-                            { contextMenuButton }
                             { badge }
                         </div>
                         { /* { incomingCallBox } */ }
