@@ -459,7 +459,7 @@ export const SETTINGS = {
     "breadcrumbs": {
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,
         displayName: _td("Show shortcuts to recently viewed rooms above the room list"),
-        default: true,
+        default: false,
     },
     "showHiddenEventsInTimeline": {
         displayName: _td("Show hidden events in timeline"),
