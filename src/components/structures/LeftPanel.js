@@ -281,7 +281,6 @@ const LeftPanel = createReactClass({
                     { breadcrumbs }
                     <CallPreview ConferenceHandler={VectorConferenceHandler} />
                     <div className="mx_LeftPanel_exploreAndFilterRow" onKeyDown={this._onKeyDown} onFocus={this._onFocus} onBlur={this._onBlur}>
-                        { exploreButton }
                         { searchBox }
                     </div>
                     <AccessibleButton className="amp_RoomHeader_button" onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}</AccessibleButton>
