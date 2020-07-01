@@ -19,7 +19,7 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import { _t } from '../../../languageHandler';
 import * as sdk from '../../../index';
-import dis from '../../../dispatcher';
+import dis from '../../../dispatcher/dispatcher';
 import GroupStore from '../../../stores/GroupStore';
 import PropTypes from 'prop-types';
 import { showGroupInviteDialog } from '../../../GroupAddressPicker';
@@ -47,7 +47,7 @@ export default createReactClass({
         };
     },
 
-    componentWillMount: function() {
+    componentDidMount: function() {
         this._unmounted = false;
         this._initGroupStore(this.props.groupId);
     },

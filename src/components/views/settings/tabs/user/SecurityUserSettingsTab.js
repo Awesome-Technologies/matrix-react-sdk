@@ -17,7 +17,7 @@ limitations under the License.
 import React from 'react';
 import PropTypes from 'prop-types';
 import {_t} from "../../../../../languageHandler";
-import SettingsStore, {SettingLevel} from "../../../../../settings/SettingsStore";
+import {SettingLevel} from "../../../../../settings/SettingsStore";
 import {MatrixClientPeg} from "../../../../../MatrixClientPeg";
 import * as FormattingUtils from "../../../../../utils/FormattingUtils";
 import AccessibleButton from "../../../elements/AccessibleButton";
@@ -25,11 +25,14 @@ import Analytics from "../../../../../Analytics";
 import Modal from "../../../../../Modal";
 import * as sdk from "../../../../..";
 import {sleep} from "../../../../../utils/promise";
+import dis from "../../../../../dispatcher/dispatcher";
+import {privateShouldBeEncrypted} from "../../../../../createRoom";
 
 export class IgnoredUser extends React.Component {
     static propTypes = {
         userId: PropTypes.string.isRequired,
         onUnignored: PropTypes.func.isRequired,
+        inProgress: PropTypes.bool.isRequired,
     };
 
     _onUnignoreClicked = (e) => {
@@ -40,7 +43,7 @@ export class IgnoredUser extends React.Component {
         const id = `mx_SecurityUserSettingsTab_ignoredUser_${this.props.userId}`;
         return (
             <div className='mx_SecurityUserSettingsTab_ignoredUser'>
-                <AccessibleButton onClick={this._onUnignoreClicked} kind='primary_sm' aria-describedby={id}>
+                <AccessibleButton onClick={this._onUnignoreClicked} kind='primary_sm' aria-describedby={id} disabled={this.props.inProgress}>
                     { _t('Unignore') }
                 </AccessibleButton>
                 <span id={id}>{ this.props.userId }</span>
@@ -50,6 +53,10 @@ export class IgnoredUser extends React.Component {
 }
 
 export default class SecurityUserSettingsTab extends React.Component {
+    static propTypes = {
+        closeSettingsFn: PropTypes.func.isRequired,
+    };
+
     constructor() {
         super();
 
@@ -58,9 +65,29 @@ export default class SecurityUserSettingsTab extends React.Component {
 
         this.state = {
             ignoredUserIds: MatrixClientPeg.get().getIgnoredUsers(),
+            waitingUnignored: [],
             managingInvites: false,
             invitedRoomAmt: invitedRooms.length,
         };
+
+        this._onAction = this._onAction.bind(this);
+    }
+
+
+    _onAction({action}) {
+        if (action === "ignore_state_changed") {
+            const ignoredUserIds = MatrixClientPeg.get().getIgnoredUsers();
+            const newWaitingUnignored = this.state.waitingUnignored.filter(e=> ignoredUserIds.includes(e));
+            this.setState({ignoredUserIds, waitingUnignored: newWaitingUnignored});
+        }
+    }
+
+    componentDidMount() {
+        this.dispatcherRef = dis.register(this._onAction);
+    }
+
+    componentWillUnmount() {
+        dis.unregister(this.dispatcherRef);
     }
 
     _updateBlacklistDevicesFlag = (checked) => {
@@ -85,17 +112,24 @@ export default class SecurityUserSettingsTab extends React.Component {
         );
     };
 
+    _onGoToUserProfileClick = () => {
+        dis.dispatch({
+            action: 'view_user_info',
+            userId: MatrixClientPeg.get().getUserId(),
+        });
+        this.props.closeSettingsFn();
+    }
+
     _onUserUnignored = async (userId) => {
-        // Don't use this.state to get the ignored user list as it might be
-        // ever so slightly outdated. Instead, prefer to get a fresh list and
-        // update that.
-        const ignoredUsers = MatrixClientPeg.get().getIgnoredUsers();
-        const index = ignoredUsers.indexOf(userId);
+        const {ignoredUserIds, waitingUnignored} = this.state;
+        const currentlyIgnoredUserIds = ignoredUserIds.filter(e => !waitingUnignored.includes(e));
+
+        const index = currentlyIgnoredUserIds.indexOf(userId);
         if (index !== -1) {
-            ignoredUsers.splice(index, 1);
-            MatrixClientPeg.get().setIgnoredUsers(ignoredUsers);
+            currentlyIgnoredUserIds.splice(index, 1);
+            this.setState(({waitingUnignored}) => ({waitingUnignored: [...waitingUnignored, userId]}));
+            MatrixClientPeg.get().setIgnoredUsers(currentlyIgnoredUserIds);
         }
-        this.setState({ignoredUsers});
     };
 
     _getInvitedRooms = () => {
@@ -201,10 +235,17 @@ export default class SecurityUserSettingsTab extends React.Component {
     }
 
     _renderIgnoredUsers() {
-        if (!this.state.ignoredUserIds || this.state.ignoredUserIds.length === 0) return null;
+        const {waitingUnignored, ignoredUserIds} = this.state;
 
-        const userIds = this.state.ignoredUserIds
-            .map((u) => <IgnoredUser userId={u} onUnignored={this._onUserUnignored} key={u} />);
+        if (!ignoredUserIds || ignoredUserIds.length === 0) return null;
+
+        const userIds = ignoredUserIds
+            .map((u) => <IgnoredUser
+             userId={u}
+             onUnignored={this._onUserUnignored}
+             key={u}
+             inProgress={waitingUnignored.includes(u)}
+             />);
 
         return (
             <div className='mx_SettingsTab_section'>
@@ -254,24 +295,19 @@ export default class SecurityUserSettingsTab extends React.Component {
             </div>
         );
 
-        let eventIndex;
-        if (SettingsStore.isFeatureEnabled("feature_event_indexing")) {
-            eventIndex = (
-                <div className="mx_SettingsTab_section">
-                    <span className="mx_SettingsTab_subheading">{_t("Message search")}</span>
-                    <EventIndexPanel />
-                </div>
-            );
-        }
+        const eventIndex = (
+            <div className="mx_SettingsTab_section">
+                <span className="mx_SettingsTab_subheading">{_t("Message search")}</span>
+                <EventIndexPanel />
+            </div>
+        );
 
         // XXX: There's no such panel in the current cross-signing designs, but
         // it's useful to have for testing the feature. If there's no interest
         // in having advanced details here once all flows are implemented, we
         // can remove this.
         const CrossSigningPanel = sdk.getComponent('views.settings.CrossSigningPanel');
-        let crossSigning;
-        if (SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            crossSigning = (
+        const crossSigning = (
                 <div className='mx_SettingsTab_section'>
                     <span className="mx_SettingsTab_subheading">{_t("Cross-signing")}</span>
                     <div className='mx_SettingsTab_subsectionText'>
@@ -279,15 +315,34 @@ export default class SecurityUserSettingsTab extends React.Component {
                     </div>
                 </div>
             );
-        }
 
         const E2eAdvancedPanel = sdk.getComponent('views.settings.E2eAdvancedPanel');
 
+        let warning;
+        if (!privateShouldBeEncrypted()) {
+            warning = <div className="mx_SecurityUserSettingsTab_warning">
+                { _t("Your server admin has disabled end-to-end encryption by default " +
+                    "in private rooms & Direct Messages.") }
+            </div>;
+        }
+
         return (
             <div className="mx_SettingsTab mx_SecurityUserSettingsTab">
+                {warning}
                 <div className="mx_SettingsTab_heading">{_t("Security & Privacy")}</div>
                 <div className="mx_SettingsTab_section">
-                    <span className="mx_SettingsTab_subheading">{_t("Sessions")}</span>
+                    <span className="mx_SettingsTab_subheading">{_t("Where you’re logged in")}</span>
+                    <span>
+                        {_t(
+                            "Manage the names of and sign out of your sessions below or " +
+                            "<a>verify them in your User Profile</a>.", {},
+                            {
+                                a: sub => <AccessibleButton kind="link" onClick={this._onGoToUserProfileClick}>
+                                    {sub}
+                                </AccessibleButton>,
+                            },
+                        )}
+                    </span>
                     <div className='mx_SettingsTab_subsectionText'>
                         {_t("A session's public name is visible to people you communicate with")}
                         <DevicesPanel />
