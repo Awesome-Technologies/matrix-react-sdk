@@ -34,8 +34,8 @@ export default class CrossSigningPanel extends React.PureComponent {
             crossSigningPrivateKeysInStorage: false,
             selfSigningPrivateKeyCached: false,
             userSigningPrivateKeyCached: false,
+            sessionBackupKeyCached: false,
             secretStorageKeyInAccount: false,
-            secretStorageKeyNeedsUpgrade: null,
         };
     }
 
@@ -80,21 +80,24 @@ export default class CrossSigningPanel extends React.PureComponent {
         const crossSigningPrivateKeysInStorage = await crossSigning.isStoredInSecretStorage(secretStorage);
         const selfSigningPrivateKeyCached = !!(pkCache && await pkCache.getCrossSigningKeyCache("self_signing"));
         const userSigningPrivateKeyCached = !!(pkCache && await pkCache.getCrossSigningKeyCache("user_signing"));
+        const sessionBackupKeyFromCache = await cli._crypto.getSessionBackupPrivateKey();
+        const sessionBackupKeyCached = !!(sessionBackupKeyFromCache);
+        const sessionBackupKeyWellFormed = sessionBackupKeyFromCache instanceof Uint8Array;
         const secretStorageKeyInAccount = await secretStorage.hasKey();
         const homeserverSupportsCrossSigning =
             await cli.doesServerSupportUnstableFeature("org.matrix.e2e_cross_signing");
         const crossSigningReady = await cli.isCrossSigningReady();
-        const secretStorageKeyNeedsUpgrade = await cli.secretStorageKeyNeedsUpgrade();
 
         this.setState({
             crossSigningPublicKeysOnDevice,
             crossSigningPrivateKeysInStorage,
             selfSigningPrivateKeyCached,
             userSigningPrivateKeyCached,
+            sessionBackupKeyCached,
+            sessionBackupKeyWellFormed,
             secretStorageKeyInAccount,
             homeserverSupportsCrossSigning,
             crossSigningReady,
-            secretStorageKeyNeedsUpgrade,
         });
     }
 
@@ -105,12 +108,12 @@ export default class CrossSigningPanel extends React.PureComponent {
      * 2. Access existing secret storage by requesting passphrase and accessing
      *    cross-signing keys as needed.
      * 3. All keys are loaded and there's nothing to do.
-     * @param {bool} [force] Bootstrap again even if keys already present
+     * @param {bool} [forceReset] Bootstrap again even if keys already present
      */
-    _bootstrapSecureSecretStorage = async (force=false) => {
+    _bootstrapSecureSecretStorage = async (forceReset=false) => {
         this.setState({ error: null });
         try {
-            await accessSecretStorage(() => undefined, force);
+            await accessSecretStorage(() => undefined, forceReset);
         } catch (e) {
             this.setState({ error: e });
             console.error("Error bootstrapping secret storage", e);
@@ -125,8 +128,8 @@ export default class CrossSigningPanel extends React.PureComponent {
     }
 
     _destroySecureSecretStorage = () => {
-        const ConfirmDestoryCrossSigningDialog = sdk.getComponent("dialogs.ConfirmDestroyCrossSigningDialog");
-        Modal.createDialog(ConfirmDestoryCrossSigningDialog, {
+        const ConfirmDestroyCrossSigningDialog = sdk.getComponent("dialogs.ConfirmDestroyCrossSigningDialog");
+        Modal.createDialog(ConfirmDestroyCrossSigningDialog, {
             onFinished: this.onDestroyStorage,
         });
     }
@@ -139,10 +142,11 @@ export default class CrossSigningPanel extends React.PureComponent {
             crossSigningPrivateKeysInStorage,
             selfSigningPrivateKeyCached,
             userSigningPrivateKeyCached,
+            sessionBackupKeyCached,
+            sessionBackupKeyWellFormed,
             secretStorageKeyInAccount,
             homeserverSupportsCrossSigning,
             crossSigningReady,
-            secretStorageKeyNeedsUpgrade,
         } = this.state;
 
         let errorSection;
@@ -190,6 +194,8 @@ export default class CrossSigningPanel extends React.PureComponent {
                 </div>
             );
         }
+
+        // TODO: determine how better to expose this to users in addition to prompts at login/toast
         let bootstrapButton;
         if (
             (!enabledForAccount || !crossSigningPublicKeysOnDevice) &&
@@ -202,6 +208,16 @@ export default class CrossSigningPanel extends React.PureComponent {
                     </AccessibleButton>
                 </div>
             );
+        }
+
+        let sessionBackupKeyWellFormedText = "";
+        if (sessionBackupKeyCached) {
+            sessionBackupKeyWellFormedText = ", ";
+            if (sessionBackupKeyWellFormed) {
+                sessionBackupKeyWellFormedText += _t("well formed");
+            } else {
+                sessionBackupKeyWellFormedText += _t("unexpected type");
+            }
         }
 
         return (
@@ -227,16 +243,19 @@ export default class CrossSigningPanel extends React.PureComponent {
                             <td>{userSigningPrivateKeyCached ? _t("cached locally") : _t("not found locally")}</td>
                         </tr>
                         <tr>
+                            <td>{_t("Session backup key:")}</td>
+                            <td>
+                                {sessionBackupKeyCached ? _t("cached locally") : _t("not found locally")}
+                                {sessionBackupKeyWellFormedText}
+                            </td>
+                        </tr>
+                        <tr>
                             <td>{_t("Secret storage public key:")}</td>
                             <td>{secretStorageKeyInAccount ? _t("in account data") : _t("not found")}</td>
                         </tr>
                         <tr>
                             <td>{_t("Homeserver feature support:")}</td>
                             <td>{homeserverSupportsCrossSigning ? _t("exists") : _t("not found")}</td>
-                        </tr>
-                        <tr>
-                            <td>{_t("Secret Storage key format:")}</td>
-                            <td>{secretStorageKeyNeedsUpgrade ? _t("outdated") : _t("up to date")}</td>
                         </tr>
                    </tbody></table>
                 </details>

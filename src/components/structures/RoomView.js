@@ -34,14 +34,14 @@ import ContentMessages from '../../ContentMessages';
 import Modal from '../../Modal';
 import * as sdk from '../../index';
 import CallHandler from '../../CallHandler';
-import dis from '../../dispatcher';
+import dis from '../../dispatcher/dispatcher';
 import Tinter from '../../Tinter';
 import rate_limited_func from '../../ratelimitedfunc';
 import * as ObjectUtils from '../../ObjectUtils';
 import * as Rooms from '../../Rooms';
 import eventSearch from '../../Searching';
 
-import {isOnlyCtrlOrCmdKeyEvent, Key} from '../../Keyboard';
+import {isOnlyCtrlOrCmdIgnoreShiftKeyEvent, isOnlyCtrlOrCmdKeyEvent, Key} from '../../Keyboard';
 
 import MainSplit from './MainSplit';
 import RightPanel from './RightPanel';
@@ -49,12 +49,13 @@ import RoomViewStore from '../../stores/RoomViewStore';
 import RoomScrollStateStore from '../../stores/RoomScrollStateStore';
 import WidgetEchoStore from '../../stores/WidgetEchoStore';
 import SettingsStore, {SettingLevel} from "../../settings/SettingsStore";
-import WidgetUtils from '../../utils/WidgetUtils';
 import AccessibleButton from "../views/elements/AccessibleButton";
 import RightPanelStore from "../../stores/RightPanelStore";
 import {haveTileForEvent} from "../views/rooms/EventTile";
 import RoomContext from "../../contexts/RoomContext";
 import MatrixClientContext from "../../contexts/MatrixClientContext";
+import { shieldStatusForRoom } from '../../utils/ShieldUtils';
+import {Action} from "../../dispatcher/actions";
 
 const DEBUG = false;
 let debuglog = function() {};
@@ -164,10 +165,15 @@ export default createReactClass({
 
             canReact: false,
             canReply: false,
+
+            useIRCLayout: SettingsStore.getValue("feature_irc_ui"),
+
+            matrixClientIsReady: this.context && this.context.isInitialSyncComplete(),
         };
     },
 
-    componentWillMount: function() {
+    // TODO: [REACT-WARNING] Replace component with real class, use constructor for refs
+    UNSAFE_componentWillMount: function() {
         this.dispatcherRef = dis.register(this.onAction);
         this.context.on("Room", this.onRoom);
         this.context.on("Room.timeline", this.onRoomTimeline);
@@ -180,6 +186,7 @@ export default createReactClass({
         this.context.on("crypto.keyBackupStatus", this.onKeyBackupStatus);
         this.context.on("deviceVerificationChanged", this.onDeviceVerificationChanged);
         this.context.on("userTrustStatusChanged", this.onUserVerificationChanged);
+        this.context.on("crossSigning.keysChanged", this.onCrossSigningKeysChanged);
         // Start listening for RoomViewStore updates
         this._roomStoreToken = RoomViewStore.addListener(this._onRoomViewStoreUpdate);
         this._rightPanelStoreToken = RightPanelStore.getSharedInstance().addListener(this._onRightPanelStoreUpdate);
@@ -191,6 +198,8 @@ export default createReactClass({
 
         this._roomView = createRef();
         this._searchResultsPanel = createRef();
+
+        this._layoutWatcherRef = SettingsStore.watchSetting("feature_irc_ui", null, this.onLayoutChange);
     },
 
     _onReadReceiptsChange: function() {
@@ -230,10 +239,16 @@ export default createReactClass({
             initialEventId: RoomViewStore.getInitialEventId(),
             isInitialEventHighlighted: RoomViewStore.isInitialEventHighlighted(),
             forwardingEvent: RoomViewStore.getForwardingEvent(),
-            shouldPeek: RoomViewStore.shouldPeek(),
+            // we should only peek once we have a ready client
+            shouldPeek: this.state.matrixClientIsReady && RoomViewStore.shouldPeek(),
             showingPinned: SettingsStore.getValue("PinnedEvents.isOpen", roomId),
             showReadReceipts: SettingsStore.getValue("showReadReceipts", roomId),
         };
+
+        if (!initial && this.state.shouldPeek && !newState.shouldPeek) {
+            // Stop peeking because we have joined this room now
+            this.context.stopPeeking();
+        }
 
         // Temporary logging to diagnose https://github.com/vector-im/riot-web/issues/4307
         console.log(
@@ -398,13 +413,9 @@ export default createReactClass({
         const hideWidgetDrawer = localStorage.getItem(
             room.roomId + "_hide_widget_drawer");
 
-        if (hideWidgetDrawer === "true") {
-            return false;
-        }
-
-        const widgets = WidgetEchoStore.getEchoedRoomWidgets(room.roomId, WidgetUtils.getRoomWidgets(room));
-
-        return widgets.length > 0 || WidgetEchoStore.roomHasPendingWidgets(room.roomId, WidgetUtils.getRoomWidgets(room));
+        // This is confusing, but it means to say that we default to the tray being
+        // hidden unless the user clicked to open it.
+        return hideWidgetDrawer === "false";
     },
 
     componentDidMount: function() {
@@ -422,7 +433,7 @@ export default createReactClass({
         }
         this.onResize();
 
-        document.addEventListener("keydown", this.onKeyDown);
+        document.addEventListener("keydown", this.onNativeKeyDown);
     },
 
     shouldComponentUpdate: function(nextProps, nextState) {
@@ -466,6 +477,10 @@ export default createReactClass({
             RoomScrollStateStore.setScrollState(this.state.roomId, this._getScrollState());
         }
 
+        if (this.state.shouldPeek) {
+            this.context.stopPeeking();
+        }
+
         // stop tracking room changes to format permalinks
         this._stopAllPermalinkCreators();
 
@@ -493,6 +508,7 @@ export default createReactClass({
             this.context.removeListener("crypto.keyBackupStatus", this.onKeyBackupStatus);
             this.context.removeListener("deviceVerificationChanged", this.onDeviceVerificationChanged);
             this.context.removeListener("userTrustStatusChanged", this.onUserVerificationChanged);
+            this.context.removeListener("crossSigning.keysChanged", this.onCrossSigningKeysChanged);
         }
 
         window.removeEventListener('beforeunload', this.onPageUnload);
@@ -500,7 +516,7 @@ export default createReactClass({
             this.props.resizeNotifier.removeListener("middlePanelResized", this.onResize);
         }
 
-        document.removeEventListener("keydown", this.onKeyDown);
+        document.removeEventListener("keydown", this.onNativeKeyDown);
 
         // Remove RoomStore listener
         if (this._roomStoreToken) {
@@ -524,6 +540,14 @@ export default createReactClass({
         // no need to do this as Dir & Settings are now overlays. It just burnt CPU.
         // console.log("Tinter.tint from RoomView.unmount");
         // Tinter.tint(); // reset colourscheme
+
+        SettingsStore.unwatchSetting(this._layoutWatcherRef);
+    },
+
+    onLayoutChange: function() {
+        this.setState({
+            useIRCLayout: SettingsStore.getValue("feature_irc_ui"),
+        });
     },
 
     _onRightPanelStoreUpdate: function() {
@@ -542,7 +566,8 @@ export default createReactClass({
         }
     },
 
-    onKeyDown: function(ev) {
+    // we register global shortcuts here, they *must not conflict* with local shortcuts elsewhere or both will fire
+    onNativeKeyDown: function(ev) {
         let handled = false;
         const ctrlCmdOnly = isOnlyCtrlOrCmdKeyEvent(ev);
 
@@ -557,6 +582,37 @@ export default createReactClass({
             case Key.E:
                 if (ctrlCmdOnly) {
                     this.onMuteVideoClick();
+                    handled = true;
+                }
+                break;
+        }
+
+        if (handled) {
+            ev.stopPropagation();
+            ev.preventDefault();
+        }
+    },
+
+    onReactKeyDown: function(ev) {
+        let handled = false;
+
+        switch (ev.key) {
+            case Key.ESCAPE:
+                if (!ev.altKey && !ev.ctrlKey && !ev.shiftKey && !ev.metaKey) {
+                    this._messagePanel.forgetReadMarker();
+                    this.jumpToLiveTimeline();
+                    handled = true;
+                }
+                break;
+            case Key.PAGE_UP:
+                if (!ev.altKey && !ev.ctrlKey && ev.shiftKey && !ev.metaKey) {
+                    this.jumpToReadMarker();
+                    handled = true;
+                }
+                break;
+            case Key.U.toUpperCase():
+                if (isOnlyCtrlOrCmdIgnoreShiftKeyEvent(ev) && ev.shiftKey) {
+                    dis.dispatch({ action: "upload_file" })
                     handled = true;
                 }
                 break;
@@ -638,6 +694,16 @@ export default createReactClass({
                             room_id: roomId,
                             deferred_action: payload,
                         });
+                    });
+                }
+                break;
+            case 'sync_state':
+                if (!this.state.matrixClientIsReady) {
+                    this.setState({
+                        matrixClientIsReady: this.context && this.context.isInitialSyncComplete(),
+                    }, () => {
+                        // send another "initial" RVS update to trigger peeking if needed
+                        this._onRoomViewStoreUpdate(true);
                     });
                 }
                 break;
@@ -794,6 +860,13 @@ export default createReactClass({
         this._updateE2EStatus(room);
     },
 
+    onCrossSigningKeysChanged: function() {
+        const room = this.state.room;
+        if (room) {
+            this._updateE2EStatus(room);
+        }
+    },
+
     _updateE2EStatus: async function(room) {
         if (!this.context.isRoomEncrypted(room.roomId)) {
             return;
@@ -807,50 +880,10 @@ export default createReactClass({
             });
             return;
         }
-        if (!SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            room.hasUnverifiedDevices().then((hasUnverifiedDevices) => {
-                this.setState({
-                    e2eStatus: hasUnverifiedDevices ? "warning" : "verified",
-                });
-            });
-            debuglog("e2e check is warning/verified only as cross-signing is off");
-            return;
-        }
 
-        // Duplication between here and _updateE2eStatus in RoomTile
         /* At this point, the user has encryption on and cross-signing on */
-        const e2eMembers = await room.getEncryptionTargetMembers();
-        const verified = [];
-        const unverified = [];
-        e2eMembers.map(({userId}) => userId)
-            .filter((userId) => userId !== this.context.getUserId())
-            .forEach((userId) => {
-                (this.context.checkUserTrust(userId).isCrossSigningVerified() ?
-                verified : unverified).push(userId);
-            });
-
-        debuglog("e2e verified", verified, "unverified", unverified);
-
-        /* Check all verified user devices. */
-        /* Don't alarm if no other users are verified  */
-        const targets = (verified.length > 0) ? [...verified, this.context.getUserId()] : verified;
-        for (const userId of targets) {
-            const devices = await this.context.getStoredDevicesForUser(userId);
-            const anyDeviceNotVerified = devices.some(({deviceId}) => {
-                return !this.context.checkDeviceTrust(userId, deviceId).isVerified();
-            });
-            if (anyDeviceNotVerified) {
-                this.setState({
-                    e2eStatus: "warning",
-                });
-                debuglog("e2e status set to warning as not all users trust all of their sessions." +
-                         " Aborted on user", userId);
-                return;
-            }
-        }
-
         this.setState({
-            e2eStatus: unverified.length === 0 ? "verified" : "normal",
+            e2eStatus: await shieldStatusForRoom(this.context, room),
         });
     },
 
@@ -1127,7 +1160,7 @@ export default createReactClass({
             ev.dataTransfer.files, this.state.room.roomId, this.context,
         );
         this.setState({ draggingFile: false });
-        dis.dispatch({action: 'focus_composer'});
+        dis.fire(Action.FocusComposer);
     },
 
     onDragLeaveOrEnd: function(ev) {
@@ -1220,7 +1253,7 @@ export default createReactClass({
             });
         }, function(error) {
             const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-            console.error("Search failed: " + error);
+            console.error("Search failed", error);
             Modal.createTrackedDialog('Search failed', '', ErrorDialog, {
                 title: _t("Search failed"),
                 description: ((error && error.message) ? error.message : _t("Server may be unavailable, overloaded, or search timed out :(")),
@@ -1333,7 +1366,7 @@ export default createReactClass({
                 event: null,
             });
         }
-        dis.dispatch({action: 'focus_composer'});
+        dis.fire(Action.FocusComposer);
     },
 
     onLeaveClick: function() {
@@ -1422,9 +1455,7 @@ export default createReactClass({
         // using /leave rather than /join. In the short term though, we
         // just ignore them.
         // https://github.com/vector-im/vector-web/issues/1134
-        dis.dispatch({
-            action: 'view_room_directory',
-        });
+        dis.fire(Action.ViewRoomDirectory);
     },
 
     onSearchClick: function() {
@@ -1444,7 +1475,7 @@ export default createReactClass({
     // jump down to the bottom of this room, where new events are arriving
     jumpToLiveTimeline: function() {
         this._messagePanel.jumpToLiveTimeline();
-        dis.dispatch({action: 'focus_composer'});
+        dis.fire(Action.FocusComposer);
     },
 
     // jump up to wherever our read marker is
@@ -1644,14 +1675,16 @@ export default createReactClass({
         const ErrorBoundary = sdk.getComponent("elements.ErrorBoundary");
 
         if (!this.state.room) {
-            const loading = this.state.roomLoading || this.state.peekLoading;
+            const loading = !this.state.matrixClientIsReady || this.state.roomLoading || this.state.peekLoading;
             if (loading) {
+                // Assume preview loading if we don't have a ready client or a room ID (still resolving the alias)
+                const previewLoading = !this.state.matrixClientIsReady || !this.state.roomId || this.state.peekLoading;
                 return (
                     <div className="mx_RoomView">
                         <ErrorBoundary>
                             <RoomPreviewBar
                                 canPreview={false}
-                                previewLoading={this.state.peekLoading}
+                                previewLoading={previewLoading && !this.state.roomLoadError}
                                 error={this.state.roomLoadError}
                                 loading={loading}
                                 joining={this.state.joining}
@@ -1676,7 +1709,8 @@ export default createReactClass({
                 return (
                     <div className="mx_RoomView">
                         <ErrorBoundary>
-                            <RoomPreviewBar onJoinClick={this.onJoinButtonClicked}
+                            <RoomPreviewBar
+                                onJoinClick={this.onJoinButtonClicked}
                                 onForgetClick={this.onForgetClick}
                                 onRejectClick={this.onRejectThreepidInviteButtonClicked}
                                 canPreview={false} error={this.state.roomLoadError}
@@ -1711,8 +1745,11 @@ export default createReactClass({
             } else {
                 const myUserId = this.context.credentials.userId;
                 const myMember = this.state.room.getMember(myUserId);
-                const inviteEvent = myMember.events.member;
-                var inviterName = inviteEvent.sender ? inviteEvent.sender.name : inviteEvent.getSender();
+                const inviteEvent = myMember ? myMember.events.member : null;
+                let inviterName = _t("Unknown");
+                if (inviteEvent) {
+                    inviterName = inviteEvent.sender ? inviteEvent.sender.name : inviteEvent.getSender();
+                }
 
                 // We deliberately don't try to peek into invites, even if we have permission to peek
                 // as they could be a spam vector.
@@ -1782,7 +1819,7 @@ export default createReactClass({
         const showRoomRecoveryReminder = (
             SettingsStore.getValue("showRoomRecoveryReminder") &&
             this.context.isRoomEncrypted(this.state.room.roomId) &&
-            !this.context.getKeyBackupEnabled()
+            this.context.getKeyBackupEnabled() === false
         );
 
         const hiddenHighlightCount = this._getHiddenHighlightCount();
@@ -1938,8 +1975,9 @@ export default createReactClass({
                 searchResultsPanel = (<div className="mx_RoomView_messagePanel mx_RoomView_messagePanelSearchSpinner" />);
             } else {
                 searchResultsPanel = (
-                    <ScrollPanel ref={this._searchResultsPanel}
-                        className="mx_RoomView_messagePanel mx_RoomView_searchResultsPanel"
+                    <ScrollPanel
+                        ref={this._searchResultsPanel}
+                        className="mx_RoomView_messagePanel mx_RoomView_searchResultsPanel mx_GroupLayout"
                         onFillRequest={this.onSearchResultsFillRequest}
                         resizeNotifier={this.props.resizeNotifier}
                     >
@@ -1959,6 +1997,13 @@ export default createReactClass({
             highlightedEventId = this.state.initialEventId;
         }
 
+        const messagePanelClassNames = classNames(
+            "mx_RoomView_messagePanel",
+            {
+                "mx_IRCLayout": this.state.useIRCLayout,
+                "mx_GroupLayout": !this.state.useIRCLayout,
+            });
+
         // console.info("ShowUrlPreview for %s is %s", this.state.room.roomId, this.state.showUrlPreview);
         const messagePanel = (
             <TimelinePanel
@@ -1974,11 +2019,12 @@ export default createReactClass({
                 onScroll={this.onMessageListScroll}
                 onReadMarkerUpdated={this._updateTopUnreadMessagesBar}
                 showUrlPreview = {this.state.showUrlPreview}
-                className="mx_RoomView_messagePanel"
+                className={messagePanelClassNames}
                 membersLoaded={this.state.membersLoaded}
                 permalinkCreator={this._getPermalinkCreatorForRoom(this.state.room)}
                 resizeNotifier={this.props.resizeNotifier}
                 showReactions={true}
+                useIRCLayout={this.state.useIRCLayout}
             />);
 
         let topUnreadMessagesBar = null;
@@ -2022,9 +2068,13 @@ export default createReactClass({
             mx_RoomView_timeline_rr_enabled: this.state.showReadReceipts,
         });
 
+        const mainClasses = classNames("mx_RoomView", {
+            mx_RoomView_inCall: inCall,
+        });
+
         return (
             <RoomContext.Provider value={this.state}>
-                <main className={"mx_RoomView" + (inCall ? " mx_RoomView_inCall" : "")} ref={this._roomView}>
+                <main className={mainClasses} ref={this._roomView} onKeyDown={this.onReactKeyDown}>
                     <ErrorBoundary>
                         <RoomHeader
                             room={this.state.room}

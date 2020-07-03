@@ -86,7 +86,8 @@ export default createReactClass({
         };
     },
 
-    componentWillMount() {
+    // TODO: [REACT-WARNING] Move this to constructor
+    UNSAFE_componentWillMount() {
         this._matrixClient = MatrixClientPeg.get();
     },
 
@@ -143,6 +144,7 @@ export default createReactClass({
                 >
                     <div className={classNames('mx_Dialog_header', {
                         'mx_Dialog_headerWithButton': !!this.props.headerButton,
+                        'mx_Dialog_headerWithCancel': !!cancelButton,
                     })}>
                         <div className={classNames('mx_Dialog_title', this.props.titleClass)} id='mx_BaseDialog_title'>
                             {headerImage}

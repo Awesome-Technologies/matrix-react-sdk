@@ -19,7 +19,7 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import * as sdk from '../../index';
 import { _t } from '../../languageHandler';
-import dis from '../../dispatcher';
+import dis from '../../dispatcher/dispatcher';
 import AccessibleButton from '../views/elements/AccessibleButton';
 import MatrixClientContext from "../../contexts/MatrixClientContext";
 import AutoHideScrollbar from "./AutoHideScrollbar";
@@ -38,7 +38,7 @@ export default createReactClass({
         contextType: MatrixClientContext,
     },
 
-    componentWillMount: function() {
+    componentDidMount: function() {
         this._fetch();
     },
 
