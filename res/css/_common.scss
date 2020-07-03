@@ -16,6 +16,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+@import "./_font-sizes.scss";
+
+:root {
+    font-size: 10px;
+}
+
 html {
     /* hack to stop overscroll bounce on OSX and iOS.
        N.B. Breaks things when we have legitimate horizontal overscroll */
@@ -25,7 +31,7 @@ html {
 
 body {
     font-family: $font-family;
-    font-size: 15px;
+    font-size: $font-15px;
     background-color: $primary-bg-color;
     color: $primary-fg-color;
     border: 0px;
@@ -60,7 +66,7 @@ b {
 h2 {
     color: $primary-fg-color;
     font-weight: 400;
-    font-size: 18px;
+    font-size: $font-18px;
     margin-top: 16px;
     margin-bottom: 16px;
 }
@@ -76,7 +82,7 @@ input[type=search],
 input[type=password] {
     padding: 9px;
     font-family: $font-family;
-    font-size: 14px;
+    font-size: $font-14px;
     font-weight: 600;
     min-width: 0;
 }
@@ -253,7 +259,7 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus {
     color: $light-fg-color;
     z-index: 4012;
     font-weight: 300;
-    font-size: 15px;
+    font-size: $font-15px;
     position: relative;
     padding: 25px 30px 30px 30px;
     max-height: 80%;
@@ -321,13 +327,16 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus {
 }
 
 .mx_Dialog_title {
-    font-size: 22px;
-    line-height: 36px;
+    font-size: $font-22px;
+    line-height: $font-36px;
     color: $dialog-title-fg-color;
 }
 
 .mx_Dialog_header.mx_Dialog_headerWithButton > .mx_Dialog_title {
     text-align: center;
+}
+.mx_Dialog_header.mx_Dialog_headerWithCancel > .mx_Dialog_title {
+    margin-right: 20px; // leave space for the 'X' cancel button
 }
 
 .mx_Dialog_title.danger {
@@ -350,7 +359,7 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus {
 
 .mx_Dialog_content {
     margin: 24px 0 68px;
-    font-size: 14px;
+    font-size: $font-14px;
     color: $primary-fg-color;
     word-wrap: break-word;
 }
@@ -446,7 +455,7 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus {
 }
 
 .mx_TextInputDialog_input {
-    font-size: 15px;
+    font-size: $font-15px;
     border-radius: 3px;
     border: 1px solid $input-border-color;
     padding: 9px;
@@ -571,4 +580,119 @@ input[type=text]:focus, input[type=password]:focus, textarea:focus {
 @define-mixin mx_Settings_tooltip {
     // So it fits in the space provided by the page
     max-width: 120px;
+}
+
+// A context menu that largely fits the | [icon]    [label] | format.
+.mx_IconizedContextMenu {
+    // Put 20px of padding around the whole menu. We do this instead of a
+    // simple `padding: 20px` rule so the horizontal rules added by the
+    // optionLists is rendered correctly (full width).
+    > * {
+        padding-left: 20px;
+        padding-right: 20px;
+
+        &:first-child {
+            padding-top: 20px;
+        }
+
+        &:last-child {
+            padding-bottom: 20px;
+        }
+    }
+
+    .mx_IconizedContextMenu_optionList {
+        // the notFirst class is for cases where the optionList might be under a header of sorts.
+        &:nth-child(n + 2), .mx_IconizedContextMenu_optionList_notFirst {
+            margin-top: 20px;
+
+            // This is a bit of a hack when we could just use a simple border-top property,
+            // however we have a (kinda) good reason for doing it this way: we need opacity.
+            // To get the right color, we need an opacity modifier which means we have to work
+            // around the problem. PostCSS doesn't support the opacity() function, and if we
+            // use something like postcss-functions we quickly run into an issue where the
+            // function we would define gets passed a CSS variable for custom themes, which
+            // can't be converted easily even when considering https://stackoverflow.com/a/41265350/7037379
+            //
+            // Therefore, we just hack in a line and border the thing ourselves
+            &::before {
+                border-top: 1px solid $primary-fg-color;
+                opacity: 0.1;
+                content: '';
+
+                // Counteract the padding problems (width: 100% ignores the 40px padding,
+                // unless we position it absolutely then it does the right thing).
+                width: 100%;
+                position: absolute;
+                left: 0;
+            }
+        }
+
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+
+            li {
+                margin: 0;
+                padding: 20px 0 0;
+
+                .mx_AccessibleButton {
+                    text-decoration: none;
+                    color: $primary-fg-color;
+                    font-size: $font-15px;
+                    line-height: $font-24px;
+
+                    // Create a flexbox to more easily define the list items
+                    display: flex;
+                    align-items: center;
+
+                    img, .mx_IconizedContextMenu_icon { // icons
+                        width: 16px;
+                        min-width: 16px;
+                        max-width: 16px;
+                    }
+
+                    span:last-child { // labels
+                        padding-left: 14px;
+                        width: 100%;
+                        flex: 1;
+
+                        // Ellipsize any text overflow
+                        text-overflow: ellipsis;
+                        overflow: hidden;
+                        white-space: nowrap;
+                    }
+                }
+            }
+        }
+    }
+
+    &.mx_IconizedContextMenu_compact {
+        > * {
+            padding-left: 11px;
+            padding-right: 16px;
+
+            &:first-child {
+                padding-top: 13px;
+            }
+
+            &:last-child {
+                padding-bottom: 13px;
+            }
+        }
+
+        .mx_IconizedContextMenu_optionList {
+            &:nth-child(n + 2), .mx_IconizedContextMenu_optionList_notFirst {
+                margin-top: 10px;
+
+                li:first-child {
+                    padding-top: 10px;
+                }
+            }
+
+            li:first-child {
+                padding-top: 0;
+            }
+        }
+    }
 }

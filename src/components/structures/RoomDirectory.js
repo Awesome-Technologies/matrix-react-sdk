@@ -20,7 +20,7 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import {MatrixClientPeg} from "../../MatrixClientPeg";
 import * as sdk from "../../index";
-import dis from "../../dispatcher";
+import dis from "../../dispatcher/dispatcher";
 import Modal from "../../Modal";
 import { linkifyAndSanitizeHtml } from '../../HtmlUtils';
 import PropTypes from 'prop-types';
@@ -56,7 +56,8 @@ export default createReactClass({
         };
     },
 
-    componentWillMount: function() {
+    // TODO: [REACT-WARNING] Move this to constructor
+    UNSAFE_componentWillMount: function() {
         this._unmounted = false;
         this.nextBatch = null;
         this.filterTimeout = null;
@@ -89,9 +90,7 @@ export default createReactClass({
                 ),
             });
         });
-    },
 
-    componentDidMount: function() {
         this.refreshRoomList();
     },
 
@@ -200,7 +199,7 @@ export default createReactClass({
 
         let desc;
         if (alias) {
-            desc = _t('Delete the room alias %(alias)s and remove %(name)s from the directory?', {alias: alias, name: name});
+            desc = _t('Delete the room address %(alias)s and remove %(name)s from the directory?', {alias, name});
         } else {
             desc = _t('Remove %(name)s from the directory?', {name: name});
         }
@@ -217,7 +216,7 @@ export default createReactClass({
 
                 MatrixClientPeg.get().setRoomDirectoryVisibility(room.room_id, 'private').then(() => {
                     if (!alias) return;
-                    step = _t('delete the alias.');
+                    step = _t('delete the address.');
                     return MatrixClientPeg.get().deleteAlias(alias);
                 }).then(() => {
                     modal.close();
@@ -368,7 +367,10 @@ export default createReactClass({
 
     onCreateRoomClick: function(room) {
         this.props.onFinished();
-        dis.dispatch({action: 'view_create_room'});
+        dis.dispatch({
+            action: 'view_create_room',
+            public: true,
+        });
     },
 
     showRoomAlias: function(alias, autoJoin=false) {

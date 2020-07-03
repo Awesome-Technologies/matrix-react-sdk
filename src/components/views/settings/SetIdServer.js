@@ -21,7 +21,7 @@ import {_t} from "../../../languageHandler";
 import * as sdk from '../../../index';
 import {MatrixClientPeg} from "../../../MatrixClientPeg";
 import Modal from '../../../Modal';
-import dis from "../../../dispatcher";
+import dis from "../../../dispatcher/dispatcher";
 import { getThreepidsWithBindStatus } from '../../../boundThreepids';
 import IdentityAuthClient from "../../../IdentityAuthClient";
 import {abbreviateUrl, unabbreviateUrl} from "../../../utils/UrlUtils";
@@ -403,8 +403,8 @@ export default class SetIdServer extends React.Component {
                 <span className="mx_SettingsTab_subsectionText">
                     {bodyText}
                 </span>
-                <Field label={_t("Enter a new identity server")}
-                    id="mx_SetIdServer_idServer"
+                <Field
+                    label={_t("Enter a new identity server")}
                     type="text"
                     autoComplete="off"
                     placeholder={this.state.defaultIdServer}

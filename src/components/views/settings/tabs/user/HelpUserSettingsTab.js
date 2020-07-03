@@ -25,6 +25,7 @@ import Modal from "../../../../../Modal";
 import * as sdk from "../../../../../";
 import PlatformPeg from "../../../../../PlatformPeg";
 import * as KeyboardShortcuts from "../../../../../accessibility/KeyboardShortcuts";
+import UpdateCheckButton from "../../UpdateCheckButton";
 
 export default class HelpUserSettingsTab extends React.Component {
     static propTypes = {
@@ -40,7 +41,7 @@ export default class HelpUserSettingsTab extends React.Component {
         };
     }
 
-    componentWillMount(): void {
+    componentDidMount(): void {
         PlatformPeg.get().getAppVersion().then((ver) => this.setState({vectorVersion: ver})).catch((e) => {
             console.error("Error getting vector version: ", e);
         });
@@ -177,12 +178,7 @@ export default class HelpUserSettingsTab extends React.Component {
 
         let updateButton = null;
         if (this.state.canUpdate) {
-            const platform = PlatformPeg.get();
-            updateButton = (
-                <AccessibleButton onClick={platform.startUpdateCheck} kind='primary'>
-                    {_t('Check for update')}
-                </AccessibleButton>
-            );
+            updateButton = <UpdateCheckButton />;
         }
 
         return (

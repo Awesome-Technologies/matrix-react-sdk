@@ -34,6 +34,7 @@ export enum Categories {
     CALLS = "Calls",
     COMPOSER = "Composer",
     ROOM_LIST = "Room List",
+    ROOM = "Room",
     AUTOCOMPLETE = "Autocomplete",
 }
 
@@ -118,6 +119,11 @@ const shortcuts: Record<Categories, IShortcut[]> = {
                 key: Key.ARROW_DOWN,
             }],
             description: _td("Navigate composer history"),
+        }, {
+            keybinds: [{
+                key: Key.ESCAPE,
+            }],
+            description: _td("Cancel replying to a message"),
         },
     ],
 
@@ -135,6 +141,34 @@ const shortcuts: Record<Categories, IShortcut[]> = {
             }],
             description: _td("Toggle video on/off"),
         },
+    ],
+
+    [Categories.ROOM]: [
+        {
+            keybinds: [{
+                key: Key.PAGE_UP,
+            }, {
+                key: Key.PAGE_DOWN,
+            }],
+            description: _td("Scroll up/down in the timeline"),
+        }, {
+            keybinds: [{
+                key: Key.ESCAPE,
+            }],
+            description: _td("Dismiss read marker and jump to bottom"),
+        }, {
+            keybinds: [{
+                modifiers: [Modifiers.SHIFT],
+                key: Key.PAGE_UP,
+            }],
+                description: _td("Jump to oldest unread message"),
+        }, {
+            keybinds: [{
+                modifiers: [CMD_OR_CTRL, Modifiers.SHIFT],
+                key: Key.U,
+            }],
+            description: _td("Upload a file"),
+        }
     ],
 
     [Categories.ROOM_LIST]: [
@@ -176,13 +210,6 @@ const shortcuts: Record<Categories, IShortcut[]> = {
 
     [Categories.NAVIGATION]: [
         {
-            keybinds: [{
-                key: Key.PAGE_UP,
-            }, {
-                key: Key.PAGE_DOWN,
-            }],
-            description: _td("Scroll up/down in the timeline"),
-        }, {
             keybinds: [{
                 modifiers: [Modifiers.ALT, Modifiers.SHIFT],
                 key: Key.ARROW_UP,
@@ -252,10 +279,11 @@ const shortcuts: Record<Categories, IShortcut[]> = {
 
 const categoryOrder = [
     Categories.COMPOSER,
-    Categories.CALLS,
-    Categories.ROOM_LIST,
     Categories.AUTOCOMPLETE,
+    Categories.ROOM,
+    Categories.ROOM_LIST,
     Categories.NAVIGATION,
+    Categories.CALLS,
 ];
 
 interface IModal {
