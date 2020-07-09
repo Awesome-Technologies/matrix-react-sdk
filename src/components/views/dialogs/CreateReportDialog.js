@@ -26,6 +26,7 @@ import Modal from "../../../Modal";
 import { MatrixClientPeg } from '../../../MatrixClientPeg';
 import colorVariables from '../../../../res/themes/light/css/light.scss';
 import { formatFullDateNoTime } from '../../../DateUtils';
+import { drawDOM, exportPDF } from '@progress/kendo-drawing';
 import { PDFExport, savePDF } from "@progress/kendo-react-pdf";
 import * as JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -71,39 +72,36 @@ export default createReactClass({
             pdfFileName = roomName + " - Report.pdf";
         }
 
-        if (this.state.fileList.length > 0) {
-            // build zip file
-            var zip = new JSZip();
+        // build zip file
+        var zip = new JSZip();
 
-            // add all files
-            for (let i = 0; i < this.state.fileList.length; i++) {
-                const blob = this._decryptFile(this.state.fileList[i].content);
-                zip.file(this.state.fileList[i].content.body, blob);
-            }
-
-            // Generate the zip file asynchronously
-            await zip.generateAsync({type:"blob"})
-            .then(function(content) {
-                // force download of the zip file
-                saveAs(content, zipFileName);
-            });
+        // add all files
+        for (let i = 0; i < this.state.fileList.length; i++) {
+            const blob = this._decryptFile(this.state.fileList[i].content);
+            zip.file(this.state.fileList[i].content.body, blob);
         }
 
-        // save pdf to filesystem
-        var res;
-        savePDF(ReactDOM.findDOMNode(this.container), {
+        await drawDOM(ReactDOM.findDOMNode(this.container), {
             paperSize: 'A4',
             creator: 'AMP.care',
             producer: 'AMP.care',
             fileName: pdfFileName,
             margin: '10mm',
-        }, this._onFileSaved);
+        }).then((group) => {
+            return exportPDF(group);
+        }).then((dataUri) => {
+            var blob = this._b64toBlob(dataUri.split(';base64,')[1], 'application/pdf');
+            zip.file(pdfFileName, blob);
+        });
 
-        console.log("pdf created")
-    },
+        // Generate the zip file asynchronously
+        await zip.generateAsync({type:"blob"})
+        .then(function(content) {
+            // force download of the zip file
+            saveAs(content, zipFileName);
+            this.props.onFinished(true);
+        });
 
-    _onFileSaved: function() {
-        this.props.onFinished(true);
     },
 
     _onCancel: function() {
@@ -118,6 +116,26 @@ export default createReactClass({
                 description: _t("Error decrypting attachment"),
             });
         });
+    },
+
+    _b64toBlob: function(b64Data, contentType='', sliceSize=512) {
+      const byteCharacters = atob(b64Data);
+      const byteArrays = [];
+
+      for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+          byteNumbers[i] = slice.charCodeAt(i);
+        }
+
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+
+      const blob = new Blob(byteArrays, {type: contentType});
+      return blob;
     },
 
     _getMessages: function(roomId) {
