@@ -82,8 +82,10 @@ export default createReactClass({
     },
 
     componentDidMount: function() {
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
         const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
-        if (username) {
+
+        if (interfaceEnabled && username !== "") {
             this.setState({caseRequesterName: username, caseRequesterDisabled: true});
         }
     },

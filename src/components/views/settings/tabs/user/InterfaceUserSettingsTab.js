@@ -59,6 +59,8 @@ export default class InterfaceUserSettingsTab extends React.Component {
           });
           if (!checked) {
               SettingsStore.setValue("ampInterfacesEnabled", null, SettingLevel.ACCOUNT, checked);
+              SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, '');
+
               const content = {};
               content['enabled'] = false;
               content['vendor'] = '';
