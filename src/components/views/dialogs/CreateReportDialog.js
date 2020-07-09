@@ -63,15 +63,6 @@ export default createReactClass({
         const room = MatrixClientPeg.get().getRoom(this.props.room_id);
         const roomName = room.name;
 
-        // build zip file
-        var zip = new JSZip();
-
-        // add all files
-        for (let i = 0; i < this.state.fileList.length; i++) {
-            const blob = this._decryptFile(this.state.fileList[i].content);
-            zip.file(this.state.fileList[i].content.body, blob);
-        }
-
         // generate filenames
         var zipFileName = "Archiv.zip";
         var pdfFileName = "Report.pdf";
@@ -80,13 +71,23 @@ export default createReactClass({
             pdfFileName = roomName + " - Report.pdf";
         }
 
+        if (this.state.fileList.length > 0) {
+            // build zip file
+            var zip = new JSZip();
 
-        // Generate the zip file asynchronously
-        await zip.generateAsync({type:"blob"})
-        .then(function(content) {
-            // force download of the zip file
-            saveAs(content, zipFileName);
-        });
+            // add all files
+            for (let i = 0; i < this.state.fileList.length; i++) {
+                const blob = this._decryptFile(this.state.fileList[i].content);
+                zip.file(this.state.fileList[i].content.body, blob);
+            }
+
+            // Generate the zip file asynchronously
+            await zip.generateAsync({type:"blob"})
+            .then(function(content) {
+                // force download of the zip file
+                saveAs(content, zipFileName);
+            });
+        }
 
         // save pdf to filesystem
         var res;
