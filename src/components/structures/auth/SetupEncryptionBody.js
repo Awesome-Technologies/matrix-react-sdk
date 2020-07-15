@@ -143,12 +143,12 @@ export default class SetupEncryptionBody extends React.Component {
 
                     <div className="mx_CompleteSecurity_clients">
                         <div className="mx_CompleteSecurity_clients_desktop">
-                            <div>Riot Web</div>
-                            <div>Riot Desktop</div>
+                            <div>Caritas Messenger Web</div>
+                            <div>Caritas Messenger Desktop</div>
                         </div>
                         <div className="mx_CompleteSecurity_clients_mobile">
-                            <div>Riot iOS</div>
-                            <div>Riot X for Android</div>
+                            <div>Caritas Messenger iOS</div>
+                            <div>Caritas Messenger Android</div>
                         </div>
                         <p>{_t("or another cross-signing capable Matrix client")}</p>
                     </div>
