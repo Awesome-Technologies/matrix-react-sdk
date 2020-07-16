@@ -56,6 +56,7 @@ import RoomContext from "../../contexts/RoomContext";
 import MatrixClientContext from "../../contexts/MatrixClientContext";
 import { shieldStatusForRoom } from '../../utils/ShieldUtils';
 import {Action} from "../../dispatcher/actions";
+import {MatrixClientPeg} from '../../MatrixClientPeg';
 
 const DEBUG = false;
 let debuglog = function() {};
@@ -1080,33 +1081,7 @@ export default createReactClass({
              dis.dispatch({
                  action: 'will_join',
              });
-
-             const SetMxIdDialog = sdk.getComponent('views.dialogs.SetMxIdDialog');
-             const close = Modal.createTrackedDialog('Set MXID', '', SetMxIdDialog, {
-                 homeserverUrl: cli.getHomeserverUrl(),
-                 onFinished: (submitted, credentials) => {
-                     if (submitted) {
-                         this.props.onRegistered(credentials);
-                     } else {
-                         dis.dispatch({
-                             action: 'cancel_after_sync_prepared',
-                         });
-                         dis.dispatch({
-                             action: 'cancel_join',
-                         });
-                     }
-                 },
-                 onDifferentServerClicked: (ev) => {
-                     dis.dispatch({action: 'start_registration'});
-                     close();
-                 },
-                 onLoginClick: (ev) => {
-                     dis.dispatch({action: 'start_login'});
-                     close();
-                 },
-             }).close;
-             return;
-        } else {
+        }
             Promise.resolve().then(() => {
                 const signUrl = this.props.thirdPartyInvite ?
                     this.props.thirdPartyInvite.inviteSignUrl : undefined;
@@ -1116,8 +1091,6 @@ export default createReactClass({
                 });
                 return Promise.resolve();
             });
-        }
-
     },
 
     onMessageListScroll: function(ev) {
@@ -1689,6 +1662,7 @@ export default createReactClass({
                                 loading={loading}
                                 joining={this.state.joining}
                                 oobData={this.props.oobData}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1721,7 +1695,7 @@ export default createReactClass({
                                 oobData={this.props.oobData}
                                 signUrl={this.props.thirdPartyInvite ? this.props.thirdPartyInvite.inviteSignUrl : null}
                                 room={this.state.room}
-                                guest_can_join={true}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1768,6 +1742,7 @@ export default createReactClass({
                                 canPreview={false}
                                 joining={this.state.joining}
                                 room={this.state.room}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1864,6 +1839,7 @@ export default createReactClass({
                                 oobData={this.props.oobData}
                                 canPreview={this.state.canPeek}
                                 room={this.state.room}
+                                guest_can_join={this.state.guestsCanJoin}
                 />
             );
             if (!this.state.canPeek) {
