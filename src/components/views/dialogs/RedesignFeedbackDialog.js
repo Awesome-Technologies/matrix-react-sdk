@@ -19,23 +19,20 @@ import QuestionDialog from './QuestionDialog';
 import { _t } from '../../../languageHandler';
 
 export default (props) => {
-    const existingIssuesUrl = "https://github.com/vector-im/riot-web/issues" +
-        "?q=is%3Aopen+is%3Aissue+sort%3Areactions-%2B1-desc";
-    const newIssueUrl = "https://github.com/vector-im/riot-web/issues/new";
+
+    const supportUrl = `mailto:support@amp.care` +
+        `?subject=AMP.care%20Supportanfrage` +
+        `&body=%0D%0A%0D%0A%0D%0AFehlerbeschreibung:`;
 
     const description1 =
         _t("If you run into any bugs or have feedback you'd like to share, " +
-           "please let us know on GitHub.");
-    const description2 = _t("To help avoid duplicate issues, " +
-        "please <existingIssuesLink>view existing issues</existingIssuesLink> " +
-        "first (and add a +1) or <newIssueLink>create a new issue</newIssueLink> " +
-        "if you can't find it.", {},
+           "please let us know.");
+    const description2 = _t("You can <supportMail>write to our support hotline</supportMail> " +
+        "to get help or provide feedback. Please add contact information for us to reach out " +
+        "to you and try to describe the error or feedback as detailed as possible.", {},
         {
-            existingIssuesLink: (sub) => {
-                return <a target="_blank" rel="noreferrer noopener" href={existingIssuesUrl}>{ sub }</a>;
-            },
-            newIssueLink: (sub) => {
-                return <a target="_blank" rel="noreferrer noopener" href={newIssueUrl}>{ sub }</a>;
+            supportMail: (sub) => {
+                return <a target="_blank" rel="noreferrer noopener" href={supportUrl}>{ sub }</a>;
             },
         });
 

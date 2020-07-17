@@ -201,7 +201,7 @@ export default class HelpUserSettingsTab extends React.Component {
                     <span className='mx_SettingsTab_subheading'>{_t('Bug reporting')}</span>
                     <div className='mx_SettingsTab_subsectionText'>
                         {
-                            _t( "If you've submitted a bug via GitHub, debug logs can help " +
+                            _t( "Debug logs can help " +
                                 "us track down the problem. Debug logs contain application " +
                                 "usage data including your username, the IDs or aliases of " +
                                 "the rooms or groups you have visited and the usernames of " +

@@ -56,14 +56,13 @@ export default class BugReportDialog extends React.Component {
     _onSubmit(ev) {
         if ((!this.state.text || !this.state.text.trim()) && (!this.state.issueUrl || !this.state.issueUrl.trim())) {
             this.setState({
-                err: _t("Please tell us what went wrong or, better, create a GitHub issue that describes the problem."),
+                err: _t("Please tell us what went wrong."),
             });
             return;
         }
 
         const userText =
-            (this.state.text.length > 0 ? this.state.text + '\n\n': '') + 'Issue: ' +
-            (this.state.issueUrl.length > 0 ? this.state.issueUrl : 'No issue link given');
+            (this.state.text.length > 0 ? this.state.text + '\n\n': '');
 
         this.setState({ busy: true, progress: null, err: null });
         this._sendProgressCallback(_t("Preparing to send logs"));
@@ -151,29 +150,6 @@ export default class BugReportDialog extends React.Component {
                             "not contain messages.",
                         ) }
                     </p>
-                    <p><b>
-                        { _t(
-                            "Before submitting logs, you must <a>create a GitHub issue</a> to describe your problem.",
-                            {},
-                            {
-                                a: (sub) => <a
-                                    target="_blank"
-                                    href="https://github.com/vector-im/riot-web/issues/new"
-                                >
-                                    { sub }
-                                </a>,
-                            },
-                        ) }
-                    </b></p>
-                    <Field
-                        id="mx_BugReportDialog_issueUrl"
-                        type="text"
-                        className="mx_BugReportDialog_field_input"
-                        label={_t("GitHub issue")}
-                        onChange={this._onIssueUrlChange}
-                        value={this.state.issueUrl}
-                        placeholder="https://github.com/vector-im/riot-web/issues/..."
-                    />
                     <Field
                         id="mx_BugReportDialog_notes"
                         className="mx_BugReportDialog_field_input"
