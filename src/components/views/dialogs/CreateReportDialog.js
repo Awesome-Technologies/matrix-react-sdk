@@ -94,14 +94,16 @@ export default createReactClass({
             zip.file(pdfFileName, blob);
         });
 
+        // preserve `this` for the `then` function
+        var that = this;
+
         // Generate the zip file asynchronously
         await zip.generateAsync({type:"blob"})
         .then(function(content) {
             // force download of the zip file
             saveAs(content, zipFileName);
-            this.props.onFinished(true);
+            that.props.onFinished(true);
         });
-
     },
 
     _onCancel: function() {
