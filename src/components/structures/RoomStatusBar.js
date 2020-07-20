@@ -173,7 +173,8 @@ export default createReactClass({
     _getSize: function() {
         if (this._shouldShowConnectionError() ||
             this.props.hasActiveCall ||
-            this.props.sentMessageAndIsAlone
+            this.props.sentMessageAndIsAlone ||
+            this.props.sentMessageAndIsClosed
         ) {
             return STATUS_BAR_EXPANDED;
         } else if (this.state.unsentMessages.length > 0) {
