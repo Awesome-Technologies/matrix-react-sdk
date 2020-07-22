@@ -40,9 +40,9 @@ export default createReactClass({
 
     getInitialState: function() {
         return {
-            username: 'demo01',
-            password: 'demo01',
-            pin: '2004',
+            username: '',
+            password: '',
+            pin: '',
             loggedIn: false,
             error: '',
             patientsLoading: false,
