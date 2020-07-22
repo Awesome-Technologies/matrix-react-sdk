@@ -535,6 +535,12 @@ export default createReactClass({
           for (var key in data) {
             this.setState({[key]: data[key]});
           }
+
+          const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
+
+          if (username !== "") {
+              this.setState({caseRequesterName: username, caseRequesterDisabled: true});
+          }
       }
     },
 
