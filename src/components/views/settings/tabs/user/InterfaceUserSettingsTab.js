@@ -112,6 +112,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
         SettingsStore.setValue("ampInterfacesVendor", null, SettingLevel.ACCOUNT, this.state.selectedVendor);
         SettingsStore.setValue("ampInterfacesAdress", null, SettingLevel.ACCOUNT, this.state.interfaceAdress);
 
+        SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, '');
         SettingsStore.setValue("ampInterfacesLoginMethod", null, SettingLevel.DEVICE, loginMethod);
         SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, '');
 
