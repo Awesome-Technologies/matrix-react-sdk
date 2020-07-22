@@ -27,6 +27,8 @@ import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import {MenuItem} from "../../structures/ContextMenu";
 import * as sdk from "../../../index";
 import * as Lifecycle from '../../../Lifecycle';
+import SettingsStore from "../../../settings/SettingsStore";
+import {SettingLevel} from "../../../settings/SettingsStore";
 
 export default class TopLeftMenu extends React.Component {
     static propTypes = {
@@ -121,11 +123,12 @@ export default class TopLeftMenu extends React.Component {
             </MenuItem>
         );
 
-        const switchUserItem = (
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const switchUserItem = interfaceEnabled ? (
             <MenuItem className="mx_TopLeftMenu_icon_switchUser" onClick={this.switchUser}>
                 {_t("Switch user")}
             </MenuItem>
-        );
+        ) : null;
 
         return <div className="mx_TopLeftMenu" ref={this.props.containerRef} role="menu">
             <div className="mx_TopLeftMenu_section_noIcon" aria-readonly={true} tabIndex={-1}>
