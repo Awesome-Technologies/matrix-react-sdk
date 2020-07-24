@@ -170,7 +170,7 @@ export default createReactClass({
             if (this.state.patientList[index].id == e.target.value) {
                 this.setState({
                     patientData: {
-                        name: this.state.patientList[index].name,
+                        name: this.state.patientList[index].givenName + " " + this.state.patientList[index].name,
                         gender: this.state.patientList[index].gender,
                         birthday: this.state.patientList[index].birthday,
                     },
