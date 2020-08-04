@@ -382,11 +382,19 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     private loadSession() {
         // the extra Promise.resolve() ensures that synchronous exceptions hit the same codepath as
         // asynchronous ones.
+
+        // test if a via server was given in the url
+        let viaGuestHsUrl = null;
+        if (this.props.startingFragmentQueryParams && this.props.startingFragmentQueryParams.via) {
+          viaGuestHsUrl = "https://" + this.props.startingFragmentQueryParams.via;
+          console.log("Via server is: " + viaGuestHsUrl);
+        }
+
         return Promise.resolve().then(() => {
             return Lifecycle.loadSession({
                 fragmentQueryParams: this.props.startingFragmentQueryParams,
                 enableGuest: this.props.enableGuest,
-                guestHsUrl: this.getServerProperties().serverConfig.hsUrl,
+                guestHsUrl: viaGuestHsUrl ? viaGuestHsUrl : this.getServerProperties().serverConfig.hsUrl,
                 guestIsUrl: this.getServerProperties().serverConfig.isUrl,
                 defaultDeviceDisplayName: this.props.defaultDeviceDisplayName,
             });
