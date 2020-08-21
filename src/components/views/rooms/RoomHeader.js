@@ -139,7 +139,7 @@ export default createReactClass({
 
           let doneContent = {};
           doneContent["done"] = true;
-          client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).done(() => {
+          client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).then(() => {
               Analytics.trackEvent('AMP.care cases', 'case closed')
               dis.dispatch({action: 'message_sent'});
           }, (err) => {
