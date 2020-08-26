@@ -70,17 +70,16 @@ export default class PinOverlay extends React.Component {
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
         const vendor = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesVendor');
 
-        this.setState({loginView: LOGIN_VIEW.USER});
+        this.setState({interfaceEnabled: interfaceEnabled, vendor: vendor});
 
         if (loginMethod === 'user') {
             console.log("using user/pw view")
-            this.setState({interfaceEnabled: interfaceEnabled, vendor: vendor});
-            return
+            this.setState({loginView: LOGIN_VIEW.USER});
+        } else {
+            // show pin login by default
+            console.log("using pin view")
+            this.setState({loginView: LOGIN_VIEW.PIN});
         }
-
-        // show pin login by default
-        console.log("using pin view")
-        this.setState({loginView: LOGIN_VIEW.PIN});
     }
 
     onPinChange = (ev) => {
