@@ -143,6 +143,7 @@ export default function createCase(opts) {
           // send state event case data
           client._sendCompleteEvent(roomId, {
             type: 'care.amp.case',
+            state_key: 'care.amp.case',
             content: opts.caseData.caseContent,
           });
           console.log("AMP.care sent case content");
@@ -151,6 +152,7 @@ export default function createCase(opts) {
           if(opts.caseData.patientContent){ // check if patient data is provided
             client._sendCompleteEvent(roomId, {
               type: 'care.amp.patient',
+              state_key: 'care.amp.patient',
               content: opts.caseData.patientContent,
             });
             console.log("AMP.care sent patient content");
