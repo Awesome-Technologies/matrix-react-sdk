@@ -74,20 +74,24 @@ export default class Vivendi {
             },
         })
         .then(response => {
-            if (!response.ok) {
-                throw {status: response.status, message: response.statusText};
-            }
-
-            return response.json()
+            return response.json().then(data => ({
+                data: data,
+                status: response.status
+            })).then(res => {
+                return {status: res.status, data: res.data}
+            })
         })
         .then(res => {
+            if (res.status != 200) {
+                throw {status: res.status, data: res.data}
+            }
             SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, username);
-            SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res);
-            return {data: {username: username, token: res}, status: 200}
+            SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res.data);
+            return {data: {username: username, token: res.data}, status: res.status}
         })
         .catch((error) => {
             if (typeof error === "object") {
-                return {status: error.status, data: {message: error.message}}
+                return {status: error.status, data: {message: error.data}}
             } else {
                 console.error(error);
             }
@@ -122,6 +126,9 @@ export default class Vivendi {
               })
             ).then(res => {
                 if (!res.data.Klienten) {
+                    if (res.data.Message) {
+                        return {status: res.status, data: {message: res.data.Message}};
+                    }
                     return res;
                 }
                 var values = {data: [], status: res.status};

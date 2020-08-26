@@ -325,7 +325,7 @@ export default createReactClass({
                         {_t("Login")}
                     </AccessibleButton>
                 </div>
-                {this.state.error}
+                <span className="amp_CreateCaseDialog_error">{this.state.error}</span>
             </div>;
         } else { // Pin login by default
             return <div>
@@ -342,7 +342,7 @@ export default createReactClass({
                         {_t("Login")}
                     </AccessibleButton>
                 </div>
-                {this.state.error}
+                <span className="amp_CreateCaseDialog_error">{this.state.error}</span>
             </div>;
         }
     },

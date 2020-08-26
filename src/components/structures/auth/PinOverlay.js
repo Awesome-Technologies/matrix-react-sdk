@@ -126,8 +126,7 @@ export default class PinOverlay extends React.Component {
 
         const res = await ExternalInterface.loginPassword(this.state.username, this.state.password);
         if (res.status != 200) {
-            let errorText = _t("Incorrect Username/Password");
-            errorText = res.data;
+            let errorText = res.data.message;
             this.setState({
                 busy: false,
                 errorText: errorText,

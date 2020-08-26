@@ -73,25 +73,30 @@ export default class ProfSys {
             body: JSON.stringify(body),
         })
         .then(response => {
-            if (!response.ok) {
-                throw {status: response.status, message: response.statusText};
-            }
-            console.log("AMP response1")
-            console.log(response)
-
-            return response.json()
+            return response.json().then(data => ({
+                data: data,
+                status: response.status
+            })).then(res => {
+                return {status: res.status, data: res.data}
+            })
         })
         .then(res => {
-            console.log("AMP response2")
-            console.log(res)
-            if (res.UserName) {
-                SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, res.UserName);
+            if (res.status != 200) {
+                throw {status: res.status, data: res.data}
             }
-            SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res.Token);
-            return {data: {username: res.UserName, token: res.Token}, status: 200}
+
+            if (res.data.UserName) {
+                SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, res.data.UserName);
+            }
+            SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res.data.Token);
+            return {data: {username: res.data.UserName, token: res.data.Token}, status: 200}
         })
         .catch((error) => {
+            console.log(error)
             if (typeof error === "object") {
+                if (error.data && error.data.ErrorMessages) {
+                    return {status: error.status, data: {message: error.data.ErrorMessages[0]}}
+                }
                 return {status: error.status, data: {message: error.message}}
             } else {
                 console.error(error);
