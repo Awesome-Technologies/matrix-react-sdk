@@ -18,6 +18,8 @@ limitations under the License.
 */
 
 import React, { createRef } from 'react';
+// @ts-ignore - XXX: no idea why this import fails
+import * as Matrix from "matrix-js-sdk";
 import { InvalidStoreError } from "matrix-js-sdk/src/errors";
 import { RoomMember } from "matrix-js-sdk/src/models/room-member";
 import { MatrixEvent } from "matrix-js-sdk/src/models/event";
@@ -151,9 +153,9 @@ interface IProps { // TODO type things better
     // Represents the screen to display as a result of parsing the initial window.location
     initialScreenAfterLogin?: IScreen;
     // displayname, if any, to set on the device when logging in/registering.
-    defaultDeviceDisplayName?: string,
+    defaultDeviceDisplayName?: string;
     // A function that makes a registration URL
-    makeRegistrationUrl: (object) => string,
+    makeRegistrationUrl: (object) => string;
 }
 
 interface IState {
@@ -1620,6 +1622,19 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             });
         } else if (screen === 'directory') {
             dis.fire(Action.ViewRoomDirectory);
+        } else if (screen === "start_sso" || screen === "start_cas") {
+            // TODO if logged in, skip SSO
+            let cli = MatrixClientPeg.get();
+            if (!cli) {
+                const {hsUrl, isUrl} = this.props.serverConfig;
+                cli = Matrix.createClient({
+                    baseUrl: hsUrl,
+                    idBaseUrl: isUrl,
+                });
+            }
+
+            const type = screen === "start_sso" ? "sso" : "cas";
+            PlatformPeg.get().startSingleSignOn(cli, type, this.getFragmentAfterLogin());
         } else if (screen === 'groups') {
             dis.dispatch({
                 action: 'view_my_groups',
@@ -1836,7 +1851,9 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     }
 
     updateStatusIndicator(state: string, prevState: string) {
-        const notifCount = countRoomsWithNotif(MatrixClientPeg.get().getRooms()).count;
+        // only count visible rooms to not torment the user with notification counts in rooms they can't see
+        // it will include highlights from the previous version of the room internally
+        const notifCount = countRoomsWithNotif(MatrixClientPeg.get().getVisibleRooms()).count;
 
         if (PlatformPeg.get()) {
             PlatformPeg.get().setErrorStatus(state === 'ERROR');
@@ -1921,17 +1938,20 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
         this.onLoggedIn();
     };
 
-    render() {
-        // console.log(`Rendering MatrixChat with view ${this.state.view}`);
-
+    getFragmentAfterLogin() {
         let fragmentAfterLogin = "";
-        if (this.props.initialScreenAfterLogin &&
+        const initialScreenAfterLogin = this.props.initialScreenAfterLogin;
+        if (initialScreenAfterLogin &&
             // XXX: workaround for https://github.com/vector-im/riot-web/issues/11643 causing a login-loop
-            !["welcome", "login", "register"].includes(this.props.initialScreenAfterLogin.screen)
+            !["welcome", "login", "register", "start_sso", "start_cas"].includes(initialScreenAfterLogin.screen)
         ) {
-            fragmentAfterLogin = `/${this.props.initialScreenAfterLogin.screen}`;
+            fragmentAfterLogin = `/${initialScreenAfterLogin.screen}`;
         }
+        return fragmentAfterLogin;
+    }
 
+    render() {
+        const fragmentAfterLogin = this.getFragmentAfterLogin();
         let view;
 
         if (this.state.view === Views.LOADING) {
@@ -2010,7 +2030,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
             }
         } else if (this.state.view === Views.WELCOME) {
             const Welcome = sdk.getComponent('auth.Welcome');
-            view = <Welcome {...this.getServerProperties()} fragmentAfterLogin={fragmentAfterLogin} />;
+            view = <Welcome />;
         } else if (this.state.view === Views.REGISTER) {
             const Registration = sdk.getComponent('structures.auth.Registration');
             view = (
