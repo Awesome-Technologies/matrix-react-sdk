@@ -348,7 +348,7 @@ const AddressPicker = createReactClass({
                 // Do a local search immediately
                 this._doLocalSearch(query);
             }
-        }).done(() => {
+        }).then(() => {
             this.setState({
                 busy: false,
             });

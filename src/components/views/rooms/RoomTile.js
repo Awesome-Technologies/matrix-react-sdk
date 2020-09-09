@@ -21,7 +21,7 @@ import React, {createRef} from 'react';
 import PropTypes from 'prop-types';
 import createReactClass from 'create-react-class';
 import classNames from 'classnames';
-import dis from '../../../dispatcher';
+import dis from '../../../dispatcher/dispatcher';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import DMRoomMap from '../../../utils/DMRoomMap';
 import * as sdk from '../../../index';
@@ -37,6 +37,7 @@ import E2EIcon from './E2EIcon';
 import InviteOnlyIcon from './InviteOnlyIcon';
 // eslint-disable-next-line camelcase
 import rate_limited_func from '../../../ratelimitedfunc';
+import { shieldStatusForRoom } from '../../../utils/ShieldUtils';
 import {formatDate} from '../../../DateUtils';
 
 export default createReactClass({
@@ -130,6 +131,10 @@ export default createReactClass({
         this._updateE2eStatus();
     },
 
+    onCrossSigningKeysChanged: function() {
+        this._updateE2eStatus();
+    },
+
     onRoomTimeline: function(ev, room) {
         if (!room) return;
         if (room.roomId != this.props.room.roomId) return;
@@ -142,7 +147,7 @@ export default createReactClass({
         const cli = MatrixClientPeg.get();
         cli.on("RoomState.members", this.onRoomStateMember);
         cli.on("userTrustStatusChanged", this.onUserVerificationChanged);
-
+        cli.on("crossSigning.keysChanged", this.onCrossSigningKeysChanged);
         this._updateE2eStatus();
     },
 
@@ -151,39 +156,10 @@ export default createReactClass({
         if (!cli.isRoomEncrypted(this.props.room.roomId)) {
             return;
         }
-        if (!SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            return;
-        }
 
-        // Duplication between here and _updateE2eStatus in RoomView
-        const e2eMembers = await this.props.room.getEncryptionTargetMembers();
-        const verified = [];
-        const unverified = [];
-        e2eMembers.map(({userId}) => userId)
-            .filter((userId) => userId !== cli.getUserId())
-            .forEach((userId) => {
-                (cli.checkUserTrust(userId).isCrossSigningVerified() ?
-                verified : unverified).push(userId);
-            });
-
-        /* Check all verified user devices. */
-        /* Don't alarm if no other users are verified  */
-        const targets = (verified.length > 0) ? [...verified, cli.getUserId()] : verified;
-        for (const userId of targets) {
-            const devices = await cli.getStoredDevicesForUser(userId);
-            const allDevicesVerified = devices.every(({deviceId}) => {
-                return cli.checkDeviceTrust(userId, deviceId).isVerified();
-            });
-            if (!allDevicesVerified) {
-                this.setState({
-                    e2eStatus: "warning",
-                });
-                return;
-            }
-        }
-
+        /* At this point, the user has encryption on and cross-signing on */
         this.setState({
-            e2eStatus: unverified.length === 0 ? "verified" : "normal",
+            e2eStatus: await shieldStatusForRoom(cli, this.props.room),
         });
     },
 
@@ -229,7 +205,7 @@ export default createReactClass({
 
             case 'view_room':
                 // when the room is selected make sure its tile is visible, for breadcrumbs/keyboard shortcut access
-                if (payload.room_id === this.props.room.roomId) {
+                if (payload.room_id === this.props.room.roomId && payload.show_room_tile) {
                     this._scrollIntoView();
                 }
                 break;
@@ -250,6 +226,7 @@ export default createReactClass({
         });
     },
 
+    // TODO: [REACT-WARNING] Replace component with real class, use constructor for refs
     UNSAFE_componentWillMount: function() {
         this._roomTile = createRef();
     },
@@ -292,6 +269,7 @@ export default createReactClass({
             cli.removeListener("RoomState.events", this.onJoinRule);
             cli.removeListener("RoomState.members", this.onRoomStateMember);
             cli.removeListener("userTrustStatusChanged", this.onUserVerificationChanged);
+            cli.removeListener("crossSigning.keysChanged", this.onCrossSigningKeysChanged);
             cli.removeListener("Room.timeline", this.onRoomTimeline);
         }
         ActiveRoomObserver.removeListener(this.props.room.roomId, this._onActiveRoomChange);
@@ -308,7 +286,8 @@ export default createReactClass({
         }
     },
 
-    componentWillReceiveProps: function(props) {
+    // TODO: [REACT-WARNING] Replace with appropriate lifecycle event
+    UNSAFE_componentWillReceiveProps: function(props) {
         // XXX: This could be a lot better - this makes the assumption that
         // the notification count may have changed when the properties of
         // the room tile change.
@@ -467,9 +446,8 @@ export default createReactClass({
         });
 
         let name = this.state.roomName;
-        if (name == undefined || name == null) name = '';
+        if (typeof name !== 'string') name = '';
         name = name.replace(":", ":\u200b"); // add a zero-width space to allow linewrapping after the colon
-
 
         let badge;
         if (badges) {
@@ -534,26 +512,10 @@ export default createReactClass({
 
         let ariaLabel = name;
 
-        let dmIndicator;
         let dmOnline;
-        /* Post-cross-signing we don't show DM indicators at all, instead relying on user
-           context to let them know when that is. */
-        if (dmUserId && !SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            dmIndicator = <img
-                src={require("../../../../res/img/icon_person.svg")}
-                className="mx_RoomTile_dm"
-                width="11"
-                height="13"
-                alt="dm"
-            />;
-        }
-
         const { room } = this.props;
         const member = room.getMember(dmUserId);
-        if (
-            member && member.membership === "join" && room.getJoinedMemberCount() === 2 &&
-            SettingsStore.isFeatureEnabled("feature_presence_in_room_list")
-        ) {
+        if (member && member.membership === "join" && room.getJoinedMemberCount() === 2) {
             const UserOnlineDot = sdk.getComponent('rooms.UserOnlineDot');
             dmOnline = <UserOnlineDot userId={dmUserId} />;
         }
@@ -583,7 +545,6 @@ export default createReactClass({
                 height="24"
                 alt={severity}
             />;
-            dmIndicator = "";
         }
 
         // The following labels are written in such a fashion to increase screen reader efficiency (speed).
@@ -610,10 +571,8 @@ export default createReactClass({
         }
 
         let privateIcon = null;
-        if (SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            if (this.state.joinRule == "invite" && !dmUserId) {
-                privateIcon = <InviteOnlyIcon collapsedPanel={this.props.collapsed} />;
-            }
+        if (this.state.joinRule === "invite" && !dmUserId) {
+            privateIcon = <InviteOnlyIcon collapsedPanel={this.props.collapsed} />;
         }
 
         let e2eIcon = null;
@@ -640,7 +599,6 @@ export default createReactClass({
                         <div className={avatarClasses}>
                             <div className="mx_RoomTile_avatar_container">
                                 { roomAvatar }
-                                { dmIndicator }
                                 { e2eIcon }
                             </div>
                         </div>

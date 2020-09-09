@@ -30,20 +30,22 @@ import rate_limited_func from "../../../ratelimitedfunc";
 import * as Rooms from '../../../Rooms';
 import DMRoomMap from '../../../utils/DMRoomMap';
 import TagOrderStore from '../../../stores/TagOrderStore';
-import RoomListStore, {TAG_DM} from '../../../stores/RoomListStore';
 import CustomRoomTagStore from '../../../stores/CustomRoomTagStore';
 import GroupStore from '../../../stores/GroupStore';
 import RoomSubList from '../../structures/RoomSubList';
 import ResizeHandle from '../elements/ResizeHandle';
 import CallHandler from "../../../CallHandler";
-import dis from "../../../dispatcher";
+import dis from "../../../dispatcher/dispatcher";
 import * as sdk from "../../../index";
 import * as Receipt from "../../../utils/Receipt";
 import {Resizer} from '../../../resizer';
 import {Layout, Distributor} from '../../../resizer/distributors/roomsublist2';
 import {RovingTabIndexProvider} from "../../../accessibility/RovingTabIndex";
+import {RoomListStoreTempProxy} from "../../../stores/room-list/RoomListStoreTempProxy";
+import {DefaultTagID} from "../../../stores/room-list/models";
 import * as Unread from "../../../Unread";
 import RoomViewStore from "../../../stores/RoomViewStore";
+import {TAG_DM} from "../../../stores/RoomListStore";
 
 const HIDE_CONFERENCE_CHANS = true;
 const STANDARD_TAGS_REGEX = /^(m\.(favourite|lowpriority|server_notice)|im\.vector\.fake\.(invite|recent|direct|archived))$/;
@@ -119,7 +121,8 @@ export default createReactClass({
         };
     },
 
-    componentWillMount: function() {
+    // TODO: [REACT-WARNING] Replace component with real class, put this in the constructor.
+    UNSAFE_componentWillMount: function() {
         this.mounted = false;
 
         const cli = MatrixClientPeg.get();
@@ -161,7 +164,7 @@ export default createReactClass({
             this.updateVisibleRooms();
         });
 
-        this._roomListStoreToken = RoomListStore.addListener(() => {
+        this._roomListStoreToken = RoomListStoreTempProxy.addListener(() => {
             this._delayedRefreshRoomList();
         });
 
@@ -290,6 +293,7 @@ export default createReactClass({
                     dis.dispatch({
                         action: 'view_room',
                         room_id: room.roomId,
+                        show_room_tile: true, // to make sure the room gets scrolled into view
                     });
                 }
                 break;
@@ -520,7 +524,7 @@ export default createReactClass({
     },
 
     getTagNameForRoomId: function(roomId) {
-        const lists = RoomListStore.getRoomLists();
+        const lists = RoomListStoreTempProxy.getRoomLists();
         for (const tagName of Object.keys(lists)) {
             for (const room of lists[tagName]) {
                 // Should be impossible, but guard anyways.
@@ -540,7 +544,7 @@ export default createReactClass({
     },
 
     getRoomLists: function() {
-        const lists = RoomListStore.getRoomLists();
+        const lists = RoomListStoreTempProxy.getRoomLists();
 
         const filteredLists = {};
 
@@ -772,10 +776,10 @@ export default createReactClass({
                 incomingCall: incomingCallIfTaggedAs('m.favourite'),
             },
             {
-                list: this.state.lists[TAG_DM],
+                list: this.state.lists[DefaultTagID.DM],
                 label: _t('Cases'),
-                tagName: TAG_DM,
-                incomingCall: incomingCallIfTaggedAs(TAG_DM),
+                tagName: DefaultTagID.DM,
+                incomingCall: incomingCallIfTaggedAs(DefaultTagID.DM),
                 onAddRoom: () => {dis.dispatch({action: 'view_create_case'});},
                 addRoomLabel: _t("New case"),
             },
@@ -784,6 +788,7 @@ export default createReactClass({
                 label: _t('Anonymous cases'),
                 incomingCall: incomingCallIfTaggedAs('im.vector.fake.recent'),
                 onAddRoom: () => {dis.dispatch({action: 'view_create_room'});},
+                addRoomLabel: _t("New anonymous case"),
             },
         ];
         const tagSubLists = Object.keys(this.state.lists)

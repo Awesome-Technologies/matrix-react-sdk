@@ -175,6 +175,26 @@ $header-divider-color: #91A1C0;
 
 // ********************
 
+// V2 Room List
+// TODO: Remove the 2 from all of these when the new list takes over
+
+$theme-button-bg-color: #e3e8f0;
+
+$roomlist2-button-bg-color: #fff; // Buttons include the filter box, explore button, and sublist buttons
+$roomlist2-bg-color: $header-panel-bg-color;
+
+$roomsublist2-divider-color: $primary-fg-color;
+
+$roomtile2-preview-color: #9e9e9e;
+$roomtile2-default-badge-bg-color: #61708b;
+$roomtile2-selected-bg-color: #FFF;
+
+$presence-online: $accent-color;
+$presence-away: orange; // TODO: Get color
+$presence-offline: #E3E8F0;
+
+// ********************
+
 $roomtile-name-color: #61708b;
 $roomtile-badge-fg-color: $accent-fg-color;
 $roomtile-selected-color: #212121;
@@ -265,6 +285,10 @@ $togglesw-off-color: #c1c9d6;
 $togglesw-on-color: $accent-color;
 $togglesw-ball-color: #fff;
 
+// Slider
+$slider-selection-color: $accent-color;
+$slider-background-color: #c1c9d6;
+
 $progressbar-color: #000;
 
 $room-warning-bg-color: $yellow-background;
@@ -305,6 +329,9 @@ $breadcrumb-placeholder-bg-color: #e8eef5;
 
 $user-tile-hover-bg-color: $header-panel-bg-color;
 
+// FontSlider colors
+$appearance-tab-border-color: $input-darker-bg-color;
+
 // AMP.care Case panel
 $amp_case_border_color: #03B381;
 $amp_case_row_color: #F2F5F8;
@@ -340,7 +367,7 @@ $amp_case_severity_info_color_opaque: #45abf230;
     border: 0px;
     border-radius: 4px;
     font-family: $font-family;
-    font-size: 14px;
+    font-size: $font-14px;
     color: $button-fg-color;
     background-color: $button-bg-color;
     width: auto;
@@ -361,7 +388,7 @@ $amp_case_severity_info_color_opaque: #45abf230;
 
 @define-mixin mx_DialogButton_small {
     @mixin mx_DialogButton;
-    font-size: 15px;
+    font-size: $font-15px;
     padding: 0px 1.5em 0px 1.5em;
 }
 

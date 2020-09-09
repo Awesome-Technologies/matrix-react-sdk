@@ -100,7 +100,17 @@ export default createReactClass({
       else {
         var caseData = this._parseData();
         const addrTexts = this.state.invitees.map((addr) => addr.address);
-        this.props.onFinished(true, this.state.caseTitle, false, addrTexts, caseData);
+
+        const createOpts = {};
+        createOpts.name = this.state.caseTitle;
+        createOpts.creation_content = {'m.federate': false};
+        createOpts.caseData = caseData;
+        createOpts.is_direct = true;
+        if (addrTexts.length >= 1) {
+            createOpts.dmUserId = addrTexts[0];
+        }
+
+        this.props.onFinished(true, createOpts);
       }
     },
 

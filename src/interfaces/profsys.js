@@ -106,6 +106,7 @@ export default class ProfSys {
         return response;
     }
 
+
     static getUserName() {
         return SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
     }

@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 import {MatrixClientPeg} from "./MatrixClientPeg";
-import dis from "./dispatcher";
+import dis from "./dispatcher/dispatcher";
 import Timer from './utils/Timer';
 import * as Lifecycle from './Lifecycle';
 

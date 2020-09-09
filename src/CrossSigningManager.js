@@ -20,7 +20,6 @@ import {MatrixClientPeg} from './MatrixClientPeg';
 import { deriveKey } from 'matrix-js-sdk/src/crypto/key_passphrase';
 import { decodeRecoveryKey } from 'matrix-js-sdk/src/crypto/recoverykey';
 import { _t } from './languageHandler';
-import SettingsStore from './settings/SettingsStore';
 import {encodeBase64} from "matrix-js-sdk/src/crypto/olmlib";
 
 // This stores the secret storage private keys in memory for the JS SDK. This is
@@ -32,10 +31,7 @@ let secretStorageKeys = {};
 let secretStorageBeingAccessed = false;
 
 function isCachingAllowed() {
-    return (
-        secretStorageBeingAccessed ||
-        SettingsStore.getValue("keepSecretStoragePassphraseForSession")
-    );
+    return secretStorageBeingAccessed;
 }
 
 export class AccessCancelledError extends Error {
@@ -51,7 +47,7 @@ async function confirmToDismiss(name) {
     } else if (name === "m.cross_signing.self_signing") {
         description = _t("If you cancel now, you won't complete verifying your other session.");
     } else {
-        description = _t("If you cancel now, you won't complete your secret storage operation.");
+        description = _t("If you cancel now, you won't complete your operation.");
     }
 
     const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
@@ -96,11 +92,8 @@ async function getSecretStorageKey({ keys: keyInfos }, ssssItemName) {
         {
             keyInfo: info,
             checkPrivateKey: async (input) => {
-                if (!info.pubkey) {
-                    return true;
-                }
                 const key = await inputToKey(input);
-                return MatrixClientPeg.get().checkSecretStoragePrivateKey(key, info.pubkey);
+                return await MatrixClientPeg.get().checkSecretStorageKey(key, info);
             },
         },
         /* className= */ null,
@@ -188,7 +181,7 @@ export async function promptForBackupPassphrase() {
 
     const RestoreKeyBackupDialog = sdk.getComponent('dialogs.keybackup.RestoreKeyBackupDialog');
     const { finished } = Modal.createTrackedDialog('Restore Backup', '', RestoreKeyBackupDialog, {
-            showSummary: false, keyCallback: k => key = k,
+        showSummary: false, keyCallback: k => key = k,
     }, null, /* priority = */ false, /* static = */ true);
 
     const success = await finished;
@@ -216,19 +209,19 @@ export async function promptForBackupPassphrase() {
  *
  * @param {Function} [func] An operation to perform once secret storage has been
  * bootstrapped. Optional.
- * @param {bool} [force] Reset secret storage even if it's already set up
+ * @param {bool} [forceReset] Reset secret storage even if it's already set up
  */
-export async function accessSecretStorage(func = async () => { }, force = false) {
+export async function accessSecretStorage(func = async () => { }, forceReset = false) {
     const cli = MatrixClientPeg.get();
     secretStorageBeingAccessed = true;
     try {
-        if (!await cli.hasSecretStorageKey() || force) {
+        if (!await cli.hasSecretStorageKey() || forceReset) {
             // This dialog calls bootstrap itself after guiding the user through
             // passphrase creation.
             const { finished } = Modal.createTrackedDialogAsync('Create Secret Storage dialog', '',
                 import("./async-components/views/dialogs/secretstorage/CreateSecretStorageDialog"),
                 {
-                    force,
+                    force: forceReset,
                 },
                 null, /* priority = */ false, /* static = */ true,
             );

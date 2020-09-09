@@ -14,19 +14,20 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-import React, { createRef } from "react";
-import PropTypes from "prop-types";
-import { _t } from "../../../languageHandler";
-import CallHandler from "../../../CallHandler";
-import { MatrixClientPeg } from "../../../MatrixClientPeg";
-import * as sdk from "../../../index";
-import dis from "../../../dispatcher";
-import RoomViewStore from "../../../stores/RoomViewStore";
-import Stickerpicker from "./Stickerpicker";
-import { makeRoomPermalink } from "../../../utils/permalinks/Permalinks";
-import ContentMessages from "../../../ContentMessages";
-import E2EIcon from "./E2EIcon";
+import React, {createRef} from 'react';
+import PropTypes from 'prop-types';
+import { _t } from '../../../languageHandler';
+import CallHandler from '../../../CallHandler';
+import {MatrixClientPeg} from '../../../MatrixClientPeg';
+import * as sdk from '../../../index';
+import dis from '../../../dispatcher/dispatcher';
+import RoomViewStore from '../../../stores/RoomViewStore';
+import Stickerpicker from './Stickerpicker';
+import { makeRoomPermalink } from '../../../utils/permalinks/Permalinks';
+import ContentMessages from '../../../ContentMessages';
+import E2EIcon from './E2EIcon';
 import SettingsStore from "../../../settings/SettingsStore";
+import {aboveLeftOf, ContextMenu, ContextMenuButton, useContextMenu} from "../../structures/ContextMenu";
 
 function ComposerAvatar(props) {
     const MemberStatusMessageAvatar = sdk.getComponent(
@@ -120,6 +121,32 @@ HangupButton.propTypes = {
     roomId: PropTypes.string.isRequired
 };
 
+const EmojiButton = ({addEmoji}) => {
+    const [menuDisplayed, button, openMenu, closeMenu] = useContextMenu();
+
+    let contextMenu;
+    if (menuDisplayed) {
+        const buttonRect = button.current.getBoundingClientRect();
+        const EmojiPicker = sdk.getComponent('emojipicker.EmojiPicker');
+        contextMenu = <ContextMenu {...aboveLeftOf(buttonRect)} onFinished={closeMenu} catchTab={false}>
+            <EmojiPicker onChoose={addEmoji} showQuickReactions={true} />
+        </ContextMenu>;
+    }
+
+    return <React.Fragment>
+        <ContextMenuButton className="mx_MessageComposer_button mx_MessageComposer_emoji"
+                           onClick={openMenu}
+                           isExpanded={menuDisplayed}
+                           label={_t('Emoji picker')}
+                           inputRef={button}
+        >
+
+        </ContextMenuButton>
+
+        { contextMenu }
+    </React.Fragment>;
+};
+
 class UploadButton extends React.Component {
     static propTypes = {
         roomId: PropTypes.string.isRequired
@@ -131,7 +158,18 @@ class UploadButton extends React.Component {
         this.onUploadFileInputChange = this.onUploadFileInputChange.bind(this);
 
         this._uploadInput = createRef();
+        this._dispatcherRef = dis.register(this.onAction);
     }
+
+    componentWillUnmount() {
+        dis.unregister(this._dispatcherRef);
+    }
+
+    onAction = payload => {
+        if (payload.action === "upload_file") {
+            this.onUploadClick();
+        }
+    };
 
     onUploadClick(ev) {
         if (MatrixClientPeg.get().isGuest()) {
@@ -145,7 +183,7 @@ class UploadButton extends React.Component {
         if (ev.target.files.length === 0) return;
 
         // take a copy so we can safely reset the value of the form control
-        // (Note it is a FileList: we can't use slice or sesnible iteration).
+        // (Note it is a FileList: we can't use slice or sensible iteration).
         const tfiles = [];
         for (let i = 0; i < ev.target.files.length; ++i) {
             tfiles.push(ev.target.files[i]);
@@ -316,35 +354,26 @@ export default class MessageComposer extends React.Component {
     }
 
     renderPlaceholderText() {
-        if (SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            if (this.state.isQuoting) {
-                if (this.props.e2eStatus) {
-                    return _t("Send an encrypted reply…");
-                } else {
-                    return _t("Send a reply…");
-                }
+        if (this.state.isQuoting) {
+            if (this.props.e2eStatus) {
+                return _t('Send an encrypted reply…');
             } else {
-                if (this.props.e2eStatus) {
-                    return _t("Send an encrypted message…");
-                } else {
-                    return _t("Send a message…");
-                }
+                return _t('Send a reply…');
             }
         } else {
-            if (this.state.isQuoting) {
-                if (this.props.e2eStatus) {
-                    return _t("Send an encrypted reply…");
-                } else {
-                    return _t("Send a reply (unencrypted)…");
-                }
+            if (this.props.e2eStatus) {
+                return _t('Send an encrypted message…');
             } else {
-                if (this.props.e2eStatus) {
-                    return _t("Send an encrypted message…");
-                } else {
-                    return _t("Send a message (unencrypted)…");
-                }
+                return _t('Send a message…');
             }
         }
+    }
+
+    addEmoji(emoji) {
+        dis.dispatch({
+            action: "insert_emoji",
+            emoji,
+        });
     }
 
     render() {
@@ -381,6 +410,7 @@ export default class MessageComposer extends React.Component {
                     permalinkCreator={this.props.permalinkCreator}
                     isCaseClosed={this.props.isCaseClosed} />,
                 <UploadButton key="controls_upload" roomId={this.props.room.roomId} />,
+                <EmojiButton key="emoji_button" addEmoji={this.addEmoji} />,
             );
 
             if (this.state.showCallButtons) {
@@ -434,7 +464,7 @@ export default class MessageComposer extends React.Component {
         }
 
         return (
-            <div className="mx_MessageComposer">
+            <div className="mx_MessageComposer mx_GroupLayout">
                 <div className="mx_MessageComposer_wrapper">
                     <div className="mx_MessageComposer_row">{controls}</div>
                 </div>

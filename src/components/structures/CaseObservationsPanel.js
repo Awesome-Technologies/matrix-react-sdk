@@ -598,6 +598,7 @@ const CaseObservationsPanel = createReactClass({
                     break;
                 case('body-temperature'):
                     vitalData_temperature = local_event.content.valueQuantity.value;
+                    vitalData_temperature = Math.round( vitalData_temperature * 100 + Number.EPSILON ) / 100;
                     if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
                         var date = new Date(local_event.content.effectiveDateTime);
                         vitalData_temperatureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
@@ -619,6 +620,7 @@ const CaseObservationsPanel = createReactClass({
                     break;
                 case('body-weight'):
                     vitalData_weight = local_event.content.valueQuantity.value;
+                    vitalData_weight = Math.round( vitalData_weight * 100 + Number.EPSILON ) / 100;
                     if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
                         var date = new Date(local_event.content.effectiveDateTime);
                         vitalData_weightDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
