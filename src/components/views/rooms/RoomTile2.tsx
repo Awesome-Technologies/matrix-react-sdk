@@ -26,12 +26,19 @@ import RoomAvatar from "../../views/avatars/RoomAvatar";
 import dis from '../../../dispatcher/dispatcher';
 import { Key } from "../../../Keyboard";
 import ActiveRoomObserver from "../../../ActiveRoomObserver";
-import NotificationBadge, { INotificationState, NotificationColor, RoomNotificationState } from "./NotificationBadge";
+import NotificationBadge, {
+    INotificationState,
+    NotificationColor,
+    TagSpecificNotificationState
+} from "./NotificationBadge";
 import { _t } from "../../../languageHandler";
 import { ContextMenu, ContextMenuButton } from "../../structures/ContextMenu";
 import { DefaultTagID, TagID } from "../../../stores/room-list/models";
-import { MessagePreviewStore } from "../../../stores/MessagePreviewStore";
+import { MessagePreviewStore } from "../../../stores/room-list/MessagePreviewStore";
 import RoomTileIcon from "./RoomTileIcon";
+
+// TODO: Remove banner on launch: https://github.com/vector-im/riot-web/issues/14231
+// TODO: Rename on launch: https://github.com/vector-im/riot-web/issues/14231
 
 /*******************************************************************
  *   CAUTION                                                       *
@@ -47,9 +54,7 @@ interface IProps {
     isMinimized: boolean;
     tag: TagID;
 
-    // TODO: Allow falsifying counts (for invites and stuff)
-    // TODO: Transparency? Was this ever used?
-    // TODO: Incoming call boxes?
+    // TODO: Incoming call boxes: https://github.com/vector-im/riot-web/issues/14177
 }
 
 interface IState {
@@ -63,23 +68,14 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
     private roomTileRef: React.RefObject<HTMLDivElement> = createRef();
     private generalMenuButtonRef: React.RefObject<HTMLButtonElement> = createRef();
 
-    // TODO: Custom status
-    // TODO: Lock icon
-    // TODO: Presence indicator
-    // TODO: e2e shields
-    // TODO: Handle changes to room aesthetics (name, join rules, etc)
-    // TODO: scrollIntoView?
-    // TODO: hover, badge, etc
-    // TODO: isSelected for hover effects
-    // TODO: Context menu
-    // TODO: a11y
+    // TODO: a11y: https://github.com/vector-im/riot-web/issues/14180
 
     constructor(props: IProps) {
         super(props);
 
         this.state = {
             hover: false,
-            notificationState: new RoomNotificationState(this.props.room),
+            notificationState: new TagSpecificNotificationState(this.props.room, this.props.tag),
             selected: ActiveRoomObserver.activeRoomId === this.props.room.roomId,
             generalMenuDisplayed: false,
         };
@@ -104,7 +100,7 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
     private onTileClick = (ev: React.KeyboardEvent) => {
         dis.dispatch({
             action: 'view_room',
-            // TODO: Support show_room_tile in new room list
+            // TODO: Support show_room_tile in new room list: https://github.com/vector-im/riot-web/issues/14233
             show_room_tile: true, // make sure the room is visible in the list
             room_id: this.props.room.roomId,
             clear_search: (ev && (ev.key === Key.ENTER || ev.key === Key.SPACE)),
@@ -131,11 +127,8 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
         ev.preventDefault();
         ev.stopPropagation();
 
-        if (tagId === DefaultTagID.DM) {
-            // TODO: DM Flagging
-        } else {
-            // TODO: XOR favourites and low priority
-        }
+        // TODO: Support tagging: https://github.com/vector-im/riot-web/issues/14211
+        // TODO: XOR favourites and low priority: https://github.com/vector-im/riot-web/issues/14210
     };
 
     private onLeaveRoomClick = (ev: ButtonEvent) => {
@@ -193,12 +186,6 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
                                     </AccessibleButton>
                                 </li>
                                 <li>
-                                    <AccessibleButton onClick={(e) => this.onTagRoom(e, DefaultTagID.DM)}>
-                                        <span className="mx_IconizedContextMenu_icon mx_RoomTile2_iconUser" />
-                                        <span>{_t("Direct Chat")}</span>
-                                    </AccessibleButton>
-                                </li>
-                                <li>
                                     <AccessibleButton onClick={this.onOpenRoomSettings}>
                                         <span className="mx_IconizedContextMenu_icon mx_RoomTile2_iconSettings" />
                                         <span>{_t("Settings")}</span>
@@ -232,14 +219,12 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
                 />
                 {contextMenu}
             </React.Fragment>
-        )
+        );
     }
 
     public render(): React.ReactElement {
-        // TODO: Collapsed state
-        // TODO: Invites
-        // TODO: a11y proper
-        // TODO: Render more than bare minimum
+        // TODO: Invites: https://github.com/vector-im/riot-web/issues/14198
+        // TODO: a11y proper: https://github.com/vector-im/riot-web/issues/14180
 
         const classes = classNames({
             'mx_RoomTile2': true,
@@ -248,20 +233,23 @@ export default class RoomTile2 extends React.Component<IProps, IState> {
             'mx_RoomTile2_minimized': this.props.isMinimized,
         });
 
-        const badge = <NotificationBadge notification={this.state.notificationState} allowNoCount={true} />;
+        const badge = (
+            <NotificationBadge
+                notification={this.state.notificationState}
+                forceCount={false}
+                roomId={this.props.room.roomId}
+            />
+        );
 
         // TODO: the original RoomTile uses state for the room name. Do we need to?
         let name = this.props.room.name;
         if (typeof name !== 'string') name = '';
         name = name.replace(":", ":\u200b"); // add a zero-width space to allow linewrapping after the colon
 
-        // TODO: Support collapsed state properly
-        // TODO: Tooltip?
-
         let messagePreview = null;
         if (this.props.showMessagePreview && !this.props.isMinimized) {
             // The preview store heavily caches this info, so should be safe to hammer.
-            const text = MessagePreviewStore.instance.getPreviewForRoom(this.props.room);
+            const text = MessagePreviewStore.instance.getPreviewForRoom(this.props.room, this.props.tag);
 
             // Only show the preview if there is one to show.
             if (text) {

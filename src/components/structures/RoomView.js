@@ -39,7 +39,7 @@ import Tinter from '../../Tinter';
 import rate_limited_func from '../../ratelimitedfunc';
 import * as ObjectUtils from '../../ObjectUtils';
 import * as Rooms from '../../Rooms';
-import eventSearch from '../../Searching';
+import eventSearch, {searchPagination} from '../../Searching';
 
 import {isOnlyCtrlOrCmdIgnoreShiftKeyEvent, isOnlyCtrlOrCmdKeyEvent, Key} from '../../Keyboard';
 
@@ -56,6 +56,7 @@ import RoomContext from "../../contexts/RoomContext";
 import MatrixClientContext from "../../contexts/MatrixClientContext";
 import { shieldStatusForRoom } from '../../utils/ShieldUtils';
 import {Action} from "../../dispatcher/actions";
+import {MatrixClientPeg} from '../../MatrixClientPeg';
 
 const DEBUG = false;
 let debuglog = function() {};
@@ -166,7 +167,7 @@ export default createReactClass({
             canReact: false,
             canReply: false,
 
-            useIRCLayout: SettingsStore.getValue("feature_irc_ui"),
+            useIRCLayout: SettingsStore.getValue("useIRCLayout"),
 
             matrixClientIsReady: this.context && this.context.isInitialSyncComplete(),
         };
@@ -199,7 +200,7 @@ export default createReactClass({
         this._roomView = createRef();
         this._searchResultsPanel = createRef();
 
-        this._layoutWatcherRef = SettingsStore.watchSetting("feature_irc_ui", null, this.onLayoutChange);
+        this._layoutWatcherRef = SettingsStore.watchSetting("useIRCLayout", null, this.onLayoutChange);
     },
 
     _onReadReceiptsChange: function() {
@@ -546,7 +547,7 @@ export default createReactClass({
 
     onLayoutChange: function() {
         this.setState({
-            useIRCLayout: SettingsStore.getValue("feature_irc_ui"),
+            useIRCLayout: SettingsStore.getValue("useIRCLayout"),
         });
     },
 
@@ -1036,8 +1037,7 @@ export default createReactClass({
 
         if (this.state.searchResults.next_batch) {
             debuglog("requesting more search results");
-            const searchPromise = this.context.backPaginateRoomEventsSearch(
-                this.state.searchResults);
+            const searchPromise = searchPagination(this.state.searchResults);
             return this._handleSearchResult(searchPromise);
         } else {
             debuglog("no more search results");
@@ -1080,33 +1080,7 @@ export default createReactClass({
              dis.dispatch({
                  action: 'will_join',
              });
-
-             const SetMxIdDialog = sdk.getComponent('views.dialogs.SetMxIdDialog');
-             const close = Modal.createTrackedDialog('Set MXID', '', SetMxIdDialog, {
-                 homeserverUrl: cli.getHomeserverUrl(),
-                 onFinished: (submitted, credentials) => {
-                     if (submitted) {
-                         this.props.onRegistered(credentials);
-                     } else {
-                         dis.dispatch({
-                             action: 'cancel_after_sync_prepared',
-                         });
-                         dis.dispatch({
-                             action: 'cancel_join',
-                         });
-                     }
-                 },
-                 onDifferentServerClicked: (ev) => {
-                     dis.dispatch({action: 'start_registration'});
-                     close();
-                 },
-                 onLoginClick: (ev) => {
-                     dis.dispatch({action: 'start_login'});
-                     close();
-                 },
-             }).close;
-             return;
-        } else {
+        }
             Promise.resolve().then(() => {
                 const signUrl = this.props.thirdPartyInvite ?
                     this.props.thirdPartyInvite.inviteSignUrl : undefined;
@@ -1116,8 +1090,6 @@ export default createReactClass({
                 });
                 return Promise.resolve();
             });
-        }
-
     },
 
     onMessageListScroll: function(ev) {
@@ -1311,6 +1283,14 @@ export default createReactClass({
             const mxEv = result.context.getEvent();
             const roomId = mxEv.getRoomId();
             const room = this.context.getRoom(roomId);
+            if (!room) {
+                // if we do not have the room in js-sdk stores then hide it as we cannot easily show it
+                // As per the spec, an all rooms search can create this condition,
+                // it happens with Seshat but not Synapse.
+                // It will make the result count not match the displayed count.
+                console.log("Hiding search result from an unknown room", roomId);
+                continue;
+            }
 
             if (!haveTileForEvent(mxEv)) {
                 // XXX: can this ever happen? It will make the result count
@@ -1319,16 +1299,9 @@ export default createReactClass({
             }
 
             if (this.state.searchScope === 'All') {
-                if (roomId != lastRoomId) {
-
-                    // XXX: if we've left the room, we might not know about
-                    // it. We should tell the js sdk to go and find out about
-                    // it. But that's not an issue currently, as synapse only
-                    // returns results for rooms we're joined to.
-                    const roomName = room ? room.name : _t("Unknown room %(roomId)s", { roomId: roomId });
-
+                if (roomId !== lastRoomId) {
                     ret.push(<li key={mxEv.getId() + "-room"}>
-                                 <h2>{ _t("Room") }: { roomName }</h2>
+                                 <h2>{ _t("Room") }: { room.name }</h2>
                              </li>);
                     lastRoomId = roomId;
                 }
@@ -1689,6 +1662,7 @@ export default createReactClass({
                                 loading={loading}
                                 joining={this.state.joining}
                                 oobData={this.props.oobData}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1721,7 +1695,7 @@ export default createReactClass({
                                 oobData={this.props.oobData}
                                 signUrl={this.props.thirdPartyInvite ? this.props.thirdPartyInvite.inviteSignUrl : null}
                                 room={this.state.room}
-                                guest_can_join={true}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1768,6 +1742,7 @@ export default createReactClass({
                                 canPreview={false}
                                 joining={this.state.joining}
                                 room={this.state.room}
+                                guest_can_join={this.state.guestsCanJoin}
                             />
                         </ErrorBoundary>
                     </div>
@@ -1864,6 +1839,7 @@ export default createReactClass({
                                 oobData={this.props.oobData}
                                 canPreview={this.state.canPeek}
                                 room={this.state.room}
+                                guest_can_join={this.state.guestsCanJoin}
                 />
             );
             if (!this.state.canPeek) {
