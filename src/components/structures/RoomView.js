@@ -131,7 +131,7 @@ export default createReactClass({
             searching: false,
             searchResults: null,
             callState: null,
-            guestsCanJoin: false,
+            guestsCanJoin: true,
             canPeek: false,
             showApps: false,
             isAlone: false,
