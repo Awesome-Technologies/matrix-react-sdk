@@ -229,7 +229,6 @@ export function handleInvalidStoreError(e) {
 }
 
 function _registerAsGuest(hsUrl, isUrl, defaultDeviceDisplayName) {
-
     // create a temporary MatrixClient to do the login
     const client = Matrix.createClient({
         baseUrl: hsUrl,

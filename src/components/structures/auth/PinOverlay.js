@@ -20,9 +20,6 @@ import { _t } from '../../../languageHandler';
 import * as sdk from '../../../index';
 import dis from '../../../dispatcher/dispatcher';
 import * as Lifecycle from '../../../Lifecycle';
-import Modal from '../../../Modal';
-import {MatrixClientPeg} from "../../../MatrixClientPeg";
-import { sendLoginRequest } from "../../../Login";
 import AuthPage from "../../views/auth/AuthPage";
 import SettingsStore from "../../../settings/SettingsStore";
 import { SettingLevel } from "../../../settings/SettingsStore";
@@ -73,11 +70,11 @@ export default class PinOverlay extends React.Component {
         this.setState({interfaceEnabled: interfaceEnabled, vendor: vendor});
 
         if (loginMethod === 'user') {
-            console.log("using user/pw view")
+            console.log("using user/pw view");
             this.setState({loginView: LOGIN_VIEW.USER});
         } else {
             // show pin login by default
-            console.log("using pin view")
+            console.log("using pin view");
             this.setState({loginView: LOGIN_VIEW.PIN});
         }
     }
@@ -101,7 +98,7 @@ export default class PinOverlay extends React.Component {
         this.setState({busy: true});
 
         const res = await ExternalInterface.loginPin(this.state.pin);
-        console.log(res)
+        console.log(res);
         if (res) {
             if (res.status === 200) {
                 dis.dispatch({action: 'view_last_screen'});
@@ -154,7 +151,6 @@ export default class PinOverlay extends React.Component {
         }
 
         if (this.state.loginView === LOGIN_VIEW.PIN) {
-
             let introText = _t("Enter your PIN ");
             if (this.state.interfaceEnabled) {
                 if (this.state.vendor === 'vivendi') {
@@ -191,7 +187,6 @@ export default class PinOverlay extends React.Component {
         }
 
         if (this.state.loginView === LOGIN_VIEW.USER) {
-
             let introText = _t("Enter your username and password ");
             if (this.state.interfaceEnabled) {
                 if (this.state.vendor === 'vivendi') {

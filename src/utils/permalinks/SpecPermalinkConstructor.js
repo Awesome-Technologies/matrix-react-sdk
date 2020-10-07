@@ -29,7 +29,7 @@ export default class SpecPermalinkConstructor extends PermalinkConstructor {
         super();
     }
 
-    _getBaseUrl(){
+    _getBaseUrl() {
         const baseUrl = `https://${host}`;
         return baseUrl;
     }

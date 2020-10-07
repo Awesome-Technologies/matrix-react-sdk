@@ -18,15 +18,12 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
-import SdkConfig from '../../../SdkConfig';
 import { _t } from '../../../languageHandler';
 import PatientData from '../cases/PatientData';
 import VitalData from '../cases/VitalData';
 import AnamnesisData from '../cases/AnamnesisData';
-import MedicationData from '../cases/MedicationData';
 import Field from "../elements/Field";
 import Modal from "../../../Modal";
-import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import colorVariables from '../../../../res/themes/light/css/light.scss';
 import SettingsStore from "../../../settings/SettingsStore";
 import {SettingLevel} from "../../../settings/SettingsStore";
@@ -94,11 +91,10 @@ export default createReactClass({
       console.log("AMP.care: state test");
       console.log(this.state);
 
-      if(this.state.invitees.length < 1){
+      if (this.state.invitees.length < 1) {
         this.setState({noRecipientSelected: true});
-      }
-      else {
-        var caseData = this._parseData();
+      } else {
+        const caseData = this._parseData();
         const addrTexts = this.state.invitees.map((addr) => addr.address);
 
         const createOpts = {};
@@ -119,13 +115,12 @@ export default createReactClass({
     },
 
     _formatDate: function(dateString) {
-        if(dateString === '') return '';
+        if (dateString === '') return '';
 
         let givenDate;
-        if(dateString === 'now'){
+        if (dateString === 'now') {
           givenDate = new Date();
-        }
-        else{
+        } else {
           givenDate = new Date(dateString);
         }
         const ret = givenDate.toISOString();
@@ -133,50 +128,47 @@ export default createReactClass({
     },
 
     _parseData: function() {
-        let myId = MatrixClientPeg.get().getUserId();
-        let content;
-
         // case data
-        let caseContent = {
+        const caseContent = {
             title: this.state.caseTitle,
             note: this.state.caseNote,
             severity: this.state.caseSeverity,
             requester: {
               reference: this.state.caseRequesterName,
-            }
-        }
+            },
+        };
 
         // patient data
         let patientContent;
         if (this.state.patientData_name === '' &&
             this.state.patientData_gender === 'unknown' &&
-            this.state.patientData_birthDate === ''){
+            this.state.patientData_birthDate === '') {
             patientContent = null;
         } else {
             patientContent = {
                 name: this.state.patientData_name,
                 gender: this.state.patientData_gender,
                 birthDate: this._formatDate(this.state.patientData_birthDate),
-            }
+            };
         }
 
         // observation data
-        let observationsContent = [];
+        const observationsContent = [];
 
         // anamnesis data
-        if(this.state.anamnesisData_responsiveness !== ''){
-            let responsivenessData = {
+        if (this.state.anamnesisData_responsiveness !== '') {
+            const responsivenessData = {
                 id: 'responsiveness',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
                 effectiveDateTime: this._formatDate('now'),
                 valueString: this.state.anamnesisData_responsiveness,
-            }
+            };
             observationsContent.push(responsivenessData);
         }
 
-        if(this.state.anamnesisData_pain !== ''){
-            let painData = {
+        if (this.state.anamnesisData_pain !== '') {
+            const painData = {
                 id: 'pain',
                 resourceType: 'Observation',
                 code: {
@@ -184,61 +176,61 @@ export default createReactClass({
                       code: '28319-2',
                       display: 'Pain status',
                       system: 'http://loinc.org'}],
-                    text: 'Pain status'
+                    text: 'Pain status',
                 },
                 subject: 'Patient/' + this.state.patientData_name,
                 effectiveDateTime: this._formatDate('now'),
                 valueString: this.state.anamnesisData_pain,
-            }
+            };
             observationsContent.push(painData);
         }
 
-        if(this.state.anamnesisData_misc !== ''){
-            let miscData = {
+        if (this.state.anamnesisData_misc !== '') {
+            const miscData = {
                 id: 'misc',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
                 effectiveDateTime: this._formatDate('now'),
                 valueString: this.state.anamnesisData_misc,
-            }
+            };
             observationsContent.push(miscData);
         }
 
-        if(this.state.anamnesisData_lastDefecation !== ''){
-            let defecationData = {
+        if (this.state.anamnesisData_lastDefecation !== '') {
+            const defecationData = {
                 id: 'last-defecation',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
                 effectiveDateTime: this._formatDate(this.state.anamnesisData_lastDefecation),
-            }
+            };
             observationsContent.push(defecationData);
         }
 
         // vital data
 
         // weight
-        if(this.state.vitalData_weight !== ''){
-            let weightData = {
+        if (this.state.vitalData_weight !== '') {
+            const weightData = {
                 id: 'body-weight',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
-                category: { coding: [ {
+                category: { coding: [{
                     code: 'vital-signs',
                     display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category'
+                    system: 'http://hl7.org/fhir/observation-category',
                   }],
-                  text: 'Vital Signs'
+                  text: 'Vital Signs',
                 },
                 code: {
-                  coding: [ {
+                  coding: [{
                     code: '29463-7',
                     display: 'Body Weight',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Body Weight'
+                  text: 'Body Weight',
                 },
                 meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns'
+                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
                 },
                 valueQuantity: {
                   code: 'kg',
@@ -247,34 +239,34 @@ export default createReactClass({
                   value: this.state.vitalData_weight,
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_weightDatetime),
-            }
+            };
             observationsContent.push(weightData);
         }
 
         // temperature
-        if(this.state.vitalData_temperature !== ''){
-            let temperatureData = {
+        if (this.state.vitalData_temperature !== '') {
+            const temperatureData = {
                 id: 'body-temperature',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
                 category: {
-                  coding: [ {
+                  coding: [{
                     code: 'vital-signs',
                     display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category'
+                    system: 'http://hl7.org/fhir/observation-category',
                   }],
-                  text: 'Vital Signs'
+                  text: 'Vital Signs',
                 },
                 code: {
-                  coding: [ {
+                  coding: [{
                     code: '8310-5',
                     display: 'Body temperature',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Body temperature'
+                  text: 'Body temperature',
                 },
                 meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns'
+                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
                 },
                 valueQuantity: {
                   code: 'Cel',
@@ -283,34 +275,34 @@ export default createReactClass({
                   value: this.state.vitalData_temperature,
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_temperatureDatetime),
-            }
+            };
             observationsContent.push(temperatureData);
         }
 
         // glucose
-        if(this.state.vitalData_sugar !== ''){
-            let glucoseData = {
+        if (this.state.vitalData_sugar !== '') {
+            const glucoseData = {
                 id: 'glucose',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
                 category: {
-                  coding: [ {
+                  coding: [{
                     code: 'vital-signs',
                     display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category'
+                    system: 'http://hl7.org/fhir/observation-category',
                   }],
-                  text: 'Vital Signs'
+                  text: 'Vital Signs',
                 },
                 code: {
                   coding: [{
                     code: '15074-8',
                     display: 'Glucose [Milligramm/volume] in Blood',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Glucose'
+                  text: 'Glucose',
                 },
                 meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns'
+                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
                 },
                 valueQuantity: {
                   code: 'mg/dl',
@@ -319,13 +311,13 @@ export default createReactClass({
                   value: this.state.vitalData_sugar,
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_sugarDatetime),
-            }
+            };
             observationsContent.push(glucoseData);
         }
 
         // bloodpressure
-        if(this.state.vitalData_bloodpressureSys !== '' || this.state.vitalData_bloodpressureDia !== ''){
-            let bloodpressureData = {
+        if (this.state.vitalData_bloodpressureSys !== '' || this.state.vitalData_bloodpressureDia !== '') {
+            const bloodpressureData = {
                 id: 'blood-pressure',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
@@ -333,61 +325,61 @@ export default createReactClass({
                   coding: [{
                     code: 'vital-signs',
                     display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category'
+                    system: 'http://hl7.org/fhir/observation-category',
                   }],
-                  text: 'Vital Signs'
+                  text: 'Vital Signs',
                 },
                 code: {
                   coding: [{
                     code: '85354-9',
                     display: 'Blood pressure panel with all children optional',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Blood pressure systolic & diastolic'
+                  text: 'Blood pressure systolic & diastolic',
                 },
                 component: [{
                   code: {
                     coding: [{
                       code: '8480-6',
                       display: 'Systolic blood pressure',
-                      system: 'http://loinc.org'
+                      system: 'http://loinc.org',
                     }],
-                    text: 'Systolic blood pressure'
+                    text: 'Systolic blood pressure',
                   },
                   valueQuantity: {
                     code: 'mm[Hg]',
                     system: 'http://unitsofmeasure.org',
                     unit: 'mmHg',
                     value: this.state.vitalData_bloodpressureSys,
-                  }
+                  },
                 },
                 {
                   code: {
                     coding: [{
                       code: '8462-4',
                       display: 'Diastolic blood pressure',
-                      system: 'http://loinc.org'
+                      system: 'http://loinc.org',
                     }],
-                    text: 'Diastolic blood pressure'
+                    text: 'Diastolic blood pressure',
                   },
                   valueQuantity: {
                     code: 'mm[Hg]',
                     system: 'http://unitsofmeasure.org',
                     unit: 'mmHg',
                     value: this.state.vitalData_bloodpressureDia,
-                  }
+                  },
                 }],
                 meta: {
                   profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_bloodpressureDatetime),
-            }
+            };
             observationsContent.push(bloodpressureData);
         }
 
         // pulse
-        if(this.state.vitalData_pulse !== ''){
-            let pulseData = {
+        if (this.state.vitalData_pulse !== '') {
+            const pulseData = {
                 id: 'heart-rate',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
@@ -403,9 +395,9 @@ export default createReactClass({
                   coding: [{
                     code: '8867-4',
                     display: 'Heart rate',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Heart rate'
+                  text: 'Heart rate',
                 },
                 meta: {
                   profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
@@ -417,13 +409,13 @@ export default createReactClass({
                   value: this.state.vitalData_pulse,
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_pulseDatetime),
-            }
+            };
             observationsContent.push(pulseData);
         }
 
         // oxygen
-        if(this.state.vitalData_oxygen !== ''){
-            let oxygenData = {
+        if (this.state.vitalData_oxygen !== '') {
+            const oxygenData = {
                 id: 'oxygen',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
@@ -439,9 +431,9 @@ export default createReactClass({
                   coding: [{
                     code: '59408-5',
                     display: 'Oxygen saturation in Arterial blood by Pulse oximetry',
-                    system: 'http://loinc.org'
+                    system: 'http://loinc.org',
                   }],
-                  text: 'Oxygen saturation'
+                  text: 'Oxygen saturation',
                 },
                 meta: {
                   profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
@@ -453,17 +445,17 @@ export default createReactClass({
                   value: this.state.vitalData_oxygen,
                 },
                 effectiveDateTime: this._formatDate(this.state.vitalData_oxygenDatetime),
-            }
+            };
             observationsContent.push(oxygenData);
         }
 
-        content = {
+        const content = {
           caseContent: caseContent,
           patientContent: patientContent,
           observationsContent: observationsContent,
         };
 
-        return(content);
+        return (content);
     },
 
     _onCaseTitleChanged: function(e) {
@@ -491,16 +483,20 @@ export default createReactClass({
 
         switch (e.target.value) {
             case "info":
-                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_info_color;
+                document.getElementById("severity").style.backgroundColor =
+                  colorVariables.amp_case_severity_info_color;
                 break;
             case "request":
-                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_request_color;
+                document.getElementById("severity").style.backgroundColor =
+                  colorVariables.amp_case_severity_request_color;
                 break;
             case "urgent":
-                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_urgent_color;
+                document.getElementById("severity").style.backgroundColor =
+                  colorVariables.amp_case_severity_urgent_color;
                 break;
             case "critical":
-                document.getElementById("severity").style.backgroundColor = colorVariables.amp_case_severity_critical_color;
+                document.getElementById("severity").style.backgroundColor =
+                  colorVariables.amp_case_severity_critical_color;
                 break;
             default:
                 break;
@@ -520,7 +516,7 @@ export default createReactClass({
     },
 
     _onSelectRecipientFinished: function(shouldInvite, addrs) {
-      if(shouldInvite){
+      if (shouldInvite) {
         const addrTexts = addrs.map((addr) => addr.address);
         console.log("AMP.care: adding recipients:");
         console.log(addrTexts);
@@ -541,8 +537,8 @@ export default createReactClass({
 
     _importData: function(shouldImport, data) {
       if (shouldImport) {
-          console.log(data)
-          for (var key in data) {
+          console.log(data);
+          for (const key in data) {
             this.setState({[key]: data[key]});
           }
 
@@ -582,9 +578,9 @@ export default createReactClass({
                                   value={this.state.caseTitle}
                               />
                               <Field id="severity" ref="caseSeverity" className="amp_CreateCaseDialog_input_field" label={_t("Severity")} element="select" onChange={this._onCaseSeverityChanged} value={this.state.caseSeverity} >
-                                  <option id="severityInfo" value="info"         className="amp_Severity_info" >{_t("Info")}</option>
-                                  <option id="severityRequest" value="request"   className="amp_Severity_request" >{_t("Request")}</option>
-                                  <option id="severityUrgent" value="urgent"     className="amp_Severity_urgent" >{_t("Urgent")}</option>
+                                  <option id="severityInfo" value="info" className="amp_Severity_info" >{_t("Info")}</option>
+                                  <option id="severityRequest" value="request" className="amp_Severity_request" >{_t("Request")}</option>
+                                  <option id="severityUrgent" value="urgent" className="amp_Severity_urgent" >{_t("Urgent")}</option>
                                   <option id="severityCritical" value="critical" className="amp_Severity_critical" >{_t("Critical")}</option>
                               </Field>
                           </div>
@@ -612,9 +608,9 @@ export default createReactClass({
                           <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
                               <label htmlFor="textinput"> { _t('Recipient') } </label>
                           </div>
-                          <AdressPicker focus={false} onSelectedListChanged={this._onRecipientChanged} placeholder={ _t('Name or AMP.care ID') }/>
+                          <AdressPicker focus={false} onSelectedListChanged={this._onRecipientChanged} placeholder={ _t('Name or AMP.care ID') } />
                       </div>
-                    <br/>
+                    <br />
                     </div>
 
                     {importArea}
@@ -655,7 +651,7 @@ export default createReactClass({
                         <AnamnesisData onDataChanged={this._onDataChanged} />
                     </details>
                 </form>
-                <div style={noRecipientSelected}  className="amp_CreateCaseDialog_error">
+                <div style={noRecipientSelected} className="amp_CreateCaseDialog_error">
                     { _t('No recipient selected') }
                 </div>
                 <DialogButtons primaryButton={_t('Send case')}

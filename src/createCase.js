@@ -22,9 +22,7 @@ import * as sdk from './index';
 import { _t } from './languageHandler';
 import dis from "./dispatcher/dispatcher";
 import * as Rooms from "./Rooms";
-import DMRoomMap from "./utils/DMRoomMap";
 import {getAddressType} from "./UserAddress";
-import SettingsStore from "./settings/SettingsStore";
 import Analytics from './Analytics';
 
 /**
@@ -149,7 +147,7 @@ export default function createCase(opts) {
           console.log("AMP.care sent case content");
 
           // send state event patient data
-          if(opts.caseData.patientContent){ // check if patient data is provided
+          if (opts.caseData.patientContent) { // check if patient data is provided
             client._sendCompleteEvent(roomId, {
               type: 'care.amp.patient',
               state_key: 'care.amp.patient',
@@ -160,14 +158,13 @@ export default function createCase(opts) {
 
 
           // send observation message events
-          for(let i=0; i<=opts.caseData.observationsContent.length-1; i++){
+          for (let i=0; i<=opts.caseData.observationsContent.length-1; i++) {
             client.sendEvent(roomId, 'care.amp.observation', opts.caseData.observationsContent[i]);
           }
           dis.dispatch({action: 'message_sent'});
           console.log("AMP.care sent observation content");
 
-          Analytics.trackEvent('AMP.care cases', 'case created')
-
+          Analytics.trackEvent('AMP.care cases', 'case created');
     }).then(function() {
         // NB createRoom doesn't block on the client seeing the echo that the
         // room has been created, so we race here with the client knowing that
@@ -207,72 +204,4 @@ export default function createCase(opts) {
         });
         return null;
     });
-}
-
-export function findDMForUser(client, userId) {
-    const roomIds = DMRoomMap.shared().getDMRoomsForUserId(userId);
-    const rooms = roomIds.map(id => client.getRoom(id));
-    const suitableDMRooms = rooms.filter(r => {
-        if (r && r.getMyMembership() === "join") {
-            const member = r.getMember(userId);
-            return member && (member.membership === "invite" || member.membership === "join");
-        }
-        return false;
-    });
-    if (suitableDMRooms.length) {
-        return suitableDMRooms[0];
-    }
-}
-
-/*
- * Try to ensure the user is already in the megolm session before continuing
- * NOTE: this assumes you've just created the room and there's not been an opportunity
- * for other code to run, so we shouldn't miss RoomState.newMember when it comes by.
- */
-export async function _waitForMember(client, roomId, userId, opts = { timeout: 1500 }) {
-    const { timeout } = opts;
-    let handler;
-    return new Promise((resolve) => {
-        handler = function(_event, _roomstate, member) {
-            if (member.userId !== userId) return;
-            if (member.roomId !== roomId) return;
-            resolve(true);
-        };
-        client.on("RoomState.newMember", handler);
-
-        /* We don't want to hang if this goes wrong, so we proceed and hope the other
-           user is already in the megolm session */
-        setTimeout(resolve, timeout, false);
-    }).finally(() => {
-        client.removeListener("RoomState.newMember", handler);
-    });
-}
-
-/*
- * Ensure that for every user in a room, there is at least one device that we
- * can encrypt to.
- */
-export async function canEncryptToAllUsers(client, userIds) {
-    const usersDeviceMap = await client.downloadKeys(userIds);
-    // { "@user:host": { "DEVICE": {...}, ... }, ... }
-    return Object.values(usersDeviceMap).every((userDevices) =>
-        // { "DEVICE": {...}, ... }
-        Object.keys(userDevices).length > 0,
-    );
-}
-
-export async function ensureDMExists(client, userId) {
-    const existingDMRoom = findDMForUser(client, userId);
-    let roomId;
-    if (existingDMRoom) {
-        roomId = existingDMRoom.roomId;
-    } else {
-        let encryption;
-        if (SettingsStore.isFeatureEnabled("feature_cross_signing")) {
-            encryption = canEncryptToAllUsers(client, [userId]);
-        }
-        roomId = await createRoom({encryption, dmUserId: userId, spinner: false, andView: false});
-        await _waitForMember(client, roomId, userId);
-    }
-    return roomId;
 }

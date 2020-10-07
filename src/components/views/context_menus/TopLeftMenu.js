@@ -151,7 +151,7 @@ export default class TopLeftMenu extends React.Component {
         this.closeMenu();
         window.open(
           'https://amp.care/privacy',
-          '_blank'
+          '_blank',
         );
     };
 

@@ -16,13 +16,11 @@ limitations under the License.
 
 import React from 'react';
 import { _t } from "../../../../../languageHandler";
-import CallMediaHandler from "../../../../../CallMediaHandler";
 import Field from "../../../elements/Field";
 import AccessibleButton from "../../../elements/AccessibleButton";
 import { SettingLevel } from "../../../../../settings/SettingsStore";
 import { MatrixClientPeg } from "../../../../../MatrixClientPeg";
 import * as sdk from "../../../../../index";
-import Modal from "../../../../../Modal";
 import LabelledToggleSwitch from "../../../elements/LabelledToggleSwitch";
 import SettingsStore from "../../../../../settings/SettingsStore";
 import ExternalInterface from "../../../../../interfaces/externalInterface";
@@ -88,7 +86,10 @@ export default class InterfaceUserSettingsTab extends React.Component {
 
     _testSettings = (e) => {
         this.setState({testInProgress: true});
-        ExternalInterface.testInterface(this.state.selectedVendor, this.state.interfaceAdress, this._onTestSucceeded, this._onTestFailed);
+        ExternalInterface.testInterface(this.state.selectedVendor,
+                                        this.state.interfaceAdress,
+                                        this._onTestSucceeded,
+                                        this._onTestFailed);
     };
 
     _onTestSucceeded = (e) => {
@@ -138,10 +139,9 @@ export default class InterfaceUserSettingsTab extends React.Component {
                   <option key={`vendor-connext`} value={'vivendi'}>Connext Vivendi</option>
                   <option key={`vendor-profsys`} value={'profsys'}>IcSys ProfSys</option>
               </Field>;
-    };
+    }
 
     render() {
-        const SettingsFlag = sdk.getComponent("views.elements.SettingsFlag");
         const InlineSpinner = sdk.getComponent('elements.InlineSpinner');
 
         let interfaceAdress = null;
@@ -153,7 +153,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
 
         const enableDiv = <LabelledToggleSwitch value={this.state.enabled}
                                           onChange={this._onEnableChange}
-                                          label={_t('Enable interfaces for this account')}/>;
+                                          label={_t('Enable interfaces for this account')} />;
         const spinner = this.state.testInProgress ? <InlineSpinner /> : null;
 
         if (this.state.enabled) {
@@ -165,7 +165,10 @@ export default class InterfaceUserSettingsTab extends React.Component {
 
             testButton = (
                 <div className='mx_VoiceUserSettingsTab_missingMediaPermissions'>
-                    <AccessibleButton onClick={this._testSettings} kind="primary" disabled={!this.state.enableSettingsTest}>
+                    <AccessibleButton
+                      onClick={this._testSettings}
+                      kind="primary"
+                      disabled={!this.state.enableSettingsTest}>
                         {_t("Test interface settings")}
                     </AccessibleButton>
                     {spinner}
@@ -173,7 +176,9 @@ export default class InterfaceUserSettingsTab extends React.Component {
             );
 
             if (this.state.testError != '') {
-                error = <p className='amp_interface_testError'>{_t('Error while connecting: ')}{this.state.testError}</p>;
+                error = <p className='amp_interface_testError'>{_t('Error while connecting: ')}
+                          {this.state.testError}
+                        </p>;
             }
 
             if (this.state.enableSettingsSave) {
@@ -184,7 +189,6 @@ export default class InterfaceUserSettingsTab extends React.Component {
                               disabled={!this.state.enableSettingsSave}>
                               {_t("Save")}
                           </AccessibleButton>;
-
         }
 
         return (

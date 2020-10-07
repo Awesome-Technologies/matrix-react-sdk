@@ -45,7 +45,7 @@ export default createReactClass({
                 <div className='amp_ConfirmCloseCaseDialog_content'>
                     <p>
                         {_t(
-                            "Closing the case is permanent. After closing the case will not be editable anymore."
+                            "Closing the case is permanent. After closing the case will not be editable anymore.",
                         )}
                     </p>
                 </div>

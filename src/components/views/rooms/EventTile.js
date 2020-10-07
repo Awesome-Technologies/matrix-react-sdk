@@ -746,16 +746,6 @@ export default createReactClass({
             }
         }
 
-        const MessageActionBar = sdk.getComponent('messages.MessageActionBar');
-        const actionBar = !isEditing ? <MessageActionBar
-            mxEvent={this.props.mxEvent}
-            reactions={this.state.reactions}
-            permalinkCreator={this.props.permalinkCreator}
-            getTile={this.getTile}
-            getReplyThread={this.getReplyThread}
-            onFocusChange={this.onActionBarFocusChange}
-        /> : undefined;
-
         const timestamp = this.props.mxEvent.getTs() ?
             <MessageTimestamp showTwelveHour={this.props.isTwelveHour} ts={this.props.mxEvent.getTs()} /> : null;
 

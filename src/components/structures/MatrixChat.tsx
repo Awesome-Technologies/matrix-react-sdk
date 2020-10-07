@@ -114,7 +114,7 @@ export enum Views {
 
     // We show the pin overlay but the client is logged in with presence status 'unavailable'
     PIN_OVERLAY = 10,
-};
+}
 
 // Actions that are redirected through the onboarding process prior to being
 // re-dispatched. NOTE: some actions are non-trivial and would require
@@ -1679,11 +1679,11 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                     params: params,
                 });
             }
-        } else if (screen == 'pin_overlay') {
+        } else if (screen === 'pin_overlay') {
             dis.dispatch({
                 action: 'view_pin_overlay',
             });
-        } else if (screen == 'new') {
+        } else if (screen === 'new') {
             dis.dispatch({
                 action: 'view_create_room',
             });

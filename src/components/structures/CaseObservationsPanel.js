@@ -20,17 +20,11 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
 import createReactClass from 'create-react-class';
-import classNames from 'classnames';
-import shouldHideEvent from '../../shouldHideEvent';
-import {wantsDateSeparator} from '../../DateUtils';
 import * as sdk from '../../index';
 import {_t} from "../../languageHandler";
 
 import {MatrixClientPeg} from '../../MatrixClientPeg';
-import SettingsStore from '../../settings/SettingsStore';
 
-const CONTINUATION_MAX_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const continuedTypes = ['m.sticker', 'm.room.message'];
 
 /* (almost) stateless UI component which builds the event tiles in the room timeline.
  */
@@ -204,17 +198,14 @@ const CaseObservationsPanel = createReactClass({
     },
 
     _getEventTiles: function() {
-
         this.eventNodes = {};
 
-        let visible = false;
         let i;
 
         // we need to figure out which is the last event we show which isn't
         // a local echo, to manage the read-marker.
         let lastShownEvent;
 
-        let lastShownNonLocalEchoIndex = -1;
         for (i = this.props.events.length-1; i >= 0; i--) {
             const mxEv = this.props.events[i];
 
@@ -231,21 +222,22 @@ const CaseObservationsPanel = createReactClass({
                 continue;
             }
 
-            lastShownNonLocalEchoIndex = i;
             break;
         }
 
         const ret = [];
         let caseSeverity = 'info';
-        let caseEvents = [];
-        let patientEvents = [];
-        let observationEvents = [];
-        let doneEvents = [];
+        const caseEvents = [];
+        const patientEvents = [];
+        const observationEvents = [];
+        const doneEvents = [];
 
         for (i = 0; i < this.props.events.length; i++) {
           const mxEv = this.props.events[i];
 
-          if (mxEv.event.state_key === "care.amp.case" || mxEv.event.type === "care.amp.case" || mxEv._clearEvent.type === "care.amp.case") {
+          if (mxEv.event.state_key === "care.amp.case"
+           || mxEv.event.type === "care.amp.case"
+           || mxEv._clearEvent.type === "care.amp.case") {
             caseEvents.push(mxEv);
 
             // get case severity
@@ -253,14 +245,16 @@ const CaseObservationsPanel = createReactClass({
                 continue;
             }
 
-            let local_event = mxEv.event;
+            let localEvent = mxEv.event;
             if (mxEv.event.type === 'm.room.encrypted') {
-                local_event = mxEv._clearEvent;
+                localEvent = mxEv._clearEvent;
             }
-            caseSeverity = local_event.content.severity;
+            caseSeverity = localEvent.content.severity;
           }
 
-          if (mxEv.event.state_key === "care.amp.patient" || mxEv.event.type === "care.amp.patient"  || mxEv._clearEvent.type === "care.amp.patient") {
+          if (mxEv.event.state_key === "care.amp.patient"
+           || mxEv.event.type === "care.amp.patient"
+           || mxEv._clearEvent.type === "care.amp.patient") {
             patientEvents.push(mxEv);
           }
 
@@ -286,18 +280,20 @@ const CaseObservationsPanel = createReactClass({
 
         let severityClass = "amp_CaseObservationsPanel_Severity_info";
         switch (caseSeverity) {
-            case('critical'):
+            case ('critical'):
                 severityClass = "amp_CaseObservationsPanel_Severity_critical";
                 break;
-            case('urgent'):
+            case ('urgent'):
                 severityClass = "amp_CaseObservationsPanel_Severity_urgent";
                 break;
-            case('request'):
+            case ('request'):
                 severityClass = "amp_CaseObservationsPanel_Severity_request";
                 break;
         }
 
-        const caseStyle = ( caseEvents.length > 0 || patientEvents.length > 0 || observationEvents.length > 0 ) ? {} : { display: 'none' };
+        const caseStyle = ( caseEvents.length > 0
+                        || patientEvents.length > 0
+                        || observationEvents.length > 0 ) ? {} : { display: 'none' };
 
         // parse case events
         if (caseEvents.length > 0) {
@@ -318,7 +314,7 @@ const CaseObservationsPanel = createReactClass({
         // parse done events
         for (i = 0; i < doneEvents.length; i++) {
             const mxEv = doneEvents[i];
-            ret.push(this._parseDone(mxEv))
+            ret.push(this._parseDone(mxEv));
             break; // show the closed hint only once
         }
 
@@ -368,24 +364,11 @@ const CaseObservationsPanel = createReactClass({
         });
     },
 
-    _startAnimation: function(ghostNode) {
-        if (this._readMarkerGhostNode) {
-            Velocity.Utilities.removeData(this._readMarkerGhostNode);
-        }
-        this._readMarkerGhostNode = ghostNode;
-
-        if (ghostNode) {
-            Velocity(ghostNode, {opacity: '0', width: '10%'},
-                     {duration: 400, easing: 'easeInSine',
-                      delay: 1000});
-        }
-    },
-
     _collectEventNode: function(eventId, node) {
         this.eventNodes[eventId] = node;
     },
 
-    _parseDone: function(mxEv) {
+    _parseDone: function(mxEv) {
       // return if event is not decrypted yet
       if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
           return;
@@ -398,22 +381,21 @@ const CaseObservationsPanel = createReactClass({
       }
       console.log(mxEv);
 
-      let local_event = mxEv.event;
+      let localEvent = mxEv.event;
       if (mxEv.event.type === 'm.room.encrypted') {
-          local_event = mxEv._clearEvent;
+          localEvent = mxEv._clearEvent;
       }
 
-      if (local_event.type === "care.amp.done") {
-          return  <div className="amp_CaseObservationsPanel_isClosedWarning">
-                      <hr/>
+      if (localEvent.type === "care.amp.done") {
+          return <div className="amp_CaseObservationsPanel_isClosedWarning">
+                      <hr />
                       <span>{_t("This case has been closed. Editing is not possible anymore.")}</span>
-                      <hr/>
+                      <hr />
                   </div>;
       }
     },
 
     _parseCaseData: function(mxEv) {
-
       // return if event is not decrypted yet
       if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
           return;
@@ -426,9 +408,9 @@ const CaseObservationsPanel = createReactClass({
       }
       console.log(mxEv);
 
-      let local_event = mxEv.event;
+      let localEvent = mxEv.event;
       if (mxEv.event.type === 'm.room.encrypted') {
-          local_event = mxEv._clearEvent;
+          localEvent = mxEv._clearEvent;
       }
 
       let caseTitle = '-';
@@ -436,17 +418,17 @@ const CaseObservationsPanel = createReactClass({
       let caseSeverity = '-';
       let caseRequester = '-';
 
-      if (local_event.content.title !== undefined) {
-          caseTitle = local_event.content.title;
+      if (localEvent.content.title !== undefined) {
+          caseTitle = localEvent.content.title;
       }
-      if (local_event.content.note !== undefined) {
-          caseNote = local_event.content.note;
+      if (localEvent.content.note !== undefined) {
+          caseNote = localEvent.content.note;
       }
-      if (local_event.content.severity !== undefined) {
-          caseSeverity = local_event.content.severity;
+      if (localEvent.content.severity !== undefined) {
+          caseSeverity = localEvent.content.severity;
       }
-      if (local_event.content.requester !== undefined) {
-          caseRequester = local_event.content.requester.reference;
+      if (localEvent.content.requester !== undefined) {
+          caseRequester = localEvent.content.requester.reference;
       }
 
       return (
@@ -492,27 +474,27 @@ const CaseObservationsPanel = createReactClass({
         }
         console.log(mxEv);
 
-        let local_event = mxEv.event;
+        let localEvent = mxEv.event;
         if (mxEv.event.type === 'm.room.encrypted') {
-            local_event = mxEv._clearEvent;
+            localEvent = mxEv._clearEvent;
         }
 
         let patientName = '-';
         let patientGender = '-';
         let patientBirthdate = '-';
 
-        if (local_event.content.name !== '' && local_event.content.name !== undefined) {
-            patientName = local_event.content.name;
+        if (localEvent.content.name !== '' && localEvent.content.name !== undefined) {
+            patientName = localEvent.content.name;
         }
-        if (local_event.content.gender !== undefined) {
-            patientGender = local_event.content.gender;
+        if (localEvent.content.gender !== undefined) {
+            patientGender = localEvent.content.gender;
         }
-        if (local_event.content.birthDate !== '' && local_event.content.birthDate !== undefined) {
-            var date = new Date(local_event.content.birthDate);
+        if (localEvent.content.birthDate !== '' && localEvent.content.birthDate !== undefined) {
+            const date = new Date(localEvent.content.birthDate);
             patientBirthdate = date.toLocaleDateString();
         }
 
-        return(
+        return (
             <div className="amp_CaseObservationsPanel_Patient">
                     <table className="amp_CaseObservationsPanel_Table_patientData">
                         <tbody>
@@ -533,27 +515,26 @@ const CaseObservationsPanel = createReactClass({
       },
 
       _parseObservationData: function(observationEvents) {
-
         let hasVitalData = false;
         let hasAnamnesisData = false;
 
-        let vitalData_bloodPressureSys: '-';
-        let vitalData_bloodPressureDia: '-';
-        let vitalData_bloodpressureDatetime: '-';
-        let vitalData_pulse: '-';
-        let vitalData_pulseDatetime: '-';
-        let vitalData_temperature: '-';
-        let vitalData_temperatureDatetime: '-';
-        let vitalData_bloodSugar: '-';
-        let vitalData_bloodSugarDatetime: '-';
-        let vitalData_weight: '-';
-        let vitalData_weightDatetime: '-';
-        let vitalData_oxygen: '-';
-        let vitalData_oxygenDatetime: '-';
-        let anamnesisData_responsiveness: '-';
-        let anamnesisData_pain: '-';
-        let anamnesisData_lastDefecation: '-';
-        let anamnesisData_misc: '-';
+        let vitalDataBloodPressureSys: '-';
+        let vitalDataBloodPressureDia: '-';
+        let vitalDataBloodpressureDatetime: '-';
+        let vitalDataPulse: '-';
+        let vitalDataPulseDatetime: '-';
+        let vitalDataTemperature: '-';
+        let vitalDataTemperatureDatetime: '-';
+        let vitalDataBloodSugar: '-';
+        let vitalDataBloodSugarDatetime: '-';
+        let vitalDataWeight: '-';
+        let vitalDataWeightDatetime: '-';
+        let vitalDataOxygen: '-';
+        let vitalDataOxygenDatetime: '-';
+        let anamnesisDataResponsiveness: '-';
+        let anamnesisDataPain: '-';
+        let anamnesisDataLastDefecation: '-';
+        let anamnesisDataMisc: '-';
 
         for (let i = 0; i < observationEvents.length; i++) {
             const mxEv = observationEvents[i];
@@ -570,92 +551,101 @@ const CaseObservationsPanel = createReactClass({
             }
             console.log(mxEv);
 
-            let local_event = mxEv.event;
+            let localEvent = mxEv.event;
             if (mxEv.event.type === 'm.room.encrypted') {
-                local_event = mxEv._clearEvent;
+                localEvent = mxEv._clearEvent;
             }
 
-            switch (local_event.content.id) {
-                case('heart-rate'):
-                    vitalData_pulse = local_event.content.valueQuantity.value;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_pulseDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            let date;
+
+            switch (localEvent.content.id) {
+                case ('heart-rate'):
+                    vitalDataPulse = localEvent.content.valueQuantity.value;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataPulseDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_pulseDatetime = '-';
+                        vitalDataPulseDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('glucose'):
-                    vitalData_bloodSugar = local_event.content.valueQuantity.value;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_bloodSugarDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('glucose'):
+                    vitalDataBloodSugar = localEvent.content.valueQuantity.value;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataBloodSugarDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_bloodSugarDatetime = '-';
+                        vitalDataBloodSugarDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('body-temperature'):
-                    vitalData_temperature = local_event.content.valueQuantity.value;
-                    vitalData_temperature = Math.round( vitalData_temperature * 100 + Number.EPSILON ) / 100;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_temperatureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('body-temperature'):
+                    vitalDataTemperature = localEvent.content.valueQuantity.value;
+                    vitalDataTemperature = Math.round( vitalDataTemperature * 100 + Number.EPSILON ) / 100;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataTemperatureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_temperatureDatetime = '-';
+                        vitalDataTemperatureDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('blood-pressure'):
-                    vitalData_bloodPressureSys = local_event.content.component[0].valueQuantity.value;
-                    vitalData_bloodPressureDia = local_event.content.component[1].valueQuantity.value;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_bloodpressureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('blood-pressure'):
+                    vitalDataBloodPressureSys = localEvent.content.component[0].valueQuantity.value;
+                    vitalDataBloodPressureDia = localEvent.content.component[1].valueQuantity.value;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataBloodpressureDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_bloodpressureDatetime = '-';
+                        vitalDataBloodpressureDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('body-weight'):
-                    vitalData_weight = local_event.content.valueQuantity.value;
-                    vitalData_weight = Math.round( vitalData_weight * 100 + Number.EPSILON ) / 100;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_weightDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('body-weight'):
+                    vitalDataWeight = localEvent.content.valueQuantity.value;
+                    vitalDataWeight = Math.round( vitalDataWeight * 100 + Number.EPSILON ) / 100;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataWeightDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_weightDatetime = '-';
+                        vitalDataWeightDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('oxygen'):
-                    vitalData_oxygen = local_event.content.valueQuantity.value;
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        vitalData_oxygenDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('oxygen'):
+                    vitalDataOxygen = localEvent.content.valueQuantity.value;
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        vitalDataOxygenDatetime = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                     } else {
-                        vitalData_oxygenDatetime = '-';
+                        vitalDataOxygenDatetime = '-';
                     }
                     hasVitalData = true;
                     break;
-                case('last-defecation'):
-                    if (local_event.content.effectiveDateTime !== '' && local_event.content.effectiveDateTime !== undefined) {
-                        var date = new Date(local_event.content.effectiveDateTime);
-                        anamnesisData_lastDefecation = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                case ('last-defecation'):
+                    if (localEvent.content.effectiveDateTime !== ''
+                     && localEvent.content.effectiveDateTime !== undefined) {
+                        date = new Date(localEvent.content.effectiveDateTime);
+                        anamnesisDataLastDefecation = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
                         hasAnamnesisData = true;
                     }
                     break;
-                case('misc'):
-                    anamnesisData_misc = local_event.content.valueString;
+                case ('misc'):
+                    anamnesisDataMisc = localEvent.content.valueString;
                     hasAnamnesisData = true;
                     break;
-                case('responsiveness'):
-                    anamnesisData_responsiveness = local_event.content.valueString;
+                case ('responsiveness'):
+                    anamnesisDataResponsiveness = localEvent.content.valueString;
                     hasAnamnesisData = true;
                     break;
-                case('pain'):
-                    anamnesisData_pain = local_event.content.valueString;
+                case ('pain'):
+                    anamnesisDataPain = localEvent.content.valueString;
                     hasAnamnesisData = true;
                     break;
             }
@@ -680,39 +670,39 @@ const CaseObservationsPanel = createReactClass({
                       <tbody>
                           <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
                               <td>{_t("Weight")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_weight} kg</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataWeight} kg</td>
                               <td>{_t("Temperature")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_temperature} °C</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataTemperature} °C</td>
                           </tr>
                           <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_weightDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataWeightDatetime}</td>
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_temperatureDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataTemperatureDatetime}</td>
                           </tr>
                           <tr className="amp_CaseObservationsPanel_TableRow_Even">
                               <td>{_t("Blood pressure")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_bloodPressureSys} mmHg / {vitalData_bloodPressureDia} mmHg</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataBloodPressureSys} mmHg / {vitalDataBloodPressureDia} mmHg</td>
                               <td>{_t("Blood sugar")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_bloodSugar} mg/dl</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataBloodSugar} mg/dl</td>
                           </tr>
                           <tr className="amp_CaseObservationsPanel_TableRow_Even">
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_bloodpressureDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataBloodpressureDatetime}</td>
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_bloodSugarDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataBloodSugarDatetime}</td>
                           </tr>
                           <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
                               <td>{_t("Pulse")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_pulse} bpm</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataPulse} bpm</td>
                               <td>{_t("Oxygen saturation")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_oxygen} %</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataOxygen} %</td>
                           </tr>
                           <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_pulseDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataPulseDatetime}</td>
                               <td>{_t("measured")}</td>
-                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalData_oxygenDatetime}</td>
+                              <td className="amp_CaseObservationsPanel_TableCell_Value">{vitalDataOxygenDatetime}</td>
                           </tr>
                       </tbody>
                   </table>
@@ -731,15 +721,15 @@ const CaseObservationsPanel = createReactClass({
                           <tbody>
                               <tr className="amp_CaseObservationsPanel_TableRow_Uneven">
                                   <td>{_t("Responsiveness")}</td>
-                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisData_responsiveness}</td>
+                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisDataResponsiveness}</td>
                                   <td>{_t("Pain")}</td>
-                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisData_pain}</td>
+                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisDataPain}</td>
                               </tr>
                               <tr className="amp_CaseObservationsPanel_TableRow_Even">
                                   <td>{_t("Last defecation")}</td>
-                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisData_lastDefecation}</td>
+                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisDataLastDefecation}</td>
                                   <td>{_t("Misc")}</td>
-                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisData_misc}</td>
+                                  <td className="amp_CaseObservationsPanel_TableCell_Value">{anamnesisDataMisc}</td>
                               </tr>
                           </tbody>
                       </table>
@@ -749,9 +739,7 @@ const CaseObservationsPanel = createReactClass({
       },
 
     render: function() {
-
         return ( this._getEventTiles() );
-
     },
 });
 

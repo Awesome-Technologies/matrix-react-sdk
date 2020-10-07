@@ -18,12 +18,15 @@ import SettingsStore from "../settings/SettingsStore";
 import {SettingLevel} from "../settings/SettingsStore";
 
 export default class ProfSys {
-
     /**
      * Test connection to the external api
+     * @param {String} url The URL of the API for the third party software
+     * @param {String} success Callback function for successful connection test
+     * @param {String} failure Callback function for connection failure
+     * @return {Object} Result from the connection test
      */
-    static async testInterface(url, success, failure){
-        const res = await fetch(url + '/api/info/product', {
+    static async testInterface(url, success, failure) {
+        await fetch(url + '/api/info/product', {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -48,20 +51,19 @@ export default class ProfSys {
             console.log('Looks like there was a problem: \n', error);
             failure();
         });
-
     }
 
-    /**
-     * Authorization method of the external api
-     */
+    // Authorization method of the external api
     static getLoginMethod() {
         return 'pin';
     }
 
     /**
-     * Login to the ProfSys API
-     */
-    static async login(pin) {
+    * Login to the ProfSys API
+    * @param {String} pin The pin for the ProfSys user
+    * @return {Object} Result from the login API in json format
+    */
+    static async login(pin) {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const body = {PIN: pin};
         const response = await fetch(url + '/api/authentication/login', {
@@ -75,29 +77,29 @@ export default class ProfSys {
         .then(response => {
             return response.json().then(data => ({
                 data: data,
-                status: response.status
+                status: response.status,
             })).then(res => {
-                return {status: res.status, data: res.data}
-            })
+                return {status: res.status, data: res.data};
+            });
         })
         .then(res => {
             if (res.status != 200) {
-                throw {status: res.status, data: res.data}
+                throw Object.assign({status: res.status, data: res.data});
             }
 
             if (res.data.UserName) {
                 SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, res.data.UserName);
             }
             SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res.data.Token);
-            return {data: {username: res.data.UserName, token: res.data.Token}, status: 200}
+            return {data: {username: res.data.UserName, token: res.data.Token}, status: 200};
         })
         .catch((error) => {
-            console.log(error)
+            console.log(error);
             if (typeof error === "object") {
                 if (error.data && error.data.ErrorMessages) {
-                    return {status: error.status, data: {message: error.data.ErrorMessages[0]}}
+                    return {status: error.status, data: {message: error.data.ErrorMessages[0]}};
                 }
-                return {status: error.status, data: {message: error.message}}
+                return {status: error.status, data: {message: error.message}};
             } else {
                 console.error(error);
             }
@@ -114,7 +116,7 @@ export default class ProfSys {
     /**
      * Loads the list of associated patients
      */
-    static async getPatients() {
+    static async getPatients() {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
@@ -128,15 +130,15 @@ export default class ProfSys {
         })
         .then(response => {
             if (!response.ok) {
-                throw {status: response.status, message: response.statusText};
+                throw Object.assign({status: response.status, message: response.statusText});
             }
 
-            return response.json()
+            return response.json();
         })
         .then(res => {
-            var values = {data: [], status: 200};
-            for (var i=0; i<res.length; i++) {
-                var value = {};
+            const values = {data: [], status: 200};
+            for (let i=0; i<res.length; i++) {
+                const value = {};
                 value.id = res[i].ID;
                 value.gender = this.mapGender(res[i].GeschlechtID);
                 if (res[i].Geburtsdatum) {
@@ -150,7 +152,7 @@ export default class ProfSys {
         })
         .catch((error) => {
             if (typeof error === "object") {
-                return {status: error.status, data: {message: error.message}}
+                return {status: error.status, data: {message: error.message}};
             } else {
                 console.error(error);
             }
@@ -170,14 +172,12 @@ export default class ProfSys {
         }
     }
 
-    /**
-     * Collect all vital data of the given patient
-     */
-    static async getVitalData(patientId) {
+    // Collect all vital data of the given patient
+    static async getVitalData(patientId) {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
-        console.log(patientId)
+        console.log(patientId);
         return await fetch(url + '/api/zeitdaten/vitalwert/list', {
             method: 'GET',
             headers: {
@@ -188,18 +188,18 @@ export default class ProfSys {
         })
         .then(response => {
             if (!response.ok) {
-                throw {status: response.status, message: response.statusText};
+                throw Object.assign({status: response.status, message: response.statusText});
             }
 
-            return response.json()
+            return response.json();
         })
         .then(res => {
-            const data = this.parseVitalData(res, patientId)
-            return {data: data, status: 200}
+            const data = this.parseVitalData(res, patientId);
+            return {data: data, status: 200};
         })
         .catch((error) => {
             if (typeof error === "object") {
-                return {status: error.status, data: {message: error.message}}
+                return {status: error.status, data: {message: error.message}};
             } else {
                 console.error(error);
             }
@@ -207,7 +207,7 @@ export default class ProfSys {
     }
 
     static parseVitalData(data, patientId) {
-        let res = {
+        const res = {
           bloodpressure: {date: '', values: {systolic: '', diastolic: ''}},
           pulse: {date: '', value: ''},
           temperature: {date: '', value: ''},
@@ -216,7 +216,7 @@ export default class ProfSys {
           spo2: {date: '', value: ''},
         };
 
-        for (var i=0; i<data.length; i++) {
+        for (let i=0; i<data.length; i++) {
             //check patient id
             if (data[i].PID != patientId) {
                 continue;
@@ -266,10 +266,10 @@ export default class ProfSys {
             }
         }
 
-        return res
+        return res;
     }
 
-    static async getLastDefecation(patientId){
+    static async getLastDefecation(patientId) {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
@@ -284,24 +284,24 @@ export default class ProfSys {
         .then(response =>
             response.json().then(data => ({
                   data: data,
-                  status: response.status
-              })
+                  status: response.status,
+              }),
             ).then(res => {
-                console.log(res)
+                console.log(res);
                 if (res.status == 200) {
                     return {
-                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum).toISOString().split('Z')[0],
+                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum)
+                                .toISOString().split('Z')[0],
                         value: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Wert.replace(',', '.'),
-                    }
+                    };
                 } else {
-                    return {date: '', value: ''}
+                    return {date: '', value: ''};
                 }
-            })
+            }),
         )
         .catch((error) => {
             console.error('Error:', error);
-            return {date: '', value: ''}
+            return {date: '', value: ''};
         });
     }
-
 }

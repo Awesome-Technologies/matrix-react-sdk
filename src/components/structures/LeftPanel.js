@@ -221,24 +221,12 @@ const LeftPanel = createReactClass({
     render: function() {
         const RoomList = sdk.getComponent('rooms.RoomList');
         const RoomBreadcrumbs = sdk.getComponent('rooms.RoomBreadcrumbs');
-        const TagPanel = sdk.getComponent('structures.TagPanel');
-        const CustomRoomTagPanel = sdk.getComponent('structures.CustomRoomTagPanel');
         const TopLeftMenuButton = sdk.getComponent('structures.TopLeftMenuButton');
         const SearchBox = sdk.getComponent('structures.SearchBox');
         const CallPreview = sdk.getComponent('voip.CallPreview');
         const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
 
         const tagPanelEnabled = SettingsStore.getValue("TagPanel.enableTagPanel");
-        let tagPanelContainer;
-
-        const isCustomTagsEnabled = SettingsStore.isFeatureEnabled("feature_custom_tags");
-
-        if (tagPanelEnabled) {
-            tagPanelContainer = (<div className="mx_LeftPanel_tagPanelContainer">
-                <TagPanel />
-                { isCustomTagsEnabled ? <CustomRoomTagPanel /> : undefined }
-            </div>);
-        }
 
         const containerClasses = classNames(
             "mx_LeftPanel_container", "mx_fadable",
@@ -248,15 +236,6 @@ const LeftPanel = createReactClass({
                 "mx_fadable_faded": this.props.disabled,
             },
         );
-
-        let exploreButton;
-        if (!this.props.collapsed) {
-            exploreButton = (
-                <div className={classNames("mx_LeftPanel_explore", {"mx_LeftPanel_explore_hidden": this.state.searchExpanded})}>
-                    <AccessibleButton onClick={() => dis.fire(Action.ViewRoomDirectory)}>{_t("Explore")}</AccessibleButton>
-                </div>
-            );
-        }
 
         const searchBox = (<SearchBox
             className="mx_LeftPanel_filterRooms"

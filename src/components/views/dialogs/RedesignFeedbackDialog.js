@@ -19,7 +19,6 @@ import QuestionDialog from './QuestionDialog';
 import { _t } from '../../../languageHandler';
 
 export default (props) => {
-
     const supportUrl = `mailto:support@amp.care` +
         `?subject=AMP.care%20Supportanfrage` +
         `&body=%0D%0A%0D%0A%0D%0AFehlerbeschreibung:`;

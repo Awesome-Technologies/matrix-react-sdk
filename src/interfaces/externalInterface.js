@@ -23,7 +23,6 @@ import SettingsStore from "../settings/SettingsStore";
 import {SettingLevel} from "../settings/SettingsStore";
 
 export default class ExternalInterface {
-
     static getVendorInterface(vendor) {
         if (!vendor) {
             vendor = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesVendor');
@@ -39,6 +38,11 @@ export default class ExternalInterface {
 
     /**
      * Test connection to the external api
+     * @param {String} vendor The vendor of the third party software
+     * @param {String} url The URL of the API for the third party software
+     * @param {String} success Callback function for successful connection test
+     * @param {String} failure Callback function for connection failure
+     * @return {Object} Result from the connection test to the corresponding vendor
      */
     static testInterface(vendor, url, success, failure) {
         if (vendor === 'profsys') {

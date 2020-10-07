@@ -353,7 +353,6 @@ export default class MessagePanel extends React.Component {
 
     // TODO: Implement granular (per-room) hide options
     _shouldShowEvent(mxEv) {
-
         // exclude AMP data from messages view
         if (mxEv._clearEvent !== undefined) {
           if (mxEv._clearEvent.type === "care.amp.observation") {
@@ -366,12 +365,12 @@ export default class MessagePanel extends React.Component {
 
         // hide state event messages
         switch (mxEv.event.type) {
-            case 'm.room.encryption': //Event.EVENT_TYPE_MESSAGE_ENCRYPTION:
             //case '': //Event.EVENT_TYPE_STATE_ROOM_CREATE:
-            case 'm.room.name': //Event.EVENT_TYPE_STATE_ROOM_NAME:
-            case 'm.room.topic':
             //case '': //Event.EVENT_TYPE_STATE_ROOM_AVATAR:
             //case 'm.room.member': //Event.EVENT_TYPE_STATE_ROOM_MEMBER:
+            case 'm.room.encryption': //Event.EVENT_TYPE_MESSAGE_ENCRYPTION:
+            case 'm.room.name': //Event.EVENT_TYPE_STATE_ROOM_NAME:
+            case 'm.room.topic':
             case 'm.room.aliases': //Event.EVENT_TYPE_STATE_ROOM_ALIASES:
             case 'm.room.canonical_alias':
             case 'm.room.history_visibility': //Event.EVENT_TYPE_STATE_HISTORY_VISIBILITY:
@@ -383,7 +382,6 @@ export default class MessagePanel extends React.Component {
             case 'm.room.server_acl':
             case 'm.room.tombstone':
             case 'm.room.join_rules':
-            case 'm.room.guest_access':
                 return false;
         }
 

@@ -189,8 +189,6 @@ export default class SecurityUserSettingsTab extends React.Component {
     };
 
     _renderCurrentDeviceInfo() {
-        const SettingsFlag = sdk.getComponent('views.elements.SettingsFlag');
-
         const client = MatrixClientPeg.get();
         const deviceId = client.deviceId;
         let identityKey = client.getDeviceEd25519Key();

@@ -19,18 +19,16 @@ import ReactDOM from 'react-dom';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
-import SdkConfig from '../../../SdkConfig';
 import { _t } from '../../../languageHandler';
-import Field from "../elements/Field";
 import Modal from "../../../Modal";
 import { MatrixClientPeg } from '../../../MatrixClientPeg';
-import colorVariables from '../../../../res/themes/light/css/light.scss';
 import { formatFullDateNoTime } from '../../../DateUtils';
 import { drawDOM, exportPDF } from '@progress/kendo-drawing';
-import { PDFExport, savePDF } from "@progress/kendo-react-pdf";
+import { PDFExport } from "@progress/kendo-react-pdf";
 import * as JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { decryptFile } from '../../../utils/DecryptFile';
+import ErrorDialog from "./ErrorDialog";
 
 export default createReactClass({
     displayName: 'CreateReportDialog',
@@ -65,15 +63,15 @@ export default createReactClass({
         const roomName = room.name;
 
         // generate filenames
-        var zipFileName = "Archiv.zip";
-        var pdfFileName = "Report.pdf";
+        let zipFileName = "Archiv.zip";
+        let pdfFileName = "Report.pdf";
         if (roomName !== '') {
             zipFileName = roomName + " - Archiv.zip";
             pdfFileName = roomName + " - Report.pdf";
         }
 
         // build zip file
-        var zip = new JSZip();
+        const zip = new JSZip();
 
         // add all files
         for (let i = 0; i < this.state.fileList.length; i++) {
@@ -90,15 +88,15 @@ export default createReactClass({
         }).then((group) => {
             return exportPDF(group);
         }).then((dataUri) => {
-            var blob = this._b64toBlob(dataUri.split(';base64,')[1], 'application/pdf');
+            const blob = this._b64toBlob(dataUri.split(';base64,')[1], 'application/pdf');
             zip.file(pdfFileName, blob);
         });
 
         // preserve `this` for the `then` function
-        var that = this;
+        const that = this;
 
         // Generate the zip file asynchronously
-        await zip.generateAsync({type:"blob"})
+        await zip.generateAsync({type: "blob"})
         .then(function(content) {
             // force download of the zip file
             saveAs(content, zipFileName);
@@ -142,24 +140,23 @@ export default createReactClass({
 
     _getMessages: function(roomId) {
         const MessageTimestamp = sdk.getComponent('messages.MessageTimestamp');
-        const DateSeparator = sdk.getComponent('messages.DateSeparator');
         const room = MatrixClientPeg.get().getRoom(roomId);
         const messages = room.getUnfilteredTimelineSet().room.timeline;
 
-        var res = [];
+        const res = [];
 
-        var timeline = [];
-        var dataList = [];
-        var observationDataList = [];
-        var fileList = [];
+        const timeline = [];
+        const dataList = [];
+        const observationDataList = [];
+        const fileList = [];
 
-        var initialDateSeparatorSet = false;
+        let initialDateSeparatorSet = false;
 
         for (let i = 0; i < messages.length; i++) {
             const event = messages[i];
-            var message = '';
-            var data = '';
-            var observationData = '';
+            let message = '';
+            let data = '';
+            let observationData = '';
 
             if (event.event.type === "m.room.encrypted") {
                 if (event._clearEvent.type === "m.room.message") {
@@ -225,7 +222,9 @@ export default createReactClass({
             }
 
             if (message != '') {
-                if (!initialDateSeparatorSet || i>0 && this._wantsDateSeparator(messages[i-1].event.origin_server_ts, messages[i].event.origin_server_ts)) {
+                if (!initialDateSeparatorSet || i>0
+                  && this._wantsDateSeparator(messages[i-1].event.origin_server_ts, messages[i].event.origin_server_ts)
+                ) {
                     initialDateSeparatorSet = true;
                     const dateSeparator = this._getDateSeparator(messages[i].event.origin_server_ts);
                     timeline.push(dateSeparator);
@@ -248,7 +247,9 @@ export default createReactClass({
 
         if (observationDataList.length > 0) {
             res.push(<h2 key="data">{_t("Vital data")}/{_t("Anamnesis")}</h2>);
-            res.push(<table className="amp_ReportTable" key="amp_report_observation_data"><tbody>{observationDataList}</tbody></table>);
+            res.push(<table className="amp_ReportTable" key="amp_report_observation_data">
+                        <tbody>{observationDataList}</tbody>
+                      </table>);
         }
 
         if (timeline.length > 0) {
@@ -270,7 +271,7 @@ export default createReactClass({
             <hr role="none" />
             <div>{ formatFullDateNoTime(date) }</div>
             <hr role="none" />
-        </h2>
+        </h2>;
     },
 
     _wantsDateSeparator: function(prevEventDate, nextEventDate) {
@@ -351,10 +352,16 @@ export default createReactClass({
             case 'glucose':
             case 'heart-rate':
             case 'oxygen':
-                res.push(<td key="amp_report_{event.id}_value">{event.valueQuantity.value} {event.valueQuantity.unit}</td>);
+                res.push(<td key="amp_report_{event.id}_value">
+                            {event.valueQuantity.value} {event.valueQuantity.unit}
+                          </td>);
                 break;
             case 'blood-pressure':
-                res.push(<td key="amp_report_{event.id}_value">{event.component[0].valueQuantity.value} {event.component[0].valueQuantity.unit} / {event.component[1].valueQuantity.value} {event.component[1].valueQuantity.unit}</td>);
+                res.push(<td key="amp_report_{event.id}_value">
+                            {event.component[0].valueQuantity.value}
+                            {event.component[0].valueQuantity.unit} / {event.component[1].valueQuantity.value}
+                            {event.component[1].valueQuantity.unit}
+                          </td>);
                 break;
         }
 
@@ -383,7 +390,7 @@ export default createReactClass({
                               <table>
                                 <tbody>
                                   <tr key="amp_report_header">
-                                    <td key="amp_report_logo" rowSpan="2"><img src={require("../../../../res/img/amp.svg")} height="80" alt='AMP Logo'/></td>
+                                    <td key="amp_report_logo" rowSpan="2"><img src={require("../../../../res/img/amp.svg")} height="80" alt='AMP Logo' /></td>
                                     <td key="amp_report_heading" style={{paddingRight: "20px"}}><h1>AMP.care {_t('Report')}</h1></td>
                                   </tr>
                                   <tr key="amp_report_subheader"><td key="amp_report_subheading" style={{position: "relative", top: "-25px"}}>{_t('created at')}&nbsp;{now}</td></tr>

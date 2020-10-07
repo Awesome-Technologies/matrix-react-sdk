@@ -111,10 +111,6 @@ const customVariables = {
     },
 };
 
-function whitelistRedact(whitelist, str) {
-    if (whitelist.includes(str)) return str;
-    return '<redacted>';
-}
 
 const UID_KEY = "mx_Riot_Analytics_uid";
 const CREATION_TS_KEY = "mx_Riot_Analytics_cts";
@@ -311,8 +307,6 @@ class Analytics {
 
         const config = SdkConfig.get();
         if (!config.piwik) return;
-
-        const whitelistedHSUrls = config.piwik.whitelistedHSUrls || [];
 
         this._setVisitVariable('User Type', isGuest ? 'Guest' : 'Logged In');
         this._setVisitVariable('Homeserver URL', homeserverUrl);

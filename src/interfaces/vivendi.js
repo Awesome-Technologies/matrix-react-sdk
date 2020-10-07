@@ -18,11 +18,13 @@ import SettingsStore from "../settings/SettingsStore";
 import {SettingLevel} from "../settings/SettingsStore";
 
 export default class Vivendi {
-
     /**
      * Test connection to the Vivendi API
+     * @param {String} url The URL of the API for the third party software
+     * @param {String} success Callback function for successful connection test
+     * @param {String} failure Callback function for connection failure
      */
-    static testInterface(url, success, failure){
+    static testInterface(url, success, failure) {
         fetch(url + '/api/v2/LoginUser', {
             method: 'GET',
             headers: {
@@ -33,36 +35,35 @@ export default class Vivendi {
         .then(function(response) {
             if (response.status == 400) {
                 return response.json();
-            }
-            else {
+            } else {
                 failure(response.status + " " + response.statusText);
-                return
+                return;
             }
         })
         .then(function(responseAsJson) {
             if (responseAsJson) {
-                if (responseAsJson == "Auth-Request enthält keinen AuthenticationHeader"){
+                if (responseAsJson == "Auth-Request enthält keinen AuthenticationHeader") {
                     success();
-                }
-                else {
+                } else {
                     failure();
                 }
             }
         })
-        .catch(failure);;
+        .catch(failure);
     }
 
-    /**
-     * Authorization method of the external api
-     */
+    // Authorization method of the external api
     static getLoginMethod() {
         return 'user';
     }
 
     /**
      * Login to the Vivendi API
+     * @param {String} username The username from Vivendi
+     * @param {String} password The password for the Vivendi user
+     * @return {Object} Result from the login API in json format
      */
-    static async login(username, password) {
+    static async login(username, password) {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const body = {username: username, password: password, userGroupType: 3};
         const response = await fetch(url + '/api/v2/LoginUser', {
@@ -76,22 +77,22 @@ export default class Vivendi {
         .then(response => {
             return response.json().then(data => ({
                 data: data,
-                status: response.status
+                status: response.status,
             })).then(res => {
-                return {status: res.status, data: res.data}
-            })
+                return {status: res.status, data: res.data};
+            });
         })
         .then(res => {
             if (res.status != 200) {
-                throw {status: res.status, data: res.data}
+                throw Object.assign({status: res.status, data: res.data});
             }
             SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, username);
             SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, res.data);
-            return {data: {username: username, token: res.data}, status: res.status}
+            return {data: {username: username, token: res.data}, status: res.status};
         })
         .catch((error) => {
             if (typeof error === "object") {
-                return {status: error.status, data: {message: error.data}}
+                return {status: error.status, data: {message: error.data}};
             } else {
                 console.error(error);
             }
@@ -104,10 +105,8 @@ export default class Vivendi {
         return SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
     }
 
-    /**
-     * Loads the list of associated patients
-     */
-    static async getPatients() {
+    // Loads the list of associated patients
+    static async getPatients() {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
@@ -122,8 +121,8 @@ export default class Vivendi {
         .then(response =>
             response.json().then(data => ({
                 data: data,
-                status: response.status
-              })
+                status: response.status,
+              }),
             ).then(res => {
                 if (!res.data.Klienten) {
                     if (res.data.Message) {
@@ -131,9 +130,9 @@ export default class Vivendi {
                     }
                     return res;
                 }
-                var values = {data: [], status: res.status};
-                for (var i=0; i<res.data.Klienten.length; i++) {
-                    var value = {};
+                const values = {data: [], status: res.status};
+                for (let i=0; i<res.data.Klienten.length; i++) {
+                    const value = {};
                     value.id = res.data.Klienten[i].Id;
                     value.gender = res.data.Klienten[i].Geschlecht ? 'male' : 'female';
                     if (res.data.Klienten[i].Geburtsdatum) {
@@ -144,24 +143,22 @@ export default class Vivendi {
                     values.data[i] = value;
                 }
                 return values;
-            })
+            }),
         )
         .catch((error) => {
             console.error('Error:', error);
         });
     }
 
-    /**
-     * Collect all vital data of the given patient
-     */
+    // Collect all vital data of the given patient
     static async getVitalData(patientId) {
-        let [
+        const [
           bloodpressure,
           pulse,
           temperature,
           sugar,
           weight,
-          spo2
+          spo2,
         ] = await Promise.all([
           this.getBloodpressure(patientId),
           this.getPulse(patientId),
@@ -173,14 +170,19 @@ export default class Vivendi {
         ]);
 
         const res = {
-          bloodpressure: {date: bloodpressure.date, values: {systolic: bloodpressure.values.sys, diastolic: bloodpressure.values.dia}},
+          bloodpressure: {date: bloodpressure.date,
+                          values: {
+                            systolic: bloodpressure.values.sys,
+                            diastolic: bloodpressure.values.dia,
+                          },
+                        },
           pulse: {date: pulse.date, value: pulse.value},
           temperature: {date: temperature.date, value: temperature.value},
           sugar: {date: sugar.date, value: sugar.value},
           weight: {date: weight.date, value: weight.value},
           spo2: {date: spo2.date, value: spo2.value},
-        }
-        return {data: res, status: 200}
+        };
+        return {data: res, status: 200};
     }
 
     static async getBloodpressure(patientId) {
@@ -198,68 +200,55 @@ export default class Vivendi {
       .then(response =>
           response.json().then(data => ({
                   data: data,
-                  status: response.status
-              })
+                  status: response.status,
+              }),
           ).then(res => {
               if (res.status == 200) {
                   return {
-                      date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum).toISOString().split('Z')[0],
+                      date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum)
+                                .toISOString()
+                                .split('Z')[0],
                       values: {
                           sys: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Werte[0],
                           dia: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Werte[1],
                       },
-                  }
+                  };
               } else {
-                  return {date: '', value: ''}
+                  return {date: '', value: ''};
               }
-          })
+          }),
       )
       .catch((error) => {
           console.error('Error:', error);
-          return {date: '', values: {sys: '', dia: ''}}
+          return {date: '', values: {sys: '', dia: ''}};
       });
     }
 
-    static async getPulse(patientId){
+    static async getPulse(patientId) {
         return await this.getVitalValue(patientId, 4);
-        const res = await this.getVitalValue(patientId, 4);
-        console.log("result for pulse")
-        console.log(res)
-        return res
     }
 
-    static async getTemperature(patientId){
+    static async getTemperature(patientId) {
         return await this.getVitalValue(patientId, 3);
-        const res = await this.getVitalValue(patientId, 3);
-        console.log(res)
-        return res
     }
 
-    static async getSugar(patientId){
+    static async getSugar(patientId) {
         return await this.getVitalValue(patientId, 2);
-        const res = await this.getVitalValue(patientId, 2);
-        console.log(res)
-        return res
     }
 
-    static async getWeight(patientId){
+    static async getWeight(patientId) {
         return await this.getVitalValue(patientId, 5);
-        const res = await this.getVitalValue(patientId, 5);
-        console.log(res)
-        return res
     }
 
-    static async getSpO2(patientId){
+    static async getSpO2(patientId) {
         return await this.getVitalValue(patientId, 12);
-        const res = await this.getVitalValue(patientId, 12);
-        console.log(res)
-        return res
     }
 
-    static async getLastDefecation(patientId){
+    static async getLastDefecation(patientId) {
         // date of last defecation could be retrieved from the reports but isn't implemented correctly yet
         return {date: '', value: ''};
 
+        /*
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
@@ -274,29 +263,30 @@ export default class Vivendi {
         .then(response =>
             response.json().then(data => ({
                   data: data,
-                  status: response.status
-              })
+                  status: response.status,
+              }),
             ).then(res => {
-                console.log(res)
+                console.log(res);
                 if (res.status == 200) {
                     return {
-                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum).toISOString().split('Z')[0],
+                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum)
+                                  .toISOString()
+                                  .split('Z')[0],
                         value: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Wert.replace(',', '.'),
-                    }
+                    };
                 } else {
-                    return {date: '', value: ''}
+                    return {date: '', value: ''};
                 }
-            })
+            }),
         )
         .catch((error) => {
             console.error('Error:', error);
-            return {date: '', value: ''}
+            return {date: '', value: ''};
         });
+        */
     }
 
-    /**
-     * Loads vital data for a given patient
-     */
+    // Loads vital data for a given patient
     static async getVitalValue(patientId, category) {
         const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
@@ -312,68 +302,24 @@ export default class Vivendi {
         .then(response =>
             response.json().then(data => ({
                   data: data,
-                  status: response.status
-              })
+                  status: response.status,
+              }),
             ).then(res => {
                 if (res.status == 200) {
                     return {
-                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum).toISOString().split('Z')[0],
+                        date: new Date(res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum)
+                                  .toISOString()
+                                  .split('Z')[0],
                         value: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Wert.replace(',', '.'),
-                    }
+                    };
                 } else {
-                    return {date: '', value: ''}
+                    return {date: '', value: ''};
                 }
-            })
+            }),
         )
         .catch((error) => {
             console.error('Error:', error);
-            return {date: '', value: ''}
+            return {date: '', value: ''};
         });
     }
-
-/*
-    static async getVitalValue(token, patientId, category) {
-      console.log("fetching value for category " + category)
-      const url = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesAdress');
-      return await fetch(url + '/api/v2/Vitalwert?KategorieIds=' + category + '&KlientIds=' + patientId, {
-          method: 'GET',
-          headers: {
-              'Accept': 'application/json',
-              'Content-Type': 'application/json',
-              'Auth-Token': token,
-          },
-      })
-      .then(response => {
-
-        //console.log(response.status)
-        //if (response.status != 200) {
-        //  console.log("returning empty")
-        //  return {date: '', value: ''}
-        //} else {
-
-          response.json().then(data => ({
-              data: data,
-              status: response.status
-            })
-          ).then(res => {
-                console.log("returning with values")
-                console.log(res)
-                console.log(res.data.Vitalwerte.length)
-                console.log(res.data.Vitalwerte[res.data.Vitalwerte.length - 1])
-                const values = {
-                  date: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Datum,
-                  value: res.data.Vitalwerte[res.data.Vitalwerte.length - 1].Wert,
-                }
-                console.log(values)
-                return values
-            }
-          )
-        //}
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-    }
-    */
-
 }

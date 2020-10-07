@@ -19,7 +19,6 @@ import createReactClass from 'create-react-class';
 import * as sdk from '../../index';
 import dis from '../../dispatcher/dispatcher';
 import Modal from '../../Modal';
-import { _t } from '../../languageHandler';
 
 const TagPanelButtons = createReactClass({
     displayName: 'TagPanelButtons',
@@ -45,9 +44,6 @@ const TagPanelButtons = createReactClass({
     },
 
     render() {
-        const GroupsButton = sdk.getComponent('elements.GroupsButton');
-        const ActionButton = sdk.getComponent("elements.ActionButton");
-
         return (<div className="mx_TagPanelButtons">
         </div>);
     },

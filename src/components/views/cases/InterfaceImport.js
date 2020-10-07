@@ -18,16 +18,8 @@ import React from 'react';
 import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
-import SdkConfig from '../../../SdkConfig';
 import { _t } from '../../../languageHandler';
-import PatientData from '../cases/PatientData';
-import VitalData from '../cases/VitalData';
-import AnamnesisData from '../cases/AnamnesisData';
-import MedicationData from '../cases/MedicationData';
 import Field from "../elements/Field";
-import Modal from "../../../Modal";
-import {MatrixClientPeg} from '../../../MatrixClientPeg';
-import colorVariables from '../../../../res/themes/light/css/light.scss';
 import SettingsStore from "../../../settings/SettingsStore";
 import {SettingLevel} from "../../../settings/SettingsStore";
 import ExternalInterface from "../../../interfaces/externalInterface";
@@ -74,7 +66,7 @@ export default createReactClass({
 
     _onOk: function() {
         // send data back
-        var data = {};
+        const data = {};
 
         // get username
         const username = ExternalInterface.getUserName();
@@ -166,7 +158,7 @@ export default createReactClass({
             spo2Selected: false,
         });
 
-        for (var index = 0; index < this.state.patientList.length; index++) {
+        for (let index = 0; index < this.state.patientList.length; index++) {
             if (this.state.patientList[index].id == e.target.value) {
                 this.setState({
                     patientData: {
@@ -219,7 +211,7 @@ export default createReactClass({
 
     _loginPassword: async function() {
         const res = await ExternalInterface.loginPassword(this.state.username, this.state.password);
-        console.log(res)
+        console.log(res);
         if (res.status != 200) {
             this.setState({loggedIn: false, error: res.data.message});
         } else {
@@ -230,7 +222,7 @@ export default createReactClass({
 
     _loginPin: async function() {
         const res = await ExternalInterface.loginPin(this.state.pin);
-        console.log(res)
+        console.log(res);
         if (res.status != 200) {
             this.setState({loggedIn: false, error: res.data.message});
         } else {
@@ -242,9 +234,9 @@ export default createReactClass({
     _generatePatientList: async function() {
         this.setState({patientsLoading: true});
         const res = await ExternalInterface.getPatients();
-        console.log(res)
+        console.log(res);
 
-        if (res.status == 200){
+        if (res.status == 200) {
             this.setState({patientList: res.data, patientsLoading: false});
         } else {
             this.setState({loggedIn: false, patientsLoading: false, error: res.data.message});
@@ -254,15 +246,17 @@ export default createReactClass({
     _fetchVitalData: async function(patientId) {
         this.setState({vitalDataLoading: true});
         const res = await ExternalInterface.getVitalData(patientId);
-        console.log(res)
-        if (res){
+        console.log(res);
+        if (res) {
             this.setState({
                 vitalData: res.data,
                 vitalDataLoaded: true,
-                vitalDataLoading: false
+                vitalDataLoading: false,
             });
         }
-        if (res.data.bloodpressure.date && res.data.bloodpressure.values.systolic && res.data.bloodpressure.values.diastolic) {
+        if (res.data.bloodpressure.date
+          && res.data.bloodpressure.values.systolic
+          && res.data.bloodpressure.values.diastolic) {
             this.setState({bloodpressureSelected: true});
         }
         if (res.data.pulse.date && res.data.pulse.value) {
@@ -283,9 +277,9 @@ export default createReactClass({
     },
 
     _formatDate: function(dateString, withTime=true) {
-        if(dateString === '') return '';
+        if (dateString === '') return '';
 
-        var date = new Date(dateString);
+        const date = new Date(dateString);
         if (withTime) {
             return date.toLocaleDateString() + ' - ' + date.toLocaleTimeString();
         } else {
@@ -299,7 +293,6 @@ export default createReactClass({
         }
 
         const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
-        const interfaceVendor = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesVendor');
         const loginMethod = ExternalInterface.getLoginMethod();
 
         if (loginMethod === 'user') {
@@ -350,7 +343,14 @@ export default createReactClass({
     _renderPatientList: function() {
       if (!this.state.loggedIn) return null;
 
-      return  <Field id="patients" ref="patients" className="amp_CreateCaseDialog_input_field" label={_t("Select patient")} element="select" onChange={this._onPatientChanged} value={this.state.patientId} >
+      return <Field
+                id="patients"
+                ref="patients"
+                className="amp_CreateCaseDialog_input_field"
+                label={_t("Select patient")}
+                element="select"
+                onChange={this._onPatientChanged}
+                value={this.state.patientId} >
                   <option key="-1" id="-1" value="-1" className="amp_patient_info" >{_t("Nothing selected")}</option>
                   {this.state.patientList.map(item => (
                     <option key={item.id} id={item.id} value={item.id} className="amp_patient_info" >{item.name}, {item.givenName} - {this._formatDate(item.birthday, false)}</option>
@@ -385,7 +385,6 @@ export default createReactClass({
             </tbody></table>
             {vitalDataSpinner}
         </div>;
-
     },
 
     _renderVitalData: function() {

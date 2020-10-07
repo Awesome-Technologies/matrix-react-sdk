@@ -23,7 +23,7 @@ import Analytics from "../../../Analytics";
 
 export default class CookieBar extends React.Component {
     static propTypes = {
-        policyUrl: PropTypes.string
+        policyUrl: PropTypes.string,
     };
 
     constructor() {
@@ -38,13 +38,13 @@ export default class CookieBar extends React.Component {
 
     onAccept() {
         dis.dispatch({
-            action: "accept_cookies"
+            action: "accept_cookies",
         });
     }
 
     onReject() {
         dis.dispatch({
-            action: "reject_cookies"
+            action: "reject_cookies",
         });
     }
 
@@ -63,7 +63,8 @@ export default class CookieBar extends React.Component {
                 <div className="mx_MatrixToolbar_content">
                     {this.props.policyUrl
                         ? _t(
-                              "Please help improve Riot.im by sending <UsageDataLink>anonymous usage data</UsageDataLink>. " +
+                              "Please help improve Riot.im by sending " +
+                                  "<UsageDataLink>anonymous usage data</UsageDataLink>. " +
                                   "This will use a cookie " +
                                   "(please see our <PolicyLink>Cookie Policy</PolicyLink>).",
                               {},
@@ -85,11 +86,12 @@ export default class CookieBar extends React.Component {
                                       >
                                           {sub}
                                       </a>
-                                  )
-                              }
+                                  ),
+                              },
                           )
                         : _t(
-                              "Please help improve Riot.im by sending <UsageDataLink>anonymous usage data</UsageDataLink>. " +
+                              "Please help improve Riot.im by sending " +
+                                  "<UsageDataLink>anonymous usage data</UsageDataLink>. " +
                                   "This will use a cookie.",
                               {},
                               {
@@ -100,8 +102,8 @@ export default class CookieBar extends React.Component {
                                       >
                                           {sub}
                                       </a>
-                                  )
-                              }
+                                  ),
+                              },
                           )}
                 </div>
                 <AccessibleButton

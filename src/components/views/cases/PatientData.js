@@ -15,10 +15,8 @@ limitations under the License.
 */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {_t} from "../../../languageHandler";
 import Field from "../elements/Field";
-import classNames from 'classnames';
 
 export default class PatientData extends React.Component {
     constructor(props, context) {

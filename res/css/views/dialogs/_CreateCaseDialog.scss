@@ -14,10 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-.amp_CreateCaseDialog {
-
-}
-
 .amp_Dialog_content {
     flex: 50%;
     margin: 6px;
@@ -68,11 +64,10 @@ limitations under the License.
 .amp_CreateCaseDialog_error {
     text-align: center;
     text-decoration: none;
-    font-family: Arial;
+    font-family: $font-family;
     font-size: 17px;
     color: $amp_no_recipient_warning_color;
 }
-
 
 .amp_CreateCaseDialog_input_field {
     margin: 0.5em !important;
@@ -88,27 +83,27 @@ limitations under the License.
 }
 
 .amp_Severity_info {
-    background-color: $amp_case_severity_info_color !important
+    background-color: $amp_case_severity_info_color !important;
 }
 
 .amp_Severity_request {
-    background-color: $amp_case_severity_request_color !important
+    background-color: $amp_case_severity_request_color !important;
 }
 
 .amp_Severity_urgent {
-    background-color: $amp_case_severity_urgent_color !important
+    background-color: $amp_case_severity_urgent_color !important;
 }
 
 .amp_Severity_critical {
-    background-color: $amp_case_severity_critical_color !important
+    background-color: $amp_case_severity_critical_color !important;
 }
 
 .amp_Flex_column {
-    flex-direction: column
+    flex-direction: column;
 }
 
 .amp_Textarea_noresize {
-    resize: none
+    resize: none;
 }
 
 .amp_CreateCaseImportButton {

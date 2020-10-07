@@ -17,7 +17,6 @@ limitations under the License.
 import React from 'react';
 import {_t} from "../../../languageHandler";
 import Field from "../elements/Field";
-import classNames from 'classnames';
 
 export default class AnamnesisData extends React.Component {
     constructor() {
@@ -64,10 +63,10 @@ export default class AnamnesisData extends React.Component {
                 <div className="mx_ProfileSettings_profile">
                     <Field id="anamnesisResponsiveness" className="amp_CreateCaseDialog_input_field" label={_t("Responsiveness")}
                                    type="text" value={this.state.responsiveness} autoComplete="off"
-                                   onChange={this._onResponsivenessChanged} /><br/>
+                                   onChange={this._onResponsivenessChanged} /><br />
                     <Field id="anamnesisPain" className="amp_CreateCaseDialog_input_field" label={_t("Pain")}
                                    type="text" value={this.state.pain} autoComplete="off"
-                                   onChange={this._onPainChanged} /><br/>
+                                   onChange={this._onPainChanged} /><br />
                     <Field id="anamnesisDefecation" className="amp_CreateCaseDialog_input_field" label={_t("Last defecation")}
                                    type="datetime-local" value={this.state.lastDefecation} autoComplete="off"
                                    onChange={this._onLastDefecationChanged} />
@@ -75,7 +74,7 @@ export default class AnamnesisData extends React.Component {
                 <div className="mx_ProfileSettings_profile">
                     <Field id="anamnesisMisc" className="amp_CreateCaseDialog_input_field" label={_t("Misc")}
                                    type="text" value={this.state.misc} autoComplete="off"
-                                   onChange={this._onMiscChanged} /><br/>
+                                   onChange={this._onMiscChanged} /><br />
                 </div>
             </div>
         );

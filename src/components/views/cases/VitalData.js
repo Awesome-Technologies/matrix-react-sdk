@@ -15,10 +15,8 @@ limitations under the License.
 */
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import {_t} from "../../../languageHandler";
 import Field from "../elements/Field";
-import classNames from 'classnames';
 
 export default class VitalData extends React.Component {
     constructor(props, context) {
@@ -127,9 +125,14 @@ export default class VitalData extends React.Component {
                     <Field id="vitalDataBloodpressureDia" className="amp_CreateCaseDialog_input_field" label={_t("Blood pressure diastolic in mm/Hg")}
                                        type="number" step="1" value={this.props.bloodPressureDia} autoComplete="off"
                                        onChange={this._onBloodpressureDiaChanged} />
-                    <Field id="vitalDataBloodpressureDatetime" className="amp_CreateCaseDialog_input_field" label={_t("Blood pressure datetime")}
-                                           type="datetime-local" value={this.props.bloodpressureDatetime} autoComplete="off"
-                                           onChange={this._onBloodpressureDatetimeChanged} />
+                    <Field
+                        id="vitalDataBloodpressureDatetime"
+                        className="amp_CreateCaseDialog_input_field"
+                        label={_t("Blood pressure datetime")}
+                        type="datetime-local"
+                        value={this.props.bloodpressureDatetime}
+                        autoComplete="off"
+                        onChange={this._onBloodpressureDatetimeChanged} />
                 </div>
                 <div className="amp_CaseTab_section">
                     <Field id="vitalDataPulse" className="amp_CreateCaseDialog_input_field" label={_t("Pulse in bpm")}
@@ -143,9 +146,14 @@ export default class VitalData extends React.Component {
                     <Field id="vitalDataTemperature" className="amp_CreateCaseDialog_input_field" label={_t("Temperature in °C")}
                                        type="number" step="0.01" value={this.props.temperature} autoComplete="off"
                                        onChange={this._onTemperatureChanged} />
-                    <Field id="vitalDataTemperatureDatetime" className="amp_CreateCaseDialog_input_field" label={_t("Temperature datetime")}
-                                           type="datetime-local" value={this.props.temperatureDatetime} autoComplete="off"
-                                           onChange={this._onTemperatureDatetimeChanged} />
+                    <Field
+                      id="vitalDataTemperatureDatetime"
+                      className="amp_CreateCaseDialog_input_field"
+                      label={_t("Temperature datetime")}
+                      type="datetime-local"
+                      value={this.props.temperatureDatetime}
+                      autoComplete="off"
+                      onChange={this._onTemperatureDatetimeChanged} />
                 </div>
                 <div className="amp_CaseTab_section">
                     <Field id="vitalDataBloodsugar" className="amp_CreateCaseDialog_input_field" label={_t("Blood sugar in mg/dl")}

@@ -36,6 +36,7 @@ import Timer from '../../utils/Timer';
 import shouldHideEvent from '../../shouldHideEvent';
 import EditorStateTransfer from '../../utils/EditorStateTransfer';
 import {haveTileForEvent} from "../views/rooms/EventTile";
+import TimelinePanel from "./TimelinePanel";
 
 const PAGINATE_SIZE = 20;
 const INITIAL_SIZE = 20;
@@ -1409,9 +1410,6 @@ const CasePanel = createReactClass({
             this.state.forwardPaginating ||
             ['PREPARED', 'CATCHUP'].includes(this.state.clientSyncState)
         );
-        const events = this.state.firstVisibleEventIndex
-              ? this.state.events.slice(this.state.firstVisibleEventIndex)
-              : this.state.events;
 
         return (
             <CaseObservationsPanel

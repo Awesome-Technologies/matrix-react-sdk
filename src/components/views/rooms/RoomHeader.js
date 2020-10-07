@@ -27,12 +27,9 @@ import RateLimitedFunc from '../../../ratelimitedfunc';
 
 import { linkifyElement } from '../../../HtmlUtils';
 import AccessibleButton from '../elements/AccessibleButton';
-import ManageIntegsButton from '../elements/ManageIntegsButton';
 import {CancelButton} from './SimpleRoomHeader';
-import SettingsStore from "../../../settings/SettingsStore";
 import RoomHeaderButtons from '../right_panel/RoomHeaderButtons';
 import DMRoomMap from '../../../utils/DMRoomMap';
-import E2EIcon from './E2EIcon';
 import InviteOnlyIcon from './InviteOnlyIcon';
 import dis from "../../../dispatcher/dispatcher";
 import Analytics from '../../../Analytics';
@@ -138,10 +135,10 @@ export default createReactClass({
           // send case closed event
           const client = MatrixClientPeg.get();
 
-          let doneContent = {};
+          const doneContent = {};
           doneContent["done"] = true;
           client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).then(() => {
-              Analytics.trackEvent('AMP.care cases', 'case closed')
+              Analytics.trackEvent('AMP.care cases', 'case closed');
               dis.dispatch({action: 'message_sent'});
           }, (err) => {
               dis.dispatch({action: 'message_send_failed'});
@@ -191,12 +188,6 @@ export default createReactClass({
 
         let searchStatus = null;
         let cancelButton = null;
-        let settingsButton = null;
-        let pinnedEventsButton = null;
-
-        const e2eIcon = this.props.e2eStatus ?
-            <E2EIcon status={this.props.e2eStatus} /> :
-            undefined;
 
         const dmUserId = DMRoomMap.shared().getUserIdForRoomId(this.props.room.roomId);
         const joinRules = this.props.room && this.props.room.currentState.getStateEvents("m.room.join_rules", "");
@@ -267,58 +258,6 @@ export default createReactClass({
                 viewAvatarOnClick={true} />);
         }
 
-        if (this.props.onSettingsClick) {
-            settingsButton =
-                <AccessibleButton className="mx_RoomHeader_button mx_RoomHeader_settingsButton"
-                    onClick={this.props.onSettingsClick}
-                    title={_t("Settings")}
-                >
-                </AccessibleButton>;
-        }
-
-        if (this.props.onPinnedClick && SettingsStore.isFeatureEnabled('feature_pinning')) {
-            let pinsIndicator = null;
-            if (this._hasUnreadPins()) {
-                pinsIndicator = (<div className="mx_RoomHeader_pinsIndicator mx_RoomHeader_pinsIndicatorUnread" />);
-            } else if (this._hasPins()) {
-                pinsIndicator = (<div className="mx_RoomHeader_pinsIndicator" />);
-            }
-
-            pinnedEventsButton =
-                <AccessibleButton className="mx_RoomHeader_button mx_RoomHeader_pinnedButton"
-                                  onClick={this.props.onPinnedClick} title={_t("Pinned Messages")}>
-                    { pinsIndicator }
-                </AccessibleButton>;
-        }
-
-//        var leave_button;
-//        if (this.props.onLeaveClick) {
-//            leave_button =
-//                <div className="mx_RoomHeader_button" onClick={this.props.onLeaveClick} title="Leave room">
-//                    <TintableSvg src={require("../../../../res/img/leave.svg")} width="26" height="20"/>
-//                </div>;
-//        }
-
-        let forgetButton;
-        if (this.props.onForgetClick) {
-            forgetButton =
-                <AccessibleButton className="mx_RoomHeader_button mx_RoomHeader_forgetButton"
-                    onClick={this.props.onForgetClick}
-                    title={_t("Forget room")}
-                >
-                </AccessibleButton>;
-        }
-
-        let searchButton;
-        if (this.props.onSearchClick && this.props.inRoom) {
-            searchButton =
-                <AccessibleButton className="mx_RoomHeader_button mx_RoomHeader_searchButton"
-                    onClick={this.props.onSearchClick}
-                    title={_t("Search")}
-                >
-                </AccessibleButton>;
-        }
-
         let shareRoomButton;
         if (this.props.inRoom && !dmUserId && !MatrixClientPeg.get().isGuest()) {
             shareRoomButton =
@@ -330,20 +269,11 @@ export default createReactClass({
                 </AccessibleButton>;
         }
 
-        let manageIntegsButton;
-        if (this.props.room && this.props.room.roomId && this.props.inRoom) {
-            manageIntegsButton = <ManageIntegsButton
-                room={this.props.room}
-            />;
-        }
-
-        let caseIsClosed = false;
         let closeCaseButton;
         let archiveCaseButton;
 
-        if(!MatrixClientPeg.get().isGuest()){
-
-          if(!MatrixClientPeg.get().isGuest()){
+        if (!MatrixClientPeg.get().isGuest()) {
+          if (!MatrixClientPeg.get().isGuest()) {
             closeCaseButton =
                 <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
                                   onClick={this.onCloseCaseClick}

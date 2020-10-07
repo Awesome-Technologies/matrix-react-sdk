@@ -22,7 +22,6 @@ import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import * as sdk from '../../../index';
 import dis from '../../../dispatcher/dispatcher';
 import RoomViewStore from '../../../stores/RoomViewStore';
-import Stickerpicker from './Stickerpicker';
 import { makeRoomPermalink } from '../../../utils/permalinks/Permalinks';
 import ContentMessages from '../../../ContentMessages';
 import E2EIcon from './E2EIcon';
@@ -31,7 +30,7 @@ import {aboveLeftOf, ContextMenu, ContextMenuButton, useContextMenu} from "../..
 
 function ComposerAvatar(props) {
     const MemberStatusMessageAvatar = sdk.getComponent(
-        "avatars.MemberStatusMessageAvatar"
+        "avatars.MemberStatusMessageAvatar",
     );
     return (
         <div className="mx_MessageComposer_avatar">
@@ -45,7 +44,7 @@ function ComposerAvatar(props) {
 }
 
 ComposerAvatar.propTypes = {
-    me: PropTypes.object.isRequired
+    me: PropTypes.object.isRequired,
 };
 
 function CallButton(props) {
@@ -54,7 +53,7 @@ function CallButton(props) {
         dis.dispatch({
             action: "place_call",
             type: "voice",
-            room_id: props.roomId
+            room_id: props.roomId,
         });
     };
 
@@ -68,7 +67,7 @@ function CallButton(props) {
 }
 
 CallButton.propTypes = {
-    roomId: PropTypes.string.isRequired
+    roomId: PropTypes.string.isRequired,
 };
 
 function VideoCallButton(props) {
@@ -77,7 +76,7 @@ function VideoCallButton(props) {
         dis.dispatch({
             action: "place_call",
             type: ev.shiftKey ? "screensharing" : "video",
-            room_id: props.roomId
+            room_id: props.roomId,
         });
     };
 
@@ -91,7 +90,7 @@ function VideoCallButton(props) {
 }
 
 VideoCallButton.propTypes = {
-    roomId: PropTypes.string.isRequired
+    roomId: PropTypes.string.isRequired,
 };
 
 function HangupButton(props) {
@@ -105,7 +104,7 @@ function HangupButton(props) {
             action: "hangup",
             // hangup the call for this room, which may not be the room in props
             // (e.g. conferences which will hangup the 1:1 room instead)
-            room_id: call.roomId
+            room_id: call.roomId,
         });
     };
     return (
@@ -118,7 +117,7 @@ function HangupButton(props) {
 }
 
 HangupButton.propTypes = {
-    roomId: PropTypes.string.isRequired
+    roomId: PropTypes.string.isRequired,
 };
 
 const EmojiButton = ({addEmoji}) => {
@@ -149,7 +148,7 @@ const EmojiButton = ({addEmoji}) => {
 
 class UploadButton extends React.Component {
     static propTypes = {
-        roomId: PropTypes.string.isRequired
+        roomId: PropTypes.string.isRequired,
     };
 
     constructor(props) {
@@ -192,7 +191,7 @@ class UploadButton extends React.Component {
         ContentMessages.sharedInstance().sendContentListToRoom(
             tfiles,
             this.props.roomId,
-            MatrixClientPeg.get()
+            MatrixClientPeg.get(),
         );
 
         // This is the onChange handler for a file form control, but we're
@@ -243,7 +242,7 @@ export default class MessageComposer extends React.Component {
     componentDidMount() {
         MatrixClientPeg.get().on("RoomState.events", this._onRoomStateEvents);
         this._roomStoreToken = RoomViewStore.addListener(
-            this._onRoomViewStoreUpdate
+            this._onRoomViewStoreUpdate,
         );
         this._waitForOwnMember();
     }
@@ -260,7 +259,7 @@ export default class MessageComposer extends React.Component {
         // will return the promise for the existing operation
         this.props.room.loadMembersIfNeeded().then(() => {
             const me = this.props.room.getMember(
-                MatrixClientPeg.get().getUserId()
+                MatrixClientPeg.get().getUserId(),
             );
             this.setState({ me });
         });
@@ -270,7 +269,7 @@ export default class MessageComposer extends React.Component {
         if (MatrixClientPeg.get()) {
             MatrixClientPeg.get().removeListener(
                 "RoomState.events",
-                this._onRoomStateEvents
+                this._onRoomStateEvents,
             );
         }
         if (this._roomStoreToken) {
@@ -286,7 +285,7 @@ export default class MessageComposer extends React.Component {
         }
         if (ev.getType() === "m.room.power_levels") {
             this.setState({
-                canSendMessages: this.props.room.maySendMessage()
+                canSendMessages: this.props.room.maySendMessage(),
             });
         }
     }
@@ -294,7 +293,7 @@ export default class MessageComposer extends React.Component {
     _getRoomTombstone() {
         return this.props.room.currentState.getStateEvents(
             "m.room.tombstone",
-            ""
+            "",
         );
     }
 
@@ -317,16 +316,15 @@ export default class MessageComposer extends React.Component {
             "replacement_room"
         ];
         const replacementRoom = MatrixClientPeg.get().getRoom(
-            replacementRoomId
+            replacementRoomId,
         );
         let createEventId = null;
         if (replacementRoom) {
             const createEvent = replacementRoom.currentState.getStateEvents(
                 "m.room.create",
-                ""
+                "",
             );
-            if (createEvent && createEvent.getId())
-                createEventId = createEvent.getId();
+            if (createEvent && createEvent.getId()) {createEventId = createEvent.getId();}
         }
 
         const viaServers = [
@@ -334,7 +332,7 @@ export default class MessageComposer extends React.Component {
                 .getSender()
                 .split(":")
                 .splice(1)
-                .join(":")
+                .join(":"),
         ];
         dis.dispatch({
             action: "view_room",
@@ -348,8 +346,8 @@ export default class MessageComposer extends React.Component {
             via_servers: viaServers,
             opts: {
                 // These are passed down to the js-sdk's /join call
-                viaServers: viaServers
-            }
+                viaServers: viaServers,
+            },
         });
     }
 
@@ -387,7 +385,7 @@ export default class MessageComposer extends React.Component {
                     status={this.props.e2eStatus}
                     className="mx_MessageComposer_e2eIcon"
                 />
-            ) : null
+            ) : null,
         ];
 
         if (!this.state.tombstone && this.state.canSendMessages) {
@@ -396,7 +394,7 @@ export default class MessageComposer extends React.Component {
             // complex because of conference calls.
 
             const SendMessageComposer = sdk.getComponent(
-                "rooms.SendMessageComposer"
+                "rooms.SendMessageComposer",
             );
             const callInProgress =
                 this.props.callState && this.props.callState !== "ended";
@@ -450,7 +448,7 @@ export default class MessageComposer extends React.Component {
                       </span><br />
                       { continuesLink }
                   </div>
-                </div>
+                </div>,
             );
         } else {
             controls.push(
@@ -459,7 +457,7 @@ export default class MessageComposer extends React.Component {
                     className="mx_MessageComposer_noperm_error"
                 >
                     {_t("You do not have permission to post to this room")}
-                </div>
+                </div>,
             );
         }
 
@@ -481,5 +479,5 @@ MessageComposer.propTypes = {
     callState: PropTypes.string,
 
     // string representing the current room app drawer state
-    showApps: PropTypes.bool
+    showApps: PropTypes.bool,
 };

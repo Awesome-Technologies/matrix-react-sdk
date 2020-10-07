@@ -25,7 +25,7 @@ import dis from '../../../dispatcher/dispatcher';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
 import DMRoomMap from '../../../utils/DMRoomMap';
 import * as sdk from '../../../index';
-import {ContextMenu, ContextMenuButton, toRightOf} from '../../structures/ContextMenu';
+import {ContextMenu, toRightOf} from '../../structures/ContextMenu';
 import * as RoomNotifs from '../../../RoomNotifs';
 import * as FormattingUtils from '../../../utils/FormattingUtils';
 import ActiveRoomObserver from '../../../ActiveRoomObserver';
@@ -496,17 +496,6 @@ export default createReactClass({
 
         const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
 
-        let contextMenuButton;
-        if (!MatrixClientPeg.get().isGuest()) {
-            contextMenuButton = (
-                <ContextMenuButton
-                    className="mx_RoomTile_menuButton"
-                    label={_t("Options")}
-                    isExpanded={isMenuDisplayed}
-                    onClick={this.onContextMenuButtonClick} />
-            );
-        }
-
         const RoomAvatar = sdk.getComponent('avatars.RoomAvatar');
         let roomAvatar = <RoomAvatar room={this.props.room} width={24} height={24} />;
 
@@ -523,7 +512,7 @@ export default createReactClass({
         // AMP.care set room icon according to case severity
         if (severity) {
             let severityIcon;
-            switch (severity){
+            switch (severity) {
                 case 'critical':
                     severityIcon = require("../../../../res/img/icon_severity_critical.svg");
                     break;
@@ -607,6 +596,10 @@ export default createReactClass({
                             <div className="mx_RoomTile_labelContainer">
                                 { label }
                                 { subtextLabel }
+                            </div>
+                            <div className="amp_RoomTile_infoContainer">
+                                { sender }
+                                { createDate }
                             </div>
                             { dmOnline }
                             { badge }
