@@ -44,7 +44,6 @@ export const SAFE_LOCALPART_REGEX = /^[a-z0-9=_\-./]+$/;
  */
 export async function startAnyRegistrationFlow(options) {
     if (options === undefined) options = {};
-    const flows = await _getRegistrationFlows();
 
     // look for an ILAG compatible flow. We define this as one
     // which has only dummy or recaptcha flows. In practice it
@@ -53,17 +52,18 @@ export async function startAnyRegistrationFlow(options) {
     // the relevant details in advance. We err on the side of
     // caution though.
 
+    const flows = await _getRegistrationFlows();
     const hasIlagFlow = flows.some((flow) => {
-       return flow.stages.every((stage) => {
-           return ['m.login.dummy', 'm.login.recaptcha', 'm.login.terms'].includes(stage);
-       });
+        return flow.stages.every((stage) => {
+            return ['m.login.dummy', 'm.login.recaptcha', 'm.login.terms'].includes(stage);
+        });
     });
 
     if (hasIlagFlow) {
-       dis.dispatch({
-           action: 'view_set_mxid',
-           go_home_on_cancel: options.go_home_on_cancel,
-       });
+        dis.dispatch({
+            action: 'view_set_mxid',
+            go_home_on_cancel: options.go_home_on_cancel,
+        });
     } else {
         const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
         const modal = Modal.createTrackedDialog('Registration required', '', QuestionDialog, {

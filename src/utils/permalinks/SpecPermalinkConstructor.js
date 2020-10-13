@@ -18,7 +18,7 @@ limitations under the License.
 import PermalinkConstructor, {PermalinkParts} from "./PermalinkConstructor";
 import {MatrixClientPeg} from "../../MatrixClientPeg";
 
-export const host = "matrix.to";
+export const host = "amp.chat";
 export const baseUrl = `https://${host}`;
 
 /**
@@ -29,9 +29,7 @@ export default class SpecPermalinkConstructor extends PermalinkConstructor {
         super();
     }
 
-    _getBaseUrl(){
-        const host = MatrixClientPeg.get().getDomain();
-        const baseUrl = `https://${host}`;
+    _getBaseUrl() {
         return baseUrl;
     }
 

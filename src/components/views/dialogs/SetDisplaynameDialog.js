@@ -15,40 +15,33 @@ limitations under the License.
 */
 
 import React from 'react';
-import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
-import * as Email from '../../../email';
-import AddThreepid from '../../../AddThreepid';
 import { _t } from '../../../languageHandler';
-import Modal from '../../../Modal';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
 
 
-/**
+/*
  * Prompt the user to set a displayname.
  *
  * On success, `onFinished(true)` is called.
  */
-export default createReactClass({
-    displayName: 'SetDisplaynameDialog',
-    propTypes: {
+export default class SetDisplaynameDialog extends React.Component {
+    static propTypes = {
         onFinished: PropTypes.func.isRequired,
-    },
+    };
 
-    getInitialState: function() {
-        return {
-            displayname: '',
-        };
-    },
+    state = {
+        displayname: '',
+    };
 
-    onDisplaynameChanged: function(value) {
+    onDisplaynameChanged = value => {
         this.setState({
             displayname: value,
         });
-    },
+    };
 
-    onSubmit: function() {
+    onSubmit = () => {
         const displayname = this.state.displayname;
 
         const cli = MatrixClientPeg.get();
@@ -57,21 +50,13 @@ export default createReactClass({
         });
 
         this.props.onFinished(true);
-    },
+    };
 
-    onCancelled: function() {
+    onCancelled = () => {
         this.props.onFinished(false);
-    },
+    };
 
-    onEmailDialogFinished: function(ok) {
-        if (ok) {
-            this.verifyEmailAddress();
-        } else {
-            this.setState({emailBusy: false});
-        }
-    },
-
-    render: function() {
+    render() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const EditableText = sdk.getComponent('elements.EditableText');
 
@@ -108,5 +93,5 @@ export default createReactClass({
                 </div>
             </BaseDialog>
         );
-    },
-});
+    }
+}

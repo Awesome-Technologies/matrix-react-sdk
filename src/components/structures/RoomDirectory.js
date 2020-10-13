@@ -1,7 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2019 Michael Telatynski <7t3chguy@gmail.com>
-Copyright 2019 The Matrix.org Foundation C.I.C.
+Copyright 2019, 2020 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 */
 
 import React from 'react';
-import createReactClass from 'create-react-class';
 import {MatrixClientPeg} from "../../MatrixClientPeg";
 import * as sdk from "../../index";
 import dis from "../../dispatcher/dispatcher";
@@ -25,27 +24,33 @@ import Modal from "../../Modal";
 import { linkifyAndSanitizeHtml } from '../../HtmlUtils';
 import PropTypes from 'prop-types';
 import { _t } from '../../languageHandler';
+import SdkConfig from '../../SdkConfig';
 import { instanceForInstanceId, protocolNameForInstanceId } from '../../utils/DirectoryUtils';
 import Analytics from '../../Analytics';
 import {getHttpUriForMxc} from "matrix-js-sdk/src/content-repo";
 import {ALL_ROOMS} from "../views/directory/NetworkDropdown";
+import SettingsStore from "../../settings/SettingsStore";
+import TagOrderStore from "../../stores/TagOrderStore";
+import GroupStore from "../../stores/GroupStore";
+import FlairStore from "../../stores/FlairStore";
 
 const MAX_NAME_LENGTH = 80;
-const MAX_TOPIC_LENGTH = 160;
+const MAX_TOPIC_LENGTH = 800;
 
 function track(action) {
     Analytics.trackEvent('RoomDirectory', action);
 }
 
-export default createReactClass({
-    displayName: 'RoomDirectory',
-
-    propTypes: {
+export default class RoomDirectory extends React.Component {
+    static propTypes = {
         onFinished: PropTypes.func.isRequired,
-    },
+    };
 
-    getInitialState: function() {
-        return {
+    constructor(props) {
+        super(props);
+
+        const selectedCommunityId = TagOrderStore.getSelectedTags()[0];
+        this.state = {
             publicRooms: [],
             loading: true,
             protocolsLoading: true,
@@ -53,64 +58,108 @@ export default createReactClass({
             instanceId: undefined,
             roomServer: MatrixClientPeg.getHomeserverName(),
             filterString: null,
+            selectedCommunityId: SettingsStore.getValue("feature_communities_v2_prototypes")
+                ? selectedCommunityId
+                : null,
+            communityName: null,
         };
-    },
 
-    // TODO: [REACT-WARNING] Move this to constructor
-    UNSAFE_componentWillMount: function() {
         this._unmounted = false;
         this.nextBatch = null;
         this.filterTimeout = null;
         this.scrollPanel = null;
         this.protocols = null;
 
-        this.setState({protocolsLoading: true});
+        this.state.protocolsLoading = true;
         if (!MatrixClientPeg.get()) {
             // We may not have a client yet when invoked from welcome page
-            this.setState({protocolsLoading: false});
+            this.state.protocolsLoading = false;
             return;
         }
-        MatrixClientPeg.get().getThirdpartyProtocols().then((response) => {
-            this.protocols = response;
-            this.setState({protocolsLoading: false});
-        }, (err) => {
-            console.warn(`error loading thirdparty protocols: ${err}`);
-            this.setState({protocolsLoading: false});
-            if (MatrixClientPeg.get().isGuest()) {
-                // Guests currently aren't allowed to use this API, so
-                // ignore this as otherwise this error is literally the
-                // thing you see when loading the client!
-                return;
-            }
-            track('Failed to get protocol list from homeserver');
-            this.setState({
-                error: _t(
-                    'Riot failed to get the protocol list from the homeserver. ' +
-                    'The homeserver may be too old to support third party networks.',
-                ),
+
+        if (!this.state.selectedCommunityId) {
+            MatrixClientPeg.get().getThirdpartyProtocols().then((response) => {
+                this.protocols = response;
+                this.setState({protocolsLoading: false});
+            }, (err) => {
+                console.warn(`error loading third party protocols: ${err}`);
+                this.setState({protocolsLoading: false});
+                if (MatrixClientPeg.get().isGuest()) {
+                    // Guests currently aren't allowed to use this API, so
+                    // ignore this as otherwise this error is literally the
+                    // thing you see when loading the client!
+                    return;
+                }
+                track('Failed to get protocol list from homeserver');
+                const brand = SdkConfig.get().brand;
+                this.setState({
+                    error: _t(
+                        '%(brand)s failed to get the protocol list from the homeserver. ' +
+                        'The homeserver may be too old to support third party networks.',
+                        {brand},
+                    ),
+                });
             });
-        });
+        } else {
+            // We don't use the protocols in the communities v2 prototype experience
+            this.state.protocolsLoading = false;
 
+            // Grab the profile info async
+            FlairStore.getGroupProfileCached(MatrixClientPeg.get(), this.state.selectedCommunityId).then(profile => {
+                this.setState({communityName: profile.name});
+            });
+        }
+    }
+
+    componentDidMount() {
         this.refreshRoomList();
-    },
+    }
 
-    componentWillUnmount: function() {
+    componentWillUnmount() {
         if (this.filterTimeout) {
             clearTimeout(this.filterTimeout);
         }
         this._unmounted = true;
-    },
+    }
 
-    refreshRoomList: function() {
+    refreshRoomList = () => {
+        if (this.state.selectedCommunityId) {
+            this.setState({
+                publicRooms: GroupStore.getGroupRooms(this.state.selectedCommunityId).map(r => {
+                    return {
+                        // Translate all the group properties to the directory format
+                        room_id: r.roomId,
+                        name: r.name,
+                        topic: r.topic,
+                        canonical_alias: r.canonicalAlias,
+                        num_joined_members: r.numJoinedMembers,
+                        avatarUrl: r.avatarUrl,
+                        world_readable: r.worldReadable,
+                        guest_can_join: r.guestsCanJoin,
+                    };
+                }).filter(r => {
+                    const filterString = this.state.filterString;
+                    if (filterString) {
+                        const containedIn = (s: string) => (s || "").toLowerCase().includes(filterString.toLowerCase());
+                        return containedIn(r.name) || containedIn(r.topic) || containedIn(r.canonical_alias);
+                    }
+                    return true;
+                }),
+                loading: false,
+            });
+            return;
+        }
+
         this.nextBatch = null;
         this.setState({
             publicRooms: [],
             loading: true,
         });
         this.getMoreRooms();
-    },
+    };
 
-    getMoreRooms: function() {
+    getMoreRooms() {
+        if (this.state.selectedCommunityId) return Promise.resolve(); // no more rooms
         if (!MatrixClientPeg.get()) return Promise.resolve();
 
         this.setState({
@@ -173,15 +222,16 @@ export default createReactClass({
 
             console.error("Failed to get publicRooms: %s", JSON.stringify(err));
             track('Failed to get public room list');
+            const brand = SdkConfig.get().brand;
             this.setState({
                 loading: false,
-                error:
-                    `${_t('Riot failed to get the public room list.')} ` +
-                    `${(err && err.message) ? err.message : _t('The homeserver may be unavailable or overloaded.')}`
-                ,
+                error: (
+                    _t('%(brand)s failed to get the public room list.', { brand }) +
+                    (err && err.message) ? err.message : _t('The homeserver may be unavailable or overloaded.')
+                ),
             });
         });
-    },
+    }
 
     /**
      * A limited interface for removing rooms from the directory.
@@ -190,7 +240,7 @@ export default createReactClass({
      * HS admins to do this through the RoomSettings interface, but
      * this needs SPEC-417.
      */
-    removeFromDirectory: function(room) {
+    removeFromDirectory(room) {
         const alias = get_display_alias_for_room(room);
         const name = room.name || alias || _t('Unnamed room');
 
@@ -232,18 +282,18 @@ export default createReactClass({
                 });
             },
         });
-    },
+    }
 
-    onRoomClicked: function(room, ev) {
-        if (ev.shiftKey) {
+    onRoomClicked = (room, ev) => {
+        if (ev.shiftKey && !this.state.selectedCommunityId) {
             ev.preventDefault();
             this.removeFromDirectory(room);
         } else {
             this.showRoom(room);
         }
-    },
+    };
 
-    onOptionChange: function(server, instanceId) {
+    onOptionChange = (server, instanceId) => {
         // clear next batch so we don't try to load more rooms
         this.nextBatch = null;
         this.setState({
@@ -261,15 +311,15 @@ export default createReactClass({
         // find the five gitter ones, at which point we do not want
         // to render all those rooms when switching back to 'all networks'.
         // Easiest to just blow away the state & re-fetch.
-    },
+    };
 
-    onFillRequest: function(backwards) {
+    onFillRequest = (backwards) => {
         if (backwards || !this.nextBatch) return Promise.resolve(false);
 
         return this.getMoreRooms();
-    },
+    };
 
-    onFilterChange: function(alias) {
+    onFilterChange = (alias) => {
         this.setState({
             filterString: alias || null,
         });
@@ -285,9 +335,9 @@ export default createReactClass({
             this.filterTimeout = null;
             this.refreshRoomList();
         }, 700);
-    },
+    };
 
-    onFilterClear: function() {
+    onFilterClear = () => {
         // update immediately
         this.setState({
             filterString: null,
@@ -296,9 +346,9 @@ export default createReactClass({
         if (this.filterTimeout) {
             clearTimeout(this.filterTimeout);
         }
-    },
+    };
 
-    onJoinFromSearchClick: function(alias) {
+    onJoinFromSearchClick = (alias) => {
         // If we don't have a particular instance id selected, just show that rooms alias
         if (!this.state.instanceId || this.state.instanceId === ALL_ROOMS) {
             // If the user specified an alias without a domain, add on whichever server is selected
@@ -314,9 +364,10 @@ export default createReactClass({
             const fields = protocolName ? this._getFieldsForThirdPartyLocation(alias, this.protocols[protocolName], instance) : null;
             if (!fields) {
                 const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
+                const brand = SdkConfig.get().brand;
                 Modal.createTrackedDialog('Unable to join network', '', ErrorDialog, {
                     title: _t('Unable to join network'),
-                    description: _t('Riot does not know how to join a room on this network'),
+                    description: _t('%(brand)s does not know how to join a room on this network', { brand }),
                 });
                 return;
             }
@@ -338,50 +389,41 @@ export default createReactClass({
                 });
             });
         }
-    },
+    };
 
-    onPreviewClick: function(ev, room) {
-        this.props.onFinished();
-        dis.dispatch({
-            action: 'view_room',
-            room_id: room.room_id,
-            should_peek: true,
-        });
+    onPreviewClick = (ev, room) => {
+        this.showRoom(room, null, false, true);
         ev.stopPropagation();
-    },
+    };
 
-    onViewClick: function(ev, room) {
-        this.props.onFinished();
-        dis.dispatch({
-            action: 'view_room',
-            room_id: room.room_id,
-            should_peek: false,
-        });
+    onViewClick = (ev, room) => {
+        this.showRoom(room);
         ev.stopPropagation();
-    },
+    };
 
-    onJoinClick: function(ev, room) {
+    onJoinClick = (ev, room) => {
         this.showRoom(room, null, true);
         ev.stopPropagation();
-    },
+    };
 
-    onCreateRoomClick: function(room) {
+    onCreateRoomClick = room => {
         this.props.onFinished();
         dis.dispatch({
             action: 'view_create_room',
             public: true,
         });
-    },
+    };
 
-    showRoomAlias: function(alias, autoJoin=false) {
+    showRoomAlias(alias, autoJoin=false) {
         this.showRoom(null, alias, autoJoin);
-    },
+    }
 
-    showRoom: function(room, room_alias, autoJoin=false) {
+    showRoom(room, room_alias, autoJoin = false, shouldPeek = false) {
         this.props.onFinished();
         const payload = {
             action: 'view_room',
             auto_join: autoJoin,
+            should_peek: shouldPeek,
         };
         if (room) {
             // Don't let the user view a room they won't be able to either
@@ -406,6 +448,7 @@ export default createReactClass({
             };
 
             if (this.state.roomServer) {
+                payload.via_servers = [this.state.roomServer];
                 payload.opts = {
                     viaServers: [this.state.roomServer],
                 };
@@ -421,7 +464,7 @@ export default createReactClass({
             payload.room_id = room.room_id;
         }
         dis.dispatch(payload);
-    },
+    }
 
     getRow(room) {
         const client = MatrixClientPeg.get();
@@ -454,6 +497,9 @@ export default createReactClass({
         }
 
         let topic = room.topic || '';
+        // Additional truncation based on line numbers is done via CSS,
+        // but to ensure that the DOM is not polluted with a huge string
+        // we give it a hard limit before rendering.
         if (topic.length > MAX_TOPIC_LENGTH) {
             topic = `${topic.substring(0, MAX_TOPIC_LENGTH)}...`;
         }
@@ -487,22 +533,22 @@ export default createReactClass({
                 <td className="mx_RoomDirectory_join">{joinOrViewButton}</td>
             </tr>
         );
-    },
+    }
 
-    collectScrollPanel: function(element) {
+    collectScrollPanel = (element) => {
         this.scrollPanel = element;
-    },
+    };
 
-    _stringLooksLikeId: function(s, field_type) {
+    _stringLooksLikeId(s, field_type) {
         let pat = /^#[^\s]+:[^\s]/;
         if (field_type && field_type.regexp) {
             pat = new RegExp(field_type.regexp);
         }
 
         return pat.test(s);
-    },
+    }
 
-    _getFieldsForThirdPartyLocation: function(userInput, protocol, instance) {
+    _getFieldsForThirdPartyLocation(userInput, protocol, instance) {
         // make an object with the fields specified by that protocol. We
         // require that the values of all but the last field come from the
         // instance. The last is the user input.
@@ -516,20 +562,20 @@ export default createReactClass({
         }
         fields[requiredFields[requiredFields.length - 1]] = userInput;
         return fields;
-    },
+    }
 
     /**
      * called by the parent component when PageUp/Down/etc is pressed.
      *
      * We pass it down to the scroll panel.
      */
-    handleScrollKey: function(ev) {
+    handleScrollKey = ev => {
         if (this.scrollPanel) {
             this.scrollPanel.handleScrollKey(ev);
         }
-    },
+    };
 
-    render: function() {
+    render() {
         const Loader = sdk.getComponent("elements.Spinner");
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
@@ -605,6 +651,18 @@ export default createReactClass({
                 }
             }
 
+            let dropdown = (
+                <NetworkDropdown
+                    protocols={this.protocols}
+                    onOptionChange={this.onOptionChange}
+                    selectedServerName={this.state.roomServer}
+                    selectedInstanceId={this.state.instanceId}
+                />
+            );
+            if (this.state.selectedCommunityId) {
+                dropdown = null;
+            }
+
             listHeader = <div className="mx_RoomDirectory_listheader">
                 <DirectorySearchBox
                     className="mx_RoomDirectory_searchbox"
@@ -614,12 +672,7 @@ export default createReactClass({
                     placeholder={placeholder}
                     showJoinButton={showJoinButton}
                 />
-                <NetworkDropdown
-                    protocols={this.protocols}
-                    onOptionChange={this.onOptionChange}
-                    selectedServerName={this.state.roomServer}
-                    selectedInstanceId={this.state.instanceId}
-                />
+                {dropdown}
             </div>;
         }
         const explanation =
@@ -632,12 +685,16 @@ export default createReactClass({
                 }},
             );
 
+        const title = this.state.selectedCommunityId
+            ? _t("Explore rooms in %(communityName)s", {
+                communityName: this.state.communityName || this.state.selectedCommunityId,
+            }) : _t("Explore rooms");
         return (
             <BaseDialog
                 className={'mx_RoomDirectory_dialog'}
                 hasCancel={true}
                 onFinished={this.props.onFinished}
-                title={_t("Explore rooms")}
+                title={title}
             >
                 <div className="mx_RoomDirectory">
                     {explanation}
@@ -648,8 +705,8 @@ export default createReactClass({
                 </div>
             </BaseDialog>
         );
-    },
-});
+    }
+}
 
 // Similar to matrix-react-sdk's MatrixTools.getDisplayAliasForRoom
 // but works with the objects we get from the public room list

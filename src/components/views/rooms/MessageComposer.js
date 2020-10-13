@@ -1,6 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
 Copyright 2017, 2018 New Vector Ltd
+Copyright 2020 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,6 +16,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 import React, {createRef} from 'react';
+import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import { _t } from '../../../languageHandler';
 import CallHandler from '../../../CallHandler';
@@ -27,7 +29,14 @@ import { makeRoomPermalink } from '../../../utils/permalinks/Permalinks';
 import ContentMessages from '../../../ContentMessages';
 import E2EIcon from './E2EIcon';
 import SettingsStore from "../../../settings/SettingsStore";
-import {aboveLeftOf, ContextMenu, ContextMenuButton, useContextMenu} from "../../structures/ContextMenu";
+import {aboveLeftOf, ContextMenu, ContextMenuTooltipButton, useContextMenu} from "../../structures/ContextMenu";
+import AccessibleTooltipButton from "../elements/AccessibleTooltipButton";
+import ReplyPreview from "./ReplyPreview";
+import {UIFeature} from "../../../settings/UIFeature";
+import WidgetStore from "../../../stores/WidgetStore";
+import WidgetUtils from "../../../utils/WidgetUtils";
+import {UPDATE_EVENT} from "../../../stores/AsyncStore";
+import ActiveWidgetStore from "../../../stores/ActiveWidgetStore";
 
 function ComposerAvatar(props) {
     const MemberStatusMessageAvatar = sdk.getComponent('avatars.MemberStatusMessageAvatar');
@@ -41,7 +50,6 @@ ComposerAvatar.propTypes = {
 };
 
 function CallButton(props) {
-    const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
     const onVoiceCallClick = (ev) => {
         dis.dispatch({
             action: 'place_call',
@@ -50,10 +58,11 @@ function CallButton(props) {
         });
     };
 
-    return (<AccessibleButton className="mx_MessageComposer_button mx_MessageComposer_voicecall"
-            onClick={onVoiceCallClick}
-            title={_t('Voice call')}
-        />);
+    return (<AccessibleTooltipButton
+        className="mx_MessageComposer_button mx_MessageComposer_voicecall"
+        onClick={onVoiceCallClick}
+        title={_t('Voice call')}
+    />);
 }
 
 CallButton.propTypes = {
@@ -61,7 +70,6 @@ CallButton.propTypes = {
 };
 
 function VideoCallButton(props) {
-    const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
     const onCallClick = (ev) => {
         dis.dispatch({
             action: 'place_call',
@@ -70,7 +78,8 @@ function VideoCallButton(props) {
         });
     };
 
-    return <AccessibleButton className="mx_MessageComposer_button mx_MessageComposer_videocall"
+    return <AccessibleTooltipButton
+        className="mx_MessageComposer_button mx_MessageComposer_videocall"
         onClick={onCallClick}
         title={_t('Video call')}
     />;
@@ -81,9 +90,16 @@ VideoCallButton.propTypes = {
 };
 
 function HangupButton(props) {
-    const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
     const onHangupClick = () => {
-        const call = CallHandler.getCallForRoom(props.roomId);
+        if (props.isConference) {
+            dis.dispatch({
+                action: props.canEndConference ? 'end_conference' : 'hangup_conference',
+                room_id: props.roomId,
+            });
+            return;
+        }
+
+        const call = CallHandler.sharedInstance().getCallForRoom(props.roomId);
         if (!call) {
             return;
         }
@@ -94,14 +110,28 @@ function HangupButton(props) {
             room_id: call.roomId,
         });
     };
-    return (<AccessibleButton className="mx_MessageComposer_button mx_MessageComposer_hangup"
+
+    let tooltip = _t("Hangup");
+    if (props.isConference && props.canEndConference) {
+        tooltip = _t("End conference");
+    }
+
+    const canLeaveConference = !props.isConference ? true : props.isInConference;
+    return (
+        <AccessibleTooltipButton
+            className="mx_MessageComposer_button mx_MessageComposer_hangup"
             onClick={onHangupClick}
-            title={_t('Hangup')}
-        />);
+            title={tooltip}
+            disabled={!canLeaveConference}
+        />
+    );
 }
 
 HangupButton.propTypes = {
     roomId: PropTypes.string.isRequired,
+    isConference: PropTypes.bool.isRequired,
+    canEndConference: PropTypes.bool,
+    isInConference: PropTypes.bool,
 };
 
 const EmojiButton = ({addEmoji}) => {
@@ -116,15 +146,26 @@ const EmojiButton = ({addEmoji}) => {
         </ContextMenu>;
     }
 
+    const className = classNames(
+        "mx_MessageComposer_button",
+        "mx_MessageComposer_emoji",
+        {
+            "mx_MessageComposer_button_highlight": menuDisplayed,
+        },
+    );
+
+    // TODO: replace ContextMenuTooltipButton with a unified representation of
+    // the header buttons and the right panel buttons
     return <React.Fragment>
-        <ContextMenuButton className="mx_MessageComposer_button mx_MessageComposer_emoji"
-                           onClick={openMenu}
-                           isExpanded={menuDisplayed}
-                           label={_t('Emoji picker')}
-                           inputRef={button}
+        <ContextMenuTooltipButton
+            className={className}
+            onClick={openMenu}
+            isExpanded={menuDisplayed}
+            title={_t('Emoji picker')}
+            inputRef={button}
         >
 
-        </ContextMenuButton>
+        </ContextMenuTooltipButton>
 
         { contextMenu }
     </React.Fragment>;
@@ -185,9 +226,9 @@ class UploadButton extends React.Component {
 
     render() {
         const uploadInputStyle = {display: 'none'};
-        const AccessibleButton = sdk.getComponent('elements.AccessibleButton');
         return (
-            <AccessibleButton className="mx_MessageComposer_button mx_MessageComposer_upload"
+            <AccessibleTooltipButton
+                className="mx_MessageComposer_button mx_MessageComposer_upload"
                 onClick={this.onUploadClick}
                 title={_t('Upload file')}
             >
@@ -198,7 +239,7 @@ class UploadButton extends React.Component {
                     multiple
                     onChange={this.onUploadFileInputChange}
                 />
-            </AccessibleButton>
+            </AccessibleTooltipButton>
         );
     }
 }
@@ -211,16 +252,42 @@ export default class MessageComposer extends React.Component {
         this._onRoomViewStoreUpdate = this._onRoomViewStoreUpdate.bind(this);
         this._onTombstoneClick = this._onTombstoneClick.bind(this);
         this.renderPlaceholderText = this.renderPlaceholderText.bind(this);
+        WidgetStore.instance.on(UPDATE_EVENT, this._onWidgetUpdate);
+        ActiveWidgetStore.on('update', this._onActiveWidgetUpdate);
+        this._dispatcherRef = null;
 
         this.state = {
             isQuoting: Boolean(RoomViewStore.getQuotingEvent()),
             tombstone: this._getRoomTombstone(),
             canSendMessages: this.props.room.maySendMessage(),
             showCallButtons: SettingsStore.getValue("showCallButtonsInComposer"),
+            hasConference: WidgetStore.instance.doesRoomHaveConference(this.props.room),
+            joinedConference: WidgetStore.instance.isJoinedToConferenceIn(this.props.room),
         };
     }
 
+    onAction = (payload) => {
+        if (payload.action === 'reply_to_event') {
+            // add a timeout for the reply preview to be rendered, so
+            // that the ScrollPanel listening to the resizeNotifier can
+            // correctly measure it's new height and scroll down to keep
+            // at the bottom if it already is
+            setTimeout(() => {
+                this.props.resizeNotifier.notifyTimelineHeightChanged();
+            }, 100);
+        }
+    };
+
+    _onWidgetUpdate = () => {
+        this.setState({hasConference: WidgetStore.instance.doesRoomHaveConference(this.props.room)});
+    };
+
+    _onActiveWidgetUpdate = () => {
+        this.setState({joinedConference: WidgetStore.instance.isJoinedToConferenceIn(this.props.room)});
+    };
+
     componentDidMount() {
+        this.dispatcherRef = dis.register(this.onAction);
         MatrixClientPeg.get().on("RoomState.events", this._onRoomStateEvents);
         this._roomStoreToken = RoomViewStore.addListener(this._onRoomViewStoreUpdate);
         this._waitForOwnMember();
@@ -249,6 +316,9 @@ export default class MessageComposer extends React.Component {
         if (this._roomStoreToken) {
             this._roomStoreToken.remove();
         }
+        WidgetStore.instance.removeListener(UPDATE_EVENT, this._onWidgetUpdate);
+        ActiveWidgetStore.removeListener('update', this._onActiveWidgetUpdate);
+        dis.unregister(this.dispatcherRef);
     }
 
     _onRoomStateEvents(ev, state) {
@@ -352,16 +422,31 @@ export default class MessageComposer extends React.Component {
                     key="controls_input"
                     room={this.props.room}
                     placeholder={this.renderPlaceholderText()}
+                    resizeNotifier={this.props.resizeNotifier}
                     permalinkCreator={this.props.permalinkCreator} />,
                 <UploadButton key="controls_upload" roomId={this.props.room.roomId} />,
                 <EmojiButton key="emoji_button" addEmoji={this.addEmoji} />,
-                <Stickerpicker key="stickerpicker_controls_button" room={this.props.room} />,
             );
 
+            if (SettingsStore.getValue(UIFeature.Widgets)) {
+                controls.push(<Stickerpicker key="stickerpicker_controls_button" room={this.props.room} />);
+            }
+
             if (this.state.showCallButtons) {
-                if (callInProgress) {
+                if (this.state.hasConference) {
+                    const canEndConf = WidgetUtils.canUserModifyWidgets(this.props.room.roomId);
                     controls.push(
-                        <HangupButton key="controls_hangup" roomId={this.props.room.roomId} />,
+                        <HangupButton
+                            key="controls_hangup"
+                            roomId={this.props.room.roomId}
+                            isConference={true}
+                            canEndConference={canEndConf}
+                            isInConference={this.state.joinedConference}
+                        />,
+                    );
+                } else if (callInProgress) {
+                    controls.push(
+                        <HangupButton key="controls_hangup" roomId={this.props.room.roomId} isConference={false} />,
                     );
                 } else {
                     controls.push(
@@ -402,6 +487,7 @@ export default class MessageComposer extends React.Component {
         return (
             <div className="mx_MessageComposer mx_GroupLayout">
                 <div className="mx_MessageComposer_wrapper">
+                    <ReplyPreview permalinkCreator={this.props.permalinkCreator} />
                     <div className="mx_MessageComposer_row">
                         { controls }
                     </div>
