@@ -33,7 +33,6 @@ import RoomViewStore from '../../../stores/RoomViewStore';
 import SettingsStore from "../../../settings/SettingsStore";
 import {_t} from "../../../languageHandler";
 import {RovingTabIndexWrapper} from "../../../accessibility/RovingTabIndex";
-import E2EIcon from './E2EIcon';
 import InviteOnlyIcon from './InviteOnlyIcon';
 // eslint-disable-next-line camelcase
 import rate_limited_func from '../../../ratelimitedfunc';
@@ -564,11 +563,6 @@ export default createReactClass({
             privateIcon = <InviteOnlyIcon collapsedPanel={this.props.collapsed} />;
         }
 
-        let e2eIcon = null;
-        if (this.state.e2eStatus) {
-            e2eIcon = <E2EIcon status={this.state.e2eStatus} className="mx_RoomTile_e2eIcon" />;
-        }
-
         return <React.Fragment>
             <RovingTabIndexWrapper inputRef={this._roomTile}>
                 {({onFocus, isActive, ref}) =>
@@ -588,7 +582,6 @@ export default createReactClass({
                         <div className={avatarClasses}>
                             <div className="mx_RoomTile_avatar_container">
                                 { roomAvatar }
-                                { e2eIcon }
                             </div>
                         </div>
                         { privateIcon }
