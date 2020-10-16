@@ -20,7 +20,7 @@ import * as sdk from '../index';
 import { _t } from '../languageHandler';
 import Field from "../components/views/elements/Field";
 import SettingsStore from "../settings/SettingsStore";
-import {SettingLevel} from "../settings/SettingsStore";
+import {SettingLevel} from "../settings/SettingLevel";
 
 export default class ExternalInterface {
     static getVendorInterface(vendor) {

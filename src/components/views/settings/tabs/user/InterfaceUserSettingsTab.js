@@ -18,10 +18,10 @@ import React from 'react';
 import { _t } from "../../../../../languageHandler";
 import Field from "../../../elements/Field";
 import AccessibleButton from "../../../elements/AccessibleButton";
-import { SettingLevel } from "../../../../../settings/SettingsStore";
 import { MatrixClientPeg } from "../../../../../MatrixClientPeg";
 import * as sdk from "../../../../../index";
 import LabelledToggleSwitch from "../../../elements/LabelledToggleSwitch";
+import {SettingLevel} from "../../../../../settings/SettingLevel";
 import SettingsStore from "../../../../../settings/SettingsStore";
 import ExternalInterface from "../../../../../interfaces/externalInterface";
 

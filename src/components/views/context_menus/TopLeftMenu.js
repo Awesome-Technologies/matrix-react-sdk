@@ -30,7 +30,7 @@ import {getHomePageUrl} from "../../../utils/pages";
 import {Action} from "../../../dispatcher/actions";
 import * as Lifecycle from '../../../Lifecycle';
 import SettingsStore from "../../../settings/SettingsStore";
-import {SettingLevel} from "../../../settings/SettingsStore";
+import {SettingLevel} from "../../../settings/SettingLevel";
 
 export default class TopLeftMenu extends React.Component {
     static propTypes = {

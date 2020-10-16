@@ -19,7 +19,6 @@ limitations under the License.
 import React from 'react';
 import ReactDOM from 'react-dom';
 import PropTypes from 'prop-types';
-import createReactClass from 'create-react-class';
 import * as sdk from '../../index';
 import {_t} from "../../languageHandler";
 
@@ -29,10 +28,8 @@ import {MatrixClientPeg} from '../../MatrixClientPeg';
 /* (almost) stateless UI component which builds the event tiles in the room timeline.
  */
 
-const CaseObservationsPanel = createReactClass({
-    displayName: 'CaseObservationsPanel',
-
-    propTypes: {
+class CaseObservationsPanel extends React.Component {
+    static propTypes = {
         // true to give the component a 'display: none' style.
         hidden: PropTypes.bool,
 
@@ -98,9 +95,9 @@ const CaseObservationsPanel = createReactClass({
 
         // whether to show reactions for an event
         showReactions: PropTypes.bool,
-    },
+    }
 
-    componentWillMount: function() {
+    componentWillMount() {
         // the event after which we put a visible unread marker on the last
         // render cycle; null if readMarkerVisible was false or the RM was
         // suppressed (eg because it was at the end of the timeline)
@@ -119,20 +116,20 @@ const CaseObservationsPanel = createReactClass({
         this._readMarkerGhostNode = null;
 
         this._isMounted = true;
-    },
+    }
 
-    componentWillUnmount: function() {
+    componentWillUnmount() {
         this._isMounted = false;
-    },
+    }
 
     /* get the DOM node representing the given event */
-    getNodeForEventId: function(eventId) {
+    getNodeForEventId = (eventId) => {
         if (!this.eventNodes) {
             return undefined;
         }
 
         return this.eventNodes[eventId];
-    },
+    };
 
     // returns one of:
     //
@@ -140,7 +137,7 @@ const CaseObservationsPanel = createReactClass({
     //  -1: read marker is above the window
     //   0: read marker is within the window
     //  +1: read marker is below the window
-    getReadMarkerPosition: function() {
+    getReadMarkerPosition = () => {
         const readMarker = this.refs.readMarkerNode;
         const messageWrapper = this.refs.scrollPanel;
 
@@ -160,13 +157,13 @@ const CaseObservationsPanel = createReactClass({
         } else {
             return 1;
         }
-    },
+    };
 
-    _isUnmounting: function() {
+    isUnmounting = () => {
         return !this._isMounted;
-    },
+    };
 
-    _shouldShowEvent: function(mxEv) {
+    shouldShowEvent = (mxEv) => {
         // filter for type='care.amp.observation' or state_key='care.amp.patient/care.amp.case'
         if (mxEv.event.state_key === "care.amp.case" || mxEv.event.state_key === "care.amp.patient") {
             return true;
@@ -195,9 +192,9 @@ const CaseObservationsPanel = createReactClass({
 
         // ignore everything else
         return false;
-    },
+    };
 
-    _getEventTiles: function() {
+    getEventTiles = () => {
         this.eventNodes = {};
 
         let i;
@@ -209,7 +206,7 @@ const CaseObservationsPanel = createReactClass({
         for (i = this.props.events.length-1; i >= 0; i--) {
             const mxEv = this.props.events[i];
 
-            if (!this._shouldShowEvent(mxEv)) {
+            if (!this.shouldShowEvent(mxEv)) {
                 continue;
             }
 
@@ -298,23 +295,23 @@ const CaseObservationsPanel = createReactClass({
         // parse case events
         if (caseEvents.length > 0) {
             // show only once
-            ret.push(this._parseCaseData(caseEvents[0]));
+            ret.push(this.parseCaseData(caseEvents[0]));
         }
 
         // parse patient events
         for (i = 0; i < patientEvents.length; i++) {
             const mxEv = patientEvents[i];
-            ret.push(this._parsePatientData(mxEv));
+            ret.push(this.parsePatientData(mxEv));
             break; // show only once
         }
 
         // parse observation events
-        ret.push(this._parseObservationData(observationEvents));
+        ret.push(this.parseObservationData(observationEvents));
 
         // parse done events
         for (i = 0; i < doneEvents.length; i++) {
             const mxEv = doneEvents[i];
-            ret.push(this._parseDone(mxEv));
+            ret.push(this.parseDone(mxEv));
             break; // show the closed hint only once
         }
 
@@ -331,11 +328,11 @@ const CaseObservationsPanel = createReactClass({
                     resizeNotifier={this.props.resizeNotifier}>
                     { ret }
                 </ScrollPanel>;
-    },
+    };
 
     // get a list of read receipts that should be shown next to this event
     // Receipts are objects which have a 'userId', 'roomMember' and 'ts'.
-    _getReadReceiptsForEvent: function(event) {
+    getReadReceiptsForEvent = (event) => {
         const myUserId = MatrixClientPeg.get().credentials.userId;
 
         // get list of read receipts, sorted most recent first
@@ -362,13 +359,13 @@ const CaseObservationsPanel = createReactClass({
         return receipts.sort((r1, r2) => {
             return r2.ts - r1.ts;
         });
-    },
+    };
 
-    _collectEventNode: function(eventId, node) {
+    collectEventNode = (eventId, node) => {
         this.eventNodes[eventId] = node;
-    },
+    };
 
-    _parseDone: function(mxEv) {
+    parseDone = (mxEv) => {
       // return if event is not decrypted yet
       if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
           return;
@@ -393,9 +390,9 @@ const CaseObservationsPanel = createReactClass({
                       <hr />
                   </div>;
       }
-    },
+    };
 
-    _parseCaseData: function(mxEv) {
+    parseCaseData = (mxEv) => {
       // return if event is not decrypted yet
       if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
           return;
@@ -459,9 +456,9 @@ const CaseObservationsPanel = createReactClass({
             </table>
         </div>
       );
-    },
+    };
 
-    _parsePatientData: function(mxEv) {
+    parsePatientData = (mxEv) => {
         // return if event is not decrypted yet
         if (mxEv.event.type === 'm.room.encrypted' && mxEv._clearEvent.type === undefined) {
             return;
@@ -512,9 +509,9 @@ const CaseObservationsPanel = createReactClass({
                     </table>
               </div>
             );
-      },
+      };
 
-      _parseObservationData: function(observationEvents) {
+      parseObservationData = (observationEvents) => {
         let hasVitalData = false;
         let hasAnamnesisData = false;
 
@@ -583,7 +580,6 @@ const CaseObservationsPanel = createReactClass({
                     break;
                 case ('body-temperature'):
                     vitalDataTemperature = localEvent.content.valueQuantity.value;
-                    vitalDataTemperature = Math.round( vitalDataTemperature * 100 + Number.EPSILON ) / 100;
                     if (localEvent.content.effectiveDateTime !== ''
                      && localEvent.content.effectiveDateTime !== undefined) {
                         date = new Date(localEvent.content.effectiveDateTime);
@@ -607,7 +603,6 @@ const CaseObservationsPanel = createReactClass({
                     break;
                 case ('body-weight'):
                     vitalDataWeight = localEvent.content.valueQuantity.value;
-                    vitalDataWeight = Math.round( vitalDataWeight * 100 + Number.EPSILON ) / 100;
                     if (localEvent.content.effectiveDateTime !== ''
                      && localEvent.content.effectiveDateTime !== undefined) {
                         date = new Date(localEvent.content.effectiveDateTime);
@@ -736,11 +731,11 @@ const CaseObservationsPanel = createReactClass({
                 </div>
             </div>
           );
-      },
+      };
 
-    render: function() {
-        return ( this._getEventTiles() );
-    },
-});
+    render() {
+        return ( this.getEventTiles() );
+    }
+}
 
 export default CaseObservationsPanel;

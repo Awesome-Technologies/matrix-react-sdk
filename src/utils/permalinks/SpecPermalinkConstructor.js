@@ -30,7 +30,6 @@ export default class SpecPermalinkConstructor extends PermalinkConstructor {
     }
 
     _getBaseUrl() {
-        const baseUrl = `https://${host}`;
         return baseUrl;
     }
 

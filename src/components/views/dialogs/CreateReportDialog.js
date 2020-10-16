@@ -16,7 +16,6 @@ limitations under the License.
 
 import React from 'react';
 import ReactDOM from 'react-dom';
-import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
@@ -30,34 +29,30 @@ import { saveAs } from 'file-saver';
 import { decryptFile } from '../../../utils/DecryptFile';
 import ErrorDialog from "./ErrorDialog";
 
-export default createReactClass({
-    displayName: 'CreateReportDialog',
-    propTypes: {
+export default class CreateReportDialog extends React.Component {
+    static propTypes = {
         onFinished: PropTypes.func.isRequired,
         room_id: PropTypes.string,
-    },
-    ref: null,
+    };
 
-    getInitialState: function() {
-        return {
+    constructor(props) {
+        super(props);
+
+        this.state = {
             fileList: [],
             messages: '',
         };
-    },
 
-    getDefaultProps: function() {
-        return {
-            room_id: null,
-        };
-    },
+        this.ref = null;
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         this.setState({
-            messages: this._getMessages(this.props.room_id),
+            messages: this.getMessages(this.props.room_id),
         });
-    },
+    }
 
-    _onOk: async function() {
+    onOk = async () => {
         // archive case
         const room = MatrixClientPeg.get().getRoom(this.props.room_id);
         const roomName = room.name;
@@ -75,7 +70,7 @@ export default createReactClass({
 
         // add all files
         for (let i = 0; i < this.state.fileList.length; i++) {
-            const blob = this._decryptFile(this.state.fileList[i].content);
+            const blob = this.decryptFile(this.state.fileList[i].content);
             zip.file(this.state.fileList[i].content.body, blob);
         }
 
@@ -88,7 +83,7 @@ export default createReactClass({
         }).then((group) => {
             return exportPDF(group);
         }).then((dataUri) => {
-            const blob = this._b64toBlob(dataUri.split(';base64,')[1], 'application/pdf');
+            const blob = this.b64toBlob(dataUri.split(';base64,')[1], 'application/pdf');
             zip.file(pdfFileName, blob);
         });
 
@@ -102,13 +97,13 @@ export default createReactClass({
             saveAs(content, zipFileName);
             that.props.onFinished(true);
         });
-    },
+    };
 
-    _onCancel: function() {
+    onCancel = () => {
         this.props.onFinished(false);
-    },
+    };
 
-    _decryptFile: function(content) {
+    decryptFile = (content) => {
         return decryptFile(content.file).catch((err) => {
             console.warn("Unable to decrypt attachment: ", err);
             Modal.createTrackedDialog('Error decrypting attachment', '', ErrorDialog, {
@@ -116,9 +111,9 @@ export default createReactClass({
                 description: _t("Error decrypting attachment"),
             });
         });
-    },
+    };
 
-    _b64toBlob: function(b64Data, contentType='', sliceSize=512) {
+    b64toBlob = (b64Data, contentType='', sliceSize=512) => {
       const byteCharacters = atob(b64Data);
       const byteArrays = [];
 
@@ -136,9 +131,9 @@ export default createReactClass({
 
       const blob = new Blob(byteArrays, {type: contentType});
       return blob;
-    },
+    };
 
-    _getMessages: function(roomId) {
+    getMessages = (roomId) => {
         const MessageTimestamp = sdk.getComponent('messages.MessageTimestamp');
         const room = MatrixClientPeg.get().getRoom(roomId);
         const messages = room.getUnfilteredTimelineSet().room.timeline;
@@ -212,21 +207,21 @@ export default createReactClass({
             }
 
             if (event._clearEvent.type === "care.amp.case") {
-                data = this._parseCaseData(event._clearEvent.content);
+                data = this.parseCaseData(event._clearEvent.content);
             }
             if (event._clearEvent.type === "care.amp.patient") {
-                data = this._parsePatientData(event._clearEvent.content);
+                data = this.parsePatientData(event._clearEvent.content);
             }
             if (event._clearEvent.type === "care.amp.observation") {
-                observationData = this._parseObservationData(event._clearEvent.content);
+                observationData = this.parseObservationData(event._clearEvent.content);
             }
 
             if (message != '') {
                 if (!initialDateSeparatorSet || i>0
-                  && this._wantsDateSeparator(messages[i-1].event.origin_server_ts, messages[i].event.origin_server_ts)
+                  && this.wantsDateSeparator(messages[i-1].event.origin_server_ts, messages[i].event.origin_server_ts)
                 ) {
                     initialDateSeparatorSet = true;
-                    const dateSeparator = this._getDateSeparator(messages[i].event.origin_server_ts);
+                    const dateSeparator = this.getDateSeparator(messages[i].event.origin_server_ts);
                     timeline.push(dateSeparator);
                 }
                 timeline.push(message);
@@ -262,9 +257,9 @@ export default createReactClass({
         });
 
         return res;
-    },
+    };
 
-    _getDateSeparator: function(ts) {
+    getDateSeparator = (ts) => {
         const date = new Date(ts);
 
         return <h2 className="mx_DateSeparator" role="separator" tabIndex={-1} key={ts}>
@@ -272,9 +267,9 @@ export default createReactClass({
             <div>{ formatFullDateNoTime(date) }</div>
             <hr role="none" />
         </h2>;
-    },
+    };
 
-    _wantsDateSeparator: function(prevEventDate, nextEventDate) {
+    wantsDateSeparator = (prevEventDate, nextEventDate) => {
         const MILLIS_IN_DAY = 86400000;
         if (!nextEventDate || !prevEventDate) {
             return false;
@@ -285,9 +280,9 @@ export default createReactClass({
         }
 
         return false;
-    },
+    };
 
-    _formatDate: function(dateString) {
+    formatDate = (dateString) => {
         if (dateString === '') return '';
 
         let givenDate;
@@ -298,9 +293,9 @@ export default createReactClass({
         }
         const ret = givenDate.toISOString();
         return ret;
-    },
+    };
 
-    _parseCaseData: function(event) {
+    parseCaseData = (event) => {
         // case data
         return <div>
             <h2 key="case_data">{_t("Case")}</h2>
@@ -311,9 +306,9 @@ export default createReactClass({
                 <tr key="amp_report_case_requester"><td>{_t("Requester")}:</td><td>{event.requester.reference}</td></tr>
             </tbody></table>
         </div>;
-    },
+    };
 
-    _parsePatientData: function(event) {
+    parsePatientData = (event) => {
         // patient data
         const date = new Date(event.birthDate);
         const patientBirthdate = date.toLocaleDateString();
@@ -326,9 +321,9 @@ export default createReactClass({
                 <tr key="amp_report_patient_birthday"><td>{_t("Birthday")}:</td><td>{patientBirthdate}</td></tr>
             </tbody></table>
         </div>;
-    },
+    };
 
-    _parseObservationData: function(event) {
+    parseObservationData = (event) => {
         const res = [];
 
         const date = new Date(event.effectiveDateTime);
@@ -367,9 +362,9 @@ export default createReactClass({
 
         res.push(<td key="amp_report_{event.id}_datetime">{datetime}</td>);
         return (<tr key={event.id}>{res}</tr>);
-    },
+    };
 
-    render: function() {
+    render() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
         const now = new Date().toLocaleDateString() + ' - ' + new Date().toLocaleTimeString();
@@ -404,9 +399,9 @@ export default createReactClass({
                 </div>
 
                 <DialogButtons primaryButton={_t('Save report')}
-                    onPrimaryButtonClick={this._onOk}
-                    onCancel={this._onCancel} />
+                    onPrimaryButtonClick={this.onOk}
+                    onCancel={this.onCancel} />
             </BaseDialog>
         );
-    },
-});
+    }
+}

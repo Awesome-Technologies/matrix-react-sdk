@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 import React from 'react';
-import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
@@ -26,16 +25,17 @@ import Field from "../elements/Field";
 import Modal from "../../../Modal";
 import colorVariables from '../../../../res/themes/light/css/light.scss';
 import SettingsStore from "../../../settings/SettingsStore";
-import {SettingLevel} from "../../../settings/SettingsStore";
+import {SettingLevel} from "../../../settings/SettingLevel";
 
-export default createReactClass({
-    displayName: 'CreateCaseDialog',
-    propTypes: {
+export default class CreateCaseDialog extends React.Component {
+    static propTypes = {
         onFinished: PropTypes.func.isRequired,
-    },
+    };
 
-    getInitialState: function() {
-        return {
+    constructor(props) {
+        super(props);
+
+        this.state = {
             invitees: [],
             caseTitle: '',
             caseNote: '',
@@ -76,25 +76,25 @@ export default createReactClass({
             medicationData_reason: '',
             noRecipientSelected: false,
         };
-    },
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
         const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
 
         if (interfaceEnabled && username !== "") {
             this.setState({caseRequesterName: username, caseRequesterDisabled: true});
         }
-    },
+    }
 
-    _onOk: function() {
+    onOk = () => {
       console.log("AMP.care: state test");
       console.log(this.state);
 
       if (this.state.invitees.length < 1) {
         this.setState({noRecipientSelected: true});
       } else {
-        const caseData = this._parseData();
+        const caseData = this.parseData();
         const addrTexts = this.state.invitees.map((addr) => addr.address);
 
         const createOpts = {};
@@ -108,13 +108,13 @@ export default createReactClass({
 
         this.props.onFinished(true, createOpts);
       }
-    },
+    };
 
-    _onCancel: function() {
+    onCancel = () => {
         this.props.onFinished(false);
-    },
+    };
 
-    _formatDate: function(dateString) {
+    formatDate = (dateString) => {
         if (dateString === '') return '';
 
         let givenDate;
@@ -125,9 +125,9 @@ export default createReactClass({
         }
         const ret = givenDate.toISOString();
         return ret;
-    },
+    };
 
-    _parseData: function() {
+    parseData = () => {
         // case data
         const caseContent = {
             title: this.state.caseTitle,
@@ -148,7 +148,7 @@ export default createReactClass({
             patientContent = {
                 name: this.state.patientData_name,
                 gender: this.state.patientData_gender,
-                birthDate: this._formatDate(this.state.patientData_birthDate),
+                birthDate: this.formatDate(this.state.patientData_birthDate),
             };
         }
 
@@ -161,7 +161,7 @@ export default createReactClass({
                 id: 'responsiveness',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this._formatDate('now'),
+                effectiveDateTime: this.formatDate('now'),
                 valueString: this.state.anamnesisData_responsiveness,
             };
             observationsContent.push(responsivenessData);
@@ -179,7 +179,7 @@ export default createReactClass({
                     text: 'Pain status',
                 },
                 subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this._formatDate('now'),
+                effectiveDateTime: this.formatDate('now'),
                 valueString: this.state.anamnesisData_pain,
             };
             observationsContent.push(painData);
@@ -190,7 +190,7 @@ export default createReactClass({
                 id: 'misc',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this._formatDate('now'),
+                effectiveDateTime: this.formatDate('now'),
                 valueString: this.state.anamnesisData_misc,
             };
             observationsContent.push(miscData);
@@ -201,7 +201,7 @@ export default createReactClass({
                 id: 'last-defecation',
                 resourceType: 'Observation',
                 subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this._formatDate(this.state.anamnesisData_lastDefecation),
+                effectiveDateTime: this.formatDate(this.state.anamnesisData_lastDefecation),
             };
             observationsContent.push(defecationData);
         }
@@ -238,7 +238,7 @@ export default createReactClass({
                   unit: 'kg',
                   value: this.state.vitalData_weight,
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_weightDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_weightDatetime),
             };
             observationsContent.push(weightData);
         }
@@ -274,7 +274,7 @@ export default createReactClass({
                   unit: 'C',
                   value: this.state.vitalData_temperature,
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_temperatureDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_temperatureDatetime),
             };
             observationsContent.push(temperatureData);
         }
@@ -310,7 +310,7 @@ export default createReactClass({
                   unit: 'mg/dl',
                   value: this.state.vitalData_sugar,
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_sugarDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_sugarDatetime),
             };
             observationsContent.push(glucoseData);
         }
@@ -372,7 +372,7 @@ export default createReactClass({
                 meta: {
                   profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_bloodpressureDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_bloodpressureDatetime),
             };
             observationsContent.push(bloodpressureData);
         }
@@ -408,7 +408,7 @@ export default createReactClass({
                   unit: 'beats/minute',
                   value: this.state.vitalData_pulse,
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_pulseDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_pulseDatetime),
             };
             observationsContent.push(pulseData);
         }
@@ -444,7 +444,7 @@ export default createReactClass({
                   unit: '%',
                   value: this.state.vitalData_oxygen,
                 },
-                effectiveDateTime: this._formatDate(this.state.vitalData_oxygenDatetime),
+                effectiveDateTime: this.formatDate(this.state.vitalData_oxygenDatetime),
             };
             observationsContent.push(oxygenData);
         }
@@ -456,27 +456,27 @@ export default createReactClass({
         };
 
         return (content);
-    },
+    };
 
-    _onCaseTitleChanged: function(e) {
+    onCaseTitleChanged = (e) => {
         this.setState({
             caseTitle: e.target.value,
         });
-    },
+    };
 
-    _onCaseNoteChanged: function(e) {
+    onCaseNoteChanged = (e) => {
         this.setState({
             caseNote: e.target.value,
         });
-    },
+    };
 
-    _onCaseRequesterChanged: function(e) {
+    onCaseRequesterChanged = (e) => {
         this.setState({
             caseRequesterName: e.target.value,
         });
-    },
+    };
 
-    _onCaseSeverityChanged: function(e) {
+    onCaseSeverityChanged = (e) => {
         this.setState({
             caseSeverity: e.target.value,
         });
@@ -501,9 +501,9 @@ export default createReactClass({
             default:
                 break;
         }
-    },
+    };
 
-    _onAddRecipientClicked: function() {
+    onAddRecipientClicked = () => {
       const AddressPickerDialog = sdk.getComponent("dialogs.AddressPickerDialog");
       Modal.createTrackedDialog('Select recipient', '', AddressPickerDialog, {
           title: _t('Select recipient'),
@@ -513,9 +513,9 @@ export default createReactClass({
           button: _t("Add recipient"),
           onFinished: this._onSelectRecipientFinished,
       });
-    },
+    };
 
-    _onSelectRecipientFinished: function(shouldInvite, addrs) {
+    onSelectRecipientFinished = (shouldInvite, addrs) => {
       if (shouldInvite) {
         const addrTexts = addrs.map((addr) => addr.address);
         console.log("AMP.care: adding recipients:");
@@ -525,17 +525,17 @@ export default createReactClass({
             noRecipientSelected: false,
         });
       }
-    },
+    };
 
-    _onRecipientChanged: function(addrs) {
+    onRecipientChanged = (addrs) => {
       this.state.invitees = addrs;
-    },
+    };
 
-    _onDataChanged: function(key, value) {
+    onDataChanged = (key, value) => {
       this.setState({[key]: value});
-    },
+    };
 
-    _importData: function(shouldImport, data) {
+    importData = (shouldImport, data) => {
       if (shouldImport) {
           console.log(data);
           for (const key in data) {
@@ -548,16 +548,16 @@ export default createReactClass({
               this.setState({caseRequesterName: username, caseRequesterDisabled: true});
           }
       }
-    },
+    };
 
-    render: function() {
+    render() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
         const AdressPicker = sdk.getComponent('views.cases.AdressPicker');
         const InterfaceImport = sdk.getComponent('views.cases.InterfaceImport');
 
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
-        const importArea = interfaceEnabled ? <InterfaceImport onFinished={this._importData} /> : null;
+        const importArea = interfaceEnabled ? <InterfaceImport onFinished={this.importData} /> : null;
 
         const noRecipientSelected = this.state.noRecipientSelected ? {} : { display: 'none' };
 
@@ -574,10 +574,10 @@ export default createReactClass({
                                   label={_t('Case title')}
                                   autoComplete="off"
                                   type="text"
-                                  onChange={this._onCaseTitleChanged}
+                                  onChange={this.onCaseTitleChanged}
                                   value={this.state.caseTitle}
                               />
-                              <Field id="severity" ref="caseSeverity" className="amp_CreateCaseDialog_input_field" label={_t("Severity")} element="select" onChange={this._onCaseSeverityChanged} value={this.state.caseSeverity} >
+                              <Field id="severity" ref="caseSeverity" className="amp_CreateCaseDialog_input_field" label={_t("Severity")} element="select" onChange={this.onCaseSeverityChanged} value={this.state.caseSeverity} >
                                   <option id="severityInfo" value="info" className="amp_Severity_info" >{_t("Info")}</option>
                                   <option id="severityRequest" value="request" className="amp_Severity_request" >{_t("Request")}</option>
                                   <option id="severityUrgent" value="urgent" className="amp_Severity_urgent" >{_t("Urgent")}</option>
@@ -589,7 +589,7 @@ export default createReactClass({
                               <Field id="caseNote" className="amp_CreateCaseDialog_input_field"
                                   label={_t('Case note')}
                                   element="textarea"
-                                  onChange={this._onCaseNoteChanged}
+                                  onChange={this.onCaseNoteChanged}
                                   value={this.state.caseNote}
                               />
                           </div>
@@ -599,7 +599,7 @@ export default createReactClass({
                                   label={_t('Requester')}
                                   size="64"
                                   type="text"
-                                  onChange={this._onCaseRequesterChanged}
+                                  onChange={this.onCaseRequesterChanged}
                                   value={this.state.caseRequesterName}
                                   disabled={this.state.caseRequesterDisabled}
                               />
@@ -608,7 +608,7 @@ export default createReactClass({
                           <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
                               <label htmlFor="textinput"> { _t('Recipient') } </label>
                           </div>
-                          <AdressPicker focus={false} onSelectedListChanged={this._onRecipientChanged} placeholder={ _t('Name or AMP.care ID') } />
+                          <AdressPicker focus={false} onSelectedListChanged={this.onRecipientChanged} placeholder={ _t('Name or AMP.care ID') } />
                       </div>
                     <br />
                     </div>
@@ -619,7 +619,7 @@ export default createReactClass({
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Patient data') }</summary>
                         <PatientData
-                            onDataChanged={this._onDataChanged}
+                            onDataChanged={this.onDataChanged}
                             name={this.state.patientData_name}
                             gender={this.state.patientData_gender}
                             birthdate={this.state.patientData_birthDate}
@@ -629,7 +629,7 @@ export default createReactClass({
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Vital data') }</summary>
                         <VitalData
-                            onDataChanged={this._onDataChanged}
+                            onDataChanged={this.onDataChanged}
                             bloodPressureSys={this.state.vitalData_bloodpressureSys}
                             bloodPressureDia={this.state.vitalData_bloodpressureDia}
                             bloodpressureDatetime={this.state.vitalData_bloodpressureDatetime}
@@ -648,16 +648,16 @@ export default createReactClass({
 
                     <details className="amp_CreateCaseDialog_details">
                         <summary className="amp_CreateCaseDialog_details_summary">{ _t('Anamnesis') }</summary>
-                        <AnamnesisData onDataChanged={this._onDataChanged} />
+                        <AnamnesisData onDataChanged={this.onDataChanged} />
                     </details>
                 </form>
                 <div style={noRecipientSelected} className="amp_CreateCaseDialog_error">
                     { _t('No recipient selected') }
                 </div>
                 <DialogButtons primaryButton={_t('Send case')}
-                    onPrimaryButtonClick={this._onOk}
-                    onCancel={this._onCancel} />
+                    onPrimaryButtonClick={this.onOk}
+                    onCancel={this.onCancel} />
             </BaseDialog>
         );
-    },
-});
+    }
+}

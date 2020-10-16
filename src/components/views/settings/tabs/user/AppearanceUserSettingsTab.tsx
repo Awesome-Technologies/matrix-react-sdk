@@ -2,7 +2,6 @@
 Copyright 2019 New Vector Ltd
 Copyright 2019, 2020 The Matrix.org Foundation C.I.C.
 
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,7 +17,8 @@ limitations under the License.
 
 import React from 'react';
 import {_t} from "../../../../../languageHandler";
-import SettingsStore, {SettingLevel} from "../../../../../settings/SettingsStore";
+import SdkConfig from "../../../../../SdkConfig";
+import SettingsStore from "../../../../../settings/SettingsStore";
 import { enumerateThemes } from "../../../../../theme";
 import ThemeWatcher from "../../../../../settings/watchers/ThemeWatcher";
 import Slider from "../../../elements/Slider";
@@ -34,6 +34,9 @@ import SettingsFlag from '../../../elements/SettingsFlag';
 import Field from '../../../elements/Field';
 import EventTilePreview from '../../../elements/EventTilePreview';
 import StyledRadioGroup from "../../../elements/StyledRadioGroup";
+import classNames from 'classnames';
+import { SettingLevel } from "../../../../../settings/SettingLevel";
+import {UIFeature} from "../../../../../settings/UIFeature";
 
 interface IProps {
 }
@@ -88,7 +91,7 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
         // We have to mirror the logic from ThemeWatcher.getEffectiveTheme so we
         // show the right values for things.
 
-        const themeChoice: string = SettingsStore.getValueAt(SettingLevel.ACCOUNT, "theme");
+        const themeChoice: string = SettingsStore.getValue("theme");
         const systemThemeExplicit: boolean = SettingsStore.getValueAt(
             SettingLevel.DEVICE, "use_system_theme", null, false, true);
         const themeExplicit: string = SettingsStore.getValueAt(
@@ -168,7 +171,7 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
             "baseFontSize",
             null,
             SettingLevel.DEVICE,
-            parseInt(value, 10) - FontWatcher.SIZE_DIFF
+            parseInt(value, 10) - FontWatcher.SIZE_DIFF,
         );
 
         return {valid: true, feedback: _t('Use between %(min)s pt and %(max)s pt', {min, max})};
@@ -235,7 +238,7 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
         }
 
         let customThemeForm: JSX.Element;
-        if (SettingsStore.isFeatureEnabled("feature_custom_themes")) {
+        if (SettingsStore.getValue("feature_custom_themes")) {
             let messageElement = null;
             if (this.state.customThemeMessage.text) {
                 if (this.state.customThemeMessage.isError) {
@@ -288,10 +291,11 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
                         }))}
                         onChange={this.onThemeChange}
                         value={this.state.useSystemTheme ? undefined : this.state.theme}
+                        outlined
                     />
                 </div>
                 {customThemeForm}
-           </div>
+            </div>
         );
     }
 
@@ -307,7 +311,7 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
             <div className="mx_AppearanceUserSettingsTab_fontSlider">
                 <div className="mx_AppearanceUserSettingsTab_fontSlider_smallText">Aa</div>
                 <Slider
-                    values={[13, 15, 16, 18, 20]}
+                    values={[13, 14, 15, 16, 18]}
                     value={parseInt(this.state.fontSize, 10)}
                     onSelectionChange={this.onFontSizeChanged}
                     displayFunc={_ => ""}
@@ -342,8 +346,10 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
         return <div className="mx_SettingsTab_section mx_AppearanceUserSettingsTab_Layout">
             <span className="mx_SettingsTab_subheading">{_t("Message layout")}</span>
 
-            <div className="mx_AppearanceUserSettingsTab_Layout_RadioButtons" >
-                <div className="mx_AppearanceUserSettingsTab_Layout_RadioButton">
+            <div className="mx_AppearanceUserSettingsTab_Layout_RadioButtons">
+                <div className={classNames("mx_AppearanceUserSettingsTab_Layout_RadioButton", {
+                    mx_AppearanceUserSettingsTab_Layout_RadioButton_selected: this.state.useIRCLayout,
+                })}>
                     <EventTilePreview
                         className="mx_AppearanceUserSettingsTab_Layout_RadioButton_preview"
                         message={this.MESSAGE_PREVIEW_TEXT}
@@ -359,7 +365,9 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
                     </StyledRadioButton>
                 </div>
                 <div className="mx_AppearanceUserSettingsTab_spacer" />
-                <div className="mx_AppearanceUserSettingsTab_Layout_RadioButton">
+                <div className={classNames("mx_AppearanceUserSettingsTab_Layout_RadioButton", {
+                    mx_AppearanceUserSettingsTab_Layout_RadioButton_selected: !this.state.useIRCLayout,
+                })}>
                     <EventTilePreview
                         className="mx_AppearanceUserSettingsTab_Layout_RadioButton_preview"
                         message={this.MESSAGE_PREVIEW_TEXT}
@@ -379,6 +387,9 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
     };
 
     private renderAdvancedSection() {
+        if (!SettingsStore.getValue(UIFeature.AdvancedSettings)) return null;
+
+        const brand = SdkConfig.get().brand;
         const toggle = <div
             className="mx_AppearanceUserSettingsTab_AdvancedToggle"
             onClick={() => this.setState({showAdvanced: !this.state.showAdvanced})}
@@ -389,12 +400,22 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
         let advanced: React.ReactNode;
 
         if (this.state.showAdvanced) {
+            const tooltipContent = _t(
+                "Set the name of a font installed on your system & %(brand)s will attempt to use it.",
+                { brand },
+            );
             advanced = <>
                 <SettingsFlag
                     name="useCompactLayout"
                     level={SettingLevel.DEVICE}
                     useCheckbox={true}
                     disabled={this.state.useIRCLayout}
+                />
+                <SettingsFlag
+                    name="useIRCLayout"
+                    level={SettingLevel.DEVICE}
+                    useCheckbox={true}
+                    onChange={(checked) => this.setState({useIRCLayout: checked})}
                 />
                 <SettingsFlag
                     name="useSystemFont"
@@ -412,7 +433,7 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
 
                         SettingsStore.setValue("systemFont", null, SettingLevel.DEVICE, value.target.value);
                     }}
-                    tooltipContent="Set the name of a font installed on your system & Riot will attempt to use it."
+                    tooltipContent={tooltipContent}
                     forceTooltipVisible={true}
                     disabled={!this.state.useSystemFont}
                     value={this.state.systemFont}
@@ -426,15 +447,16 @@ export default class AppearanceUserSettingsTab extends React.Component<IProps, I
     }
 
     render() {
+        const brand = SdkConfig.get().brand;
+
         return (
             <div className="mx_SettingsTab mx_AppearanceUserSettingsTab">
                 <div className="mx_SettingsTab_heading">{_t("Customise your appearance")}</div>
                 <div className="mx_SettingsTab_SubHeading">
-                    {_t("Appearance Settings only affect this Riot session.")}
+                    {_t("Appearance Settings only affect this %(brand)s session.", { brand })}
                 </div>
                 {this.renderThemeSection()}
-                {SettingsStore.isFeatureEnabled("feature_font_scaling") ? this.renderFontSection() : null}
-                {SettingsStore.isFeatureEnabled("feature_irc_ui") ? this.renderLayoutSection() : null}
+                {this.renderFontSection()}
                 {this.renderAdvancedSection()}
             </div>
         );

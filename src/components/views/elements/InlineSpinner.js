@@ -15,30 +15,24 @@ limitations under the License.
 */
 
 import React from "react";
-import createReactClass from 'create-react-class';
 import {_t} from "../../../languageHandler";
 import SettingsStore from "../../../settings/SettingsStore";
 
-export default createReactClass({
-    displayName: 'InlineSpinner',
-
-    render: function() {
+export default class InlineSpinner extends React.Component {
+    render() {
         const w = this.props.w || 16;
         const h = this.props.h || 16;
         const imgClass = this.props.imgClassName || "";
 
-        let divClass;
         let imageSource;
-        if (SettingsStore.isFeatureEnabled('feature_new_spinner')) {
-            divClass = "mx_InlineSpinner mx_Spinner_spin";
+        if (SettingsStore.getValue('feature_new_spinner')) {
             imageSource = require("../../../../res/img/spinner.svg");
         } else {
-            divClass = "mx_InlineSpinner";
             imageSource = require("../../../../res/img/spinner.gif");
         }
 
         return (
-            <div className={divClass}>
+            <div className="mx_InlineSpinner">
                 <img
                     src={imageSource}
                     width={w}
@@ -48,5 +42,5 @@ export default createReactClass({
                 />
             </div>
         );
-    },
-});
+    }
+}

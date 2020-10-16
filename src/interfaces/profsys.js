@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import SettingsStore from "../settings/SettingsStore";
-import {SettingLevel} from "../settings/SettingsStore";
+import {SettingLevel} from "../settings/SettingLevel";
 
 export default class ProfSys {
     /**

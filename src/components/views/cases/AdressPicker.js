@@ -18,7 +18,6 @@ limitations under the License.
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import createReactClass from 'create-react-class';
 import { _t, _td } from '../../../languageHandler';
 import * as sdk from '../../../index';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
@@ -37,10 +36,8 @@ const addressTypeName = {
 };
 
 
-const AddressPicker = createReactClass({
-    displayName: "AddressPicker",
-
-    propTypes: {
+export default class AddressPicker extends React.Component {
+    static propTypes = {
         value: PropTypes.string,
         placeholder: PropTypes.string,
         roomId: PropTypes.string,
@@ -53,20 +50,20 @@ const AddressPicker = createReactClass({
         // Whether the current user should be included in the addresses returned. Only
         // applicable when pickerType is `user`. Default: false.
         includeSelf: PropTypes.bool,
-    },
+    };
 
-    getDefaultProps: function() {
-        return {
-            value: "",
-            focus: true,
-            validAddressTypes: addressTypes,
-            pickerType: 'user',
-            includeSelf: false,
-        };
-    },
+    static defaultProps = {
+        value: "",
+        focus: true,
+        validAddressTypes: addressTypes,
+        pickerType: 'user',
+        includeSelf: false,
+    };
 
-    getInitialState: function() {
-        return {
+    constructor(props) {
+        super(props);
+
+        this.state = {
             error: false,
 
             // List of UserAddressType objects representing
@@ -85,27 +82,27 @@ const AddressPicker = createReactClass({
             // auto-completion results for the current search query.
             suggestedList: [],
         };
-    },
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         if (this.props.focus) {
             // Set the cursor at the end of the text input
             this.refs.textinput.value = this.props.value;
         }
-    },
+    }
 
-    onButtonClick: function() {
+    onButtonClick = () => {
         let selectedList = this.state.selectedList.slice();
         // Check the text input field to see if user has an unconverted address
         // If there is and it's valid add it to the local selectedList
         if (this.refs.textinput.value !== '') {
-            selectedList = this._addInputToList();
+            selectedList = this.addInputToList();
             if (selectedList === null) return;
         }
         this.props.onFinished(true, selectedList);
-    },
+    };
 
-    onKeyDown: function(e) {
+    onKeyDown = (e) => {
         if (e.keyCode === 27) { // escape
             e.stopPropagation();
             e.preventDefault();
@@ -133,16 +130,16 @@ const AddressPicker = createReactClass({
                 // if there's nothing in the input box, submit the form
                 this.onButtonClick();
             } else {
-                this._addInputToList();
+                this.addInputToList();
             }
         } else if (e.keyCode === 188 || e.keyCode === 9) { // comma or tab
             e.stopPropagation();
             e.preventDefault();
-            this._addInputToList();
+            this.addInputToList();
         }
-    },
+    };
 
-    onQueryChanged: function(ev) {
+    onQueryChanged = (ev) => {
         const query = ev.target.value;
         if (this.queryChangedDebouncer) {
             clearTimeout(this.queryChangedDebouncer);
@@ -152,17 +149,17 @@ const AddressPicker = createReactClass({
             this.queryChangedDebouncer = setTimeout(() => {
                 if (this.props.pickerType === 'user') {
                     if (this.props.groupId) {
-                        this._doNaiveGroupSearch(query);
+                        this.doNaiveGroupSearch(query);
                     } else if (this.state.serverSupportsUserDirectory) {
-                        this._doUserDirectorySearch(query);
+                        this.doUserDirectorySearch(query);
                     } else {
-                        this._doLocalSearch(query);
+                        this.doLocalSearch(query);
                     }
                 } else if (this.props.pickerType === 'room') {
                     if (this.props.groupId) {
-                        this._doNaiveGroupRoomSearch(query);
+                        this.doNaiveGroupRoomSearch(query);
                     } else {
-                        this._doRoomSearch(query);
+                        this.doRoomSearch(query);
                     }
                 } else {
                     console.error('Unknown pickerType', this.props.pickerType);
@@ -175,9 +172,9 @@ const AddressPicker = createReactClass({
                 searchError: null,
             });
         }
-    },
+    };
 
-    onDismissed: function(index) {
+    onDismissed = (index) => {
         return () => {
             const selectedList = this.state.selectedList.slice();
             selectedList.splice(index, 1);
@@ -186,17 +183,17 @@ const AddressPicker = createReactClass({
                 suggestedList: [],
                 query: "",
             });
-            if (this._cancelThreepidLookup) this._cancelThreepidLookup();
+            if (this._cancelThreepidLookup) this.cancelThreepidLookup();
         };
-    },
+    };
 
-    onClick: function(index) {
+    onClick = (index) => {
         return () => {
             this.onSelected(index);
         };
-    },
+    };
 
-    onSelected: function(index) {
+    onSelected = (index) => {
         const selectedList = this.state.selectedList.slice();
         selectedList.push(this.state.suggestedList[index]);
         this.setState({
@@ -205,10 +202,10 @@ const AddressPicker = createReactClass({
             query: "",
         });
         this.props.onSelectedListChanged(selectedList);
-        if (this._cancelThreepidLookup) this._cancelThreepidLookup();
-    },
+        if (this._cancelThreepidLookup) this.cancelThreepidLookup();
+    };
 
-    _doNaiveGroupSearch: function(query) {
+    doNaiveGroupSearch = (query) => {
         const lowerCaseQuery = query.toLowerCase();
         this.setState({
             busy: true,
@@ -240,9 +237,9 @@ const AddressPicker = createReactClass({
                 busy: false,
             });
         });
-    },
+    };
 
-    _doNaiveGroupRoomSearch: function(query) {
+    doNaiveGroupRoomSearch = (query) => {
         const lowerCaseQuery = query.toLowerCase();
         const results = [];
         GroupStore.getGroupRooms(this.props.groupId).forEach((r) => {
@@ -258,13 +255,13 @@ const AddressPicker = createReactClass({
                 name: r.name || r.canonical_alias,
             });
         });
-        this._processResults(results, query);
+        this.processResults(results, query);
         this.setState({
             busy: false,
         });
-    },
+    };
 
-    _doRoomSearch: function(query) {
+    doRoomSearch = (query) => {
         const lowerCaseQuery = query.toLowerCase();
         const rooms = MatrixClientPeg.get().getRooms();
         const results = [];
@@ -315,13 +312,13 @@ const AddressPicker = createReactClass({
             return a.rank - b.rank;
         });
 
-        this._processResults(sortedResults, query);
+        this.processResults(sortedResults, query);
         this.setState({
             busy: false,
         });
-    },
+    };
 
-    _doUserDirectorySearch: function(query) {
+    doUserDirectorySearch = (query) => {
         this.setState({
             busy: true,
             query,
@@ -335,7 +332,7 @@ const AddressPicker = createReactClass({
             if (this.state.query !== query) {
                 return;
             }
-            this._processResults(resp.results, query);
+            this.processResults(resp.results, query);
         }).catch((err) => {
             console.error('Error whilst searching user directory: ', err);
             this.setState({
@@ -346,16 +343,16 @@ const AddressPicker = createReactClass({
                     serverSupportsUserDirectory: false,
                 });
                 // Do a local search immediately
-                this._doLocalSearch(query);
+                this.doLocalSearch(query);
             }
         }).then(() => {
             this.setState({
                 busy: false,
             });
         });
-    },
+    };
 
-    _doLocalSearch: function(query) {
+    doLocalSearch = (query) => {
         this.setState({
             query,
             searchError: null,
@@ -376,10 +373,10 @@ const AddressPicker = createReactClass({
                 avatar_url: user.avatarUrl,
             });
         });
-        this._processResults(results, query);
-    },
+        this.processResults(results, query);
+    };
 
-    _processResults: function(results, query) {
+    processResults = (results, query) => {
         const suggestedList = [];
         results.forEach((result) => {
             if (result.room_id) {
@@ -434,7 +431,7 @@ const AddressPicker = createReactClass({
                 address: query,
                 isKnown: false,
             });
-            if (this._cancelThreepidLookup) this._cancelThreepidLookup();
+            if (this._cancelThreepidLookup) this.cancelThreepidLookup();
             if (addrType === 'email') {
                 this._lookupThreepid(addrType, query).done();
             }
@@ -445,9 +442,9 @@ const AddressPicker = createReactClass({
         }, () => {
             if (this.addressSelector) this.addressSelector.moveSelectionTop();
         });
-    },
+    };
 
-    _addInputToList: function() {
+    addInputToList = () => {
         const addressText = this.refs.textinput.value.trim();
         const addrType = getAddressType(addressText);
         const addrObj = {
@@ -481,11 +478,11 @@ const AddressPicker = createReactClass({
             suggestedList: [],
             query: "",
         });
-        if (this._cancelThreepidLookup) this._cancelThreepidLookup();
+        if (this._cancelThreepidLookup) this.cancelThreepidLookup();
         return selectedList;
-    },
+    };
 
-    _lookupThreepid: function(medium, address) {
+    lookupThreepid = (medium, address) => {
         let cancelled = false;
         // Note that we can't safely remove this after we're done
         // because we don't know that it's the same one, so we just
@@ -518,9 +515,9 @@ const AddressPicker = createReactClass({
                 }],
             });
         });
-    },
+    };
 
-    render: function() {
+    render() {
         const AddressSelector = sdk.getComponent("elements.AddressSelector");
         this.scrollElement = null;
 
@@ -599,7 +596,5 @@ const AddressPicker = createReactClass({
                     { addressSelector }
                 </div>
         );
-    },
-});
-
-export default AddressPicker;
+    }
+}

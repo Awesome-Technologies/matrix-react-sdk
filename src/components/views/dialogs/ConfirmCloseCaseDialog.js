@@ -15,26 +15,24 @@ limitations under the License.
 */
 
 import React from 'react';
-import createReactClass from 'create-react-class';
 import PropTypes from 'prop-types';
 import {_t} from "../../../languageHandler";
 import * as sdk from "../../../index";
 
-export default createReactClass({
-    displayName: 'ConfirmCloseCaseDialog',
-    propTypes: {
+export default class ConfirmCloseCaseDialog extends React.Component {
+    static propTypes = {
         onFinished: PropTypes.func.isRequired,
-    },
+    };
 
-    _onOk: function() {
+    onOk = () => {
         this.props.onFinished(true);
-    },
+    };
 
-    _onCancel: function() {
+    onCancel = () => {
         this.props.onFinished(false);
-    },
+    };
 
-    render: function() {
+    render() {
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
 
@@ -51,12 +49,12 @@ export default createReactClass({
                 </div>
                 <DialogButtons
                     primaryButton={_t("Close case")}
-                    onPrimaryButtonClick={this._onOk}
+                    onPrimaryButtonClick={this.onOk}
                     primaryButtonClass="danger"
                     cancelButton={_t("Cancel")}
-                    onCancel={this._onCancel}
+                    onCancel={this.onCancel}
                 />
             </BaseDialog>
           );
-      },
-  });
+      }
+  }

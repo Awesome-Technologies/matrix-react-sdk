@@ -17,27 +17,28 @@ limitations under the License.
 
 import React, {createRef} from 'react';
 import PropTypes from 'prop-types';
-import createReactClass from 'create-react-class';
 import classNames from 'classnames';
-import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
 import {MatrixClientPeg} from '../../../MatrixClientPeg';
-import Modal from "../../../Modal";
 import RateLimitedFunc from '../../../ratelimitedfunc';
 
 import { linkifyElement } from '../../../HtmlUtils';
-import AccessibleButton from '../elements/AccessibleButton';
 import {CancelButton} from './SimpleRoomHeader';
 import RoomHeaderButtons from '../right_panel/RoomHeaderButtons';
 import DMRoomMap from '../../../utils/DMRoomMap';
-import InviteOnlyIcon from './InviteOnlyIcon';
 import dis from "../../../dispatcher/dispatcher";
 import Analytics from '../../../Analytics';
+import DecoratedRoomAvatar from "../avatars/DecoratedRoomAvatar";
+import {DefaultTagID} from "../../../stores/room-list/models";
+import AccessibleButton from "../elements/AccessibleButton";
+import ConfirmArchiveCaseDialog from "../dialogs/ConfirmArchiveCaseDialog";
+import ConfirmCloseCaseDialog from "../dialogs/ConfirmCloseCaseDialog";
+import ShareDialog from "../dialogs/ShareDialog";
+import Modal from "../../../Modal";
 
-export default createReactClass({
-    displayName: 'RoomHeader',
 
-    propTypes: {
+export default class RoomHeader extends React.Component {
+    static propTypes = {
         room: PropTypes.object,
         oobData: PropTypes.object,
         inRoom: PropTypes.bool,
@@ -48,22 +49,21 @@ export default createReactClass({
         onCancelClick: PropTypes.func,
         e2eStatus: PropTypes.string,
         isCaseClosed: PropTypes.bool,
-    },
+    };
 
-    getDefaultProps: function() {
-        return {
-            editing: false,
-            inRoom: false,
-            onCancelClick: null,
-        };
-    },
+    static defaultProps = {
+        editing: false,
+        inRoom: false,
+        onCancelClick: null,
+    };
 
-    // TODO: [REACT-WARNING] Replace component with real class, use constructor for refs
-    UNSAFE_componentWillMount: function() {
+    constructor(props) {
+        super(props);
+
         this._topic = createRef();
-    },
+    }
 
-    componentDidMount: function() {
+    componentDidMount() {
         const cli = MatrixClientPeg.get();
         cli.on("RoomState.events", this._onRoomStateEvents);
         cli.on("Room.accountData", this._onRoomAccountData);
@@ -74,15 +74,15 @@ export default createReactClass({
         if (this.props.room) {
             this.props.room.on("Room.name", this._onRoomNameChange);
         }
-    },
+    }
 
-    componentDidUpdate: function() {
+    componentDidUpdate() {
         if (this._topic.current) {
             linkifyElement(this._topic.current);
         }
-    },
+    }
 
-    componentWillUnmount: function() {
+    componentWillUnmount() {
         if (this.props.room) {
             this.props.room.removeListener("Room.name", this._onRoomNameChange);
         }
@@ -91,43 +91,41 @@ export default createReactClass({
             cli.removeListener("RoomState.events", this._onRoomStateEvents);
             cli.removeListener("Room.accountData", this._onRoomAccountData);
         }
-    },
+    }
 
-    _onRoomStateEvents: function(event, state) {
+    _onRoomStateEvents = (event, state) => {
         if (!this.props.room || event.getRoomId() !== this.props.room.roomId) {
             return;
         }
 
         // redisplay the room name, topic, etc.
         this._rateLimitedUpdate();
-    },
+    };
 
-    _onRoomAccountData: function(event, room) {
+    _onRoomAccountData = (event, room) => {
         if (!this.props.room || room.roomId !== this.props.room.roomId) return;
         if (event.getType() !== "im.vector.room.read_pins") return;
 
         this._rateLimitedUpdate();
-    },
+    };
 
-    _rateLimitedUpdate: new RateLimitedFunc(function() {
+    _rateLimitedUpdate = new RateLimitedFunc(function() {
         /* eslint-disable babel/no-invalid-this */
         this.forceUpdate();
-    }, 500),
+    }, 500);
 
-    _onRoomNameChange: function(room) {
+    _onRoomNameChange = (room) => {
         this.forceUpdate();
-    },
+    };
 
-    onShareRoomClick: function(ev) {
-        const ShareDialog = sdk.getComponent("dialogs.ShareDialog");
+    onShareRoomClick = (ev) => {
         Modal.createTrackedDialog('share room dialog', '', ShareDialog, {
             target: this.props.room,
         });
-    },
+    };
 
-    onCloseCaseClick: async function(ev) {
-        const CloseDialog = sdk.getComponent('dialogs.ConfirmCloseCaseDialog');
-        const modal = Modal.createTrackedDialog('Close Case', '', CloseDialog);
+    onCloseCaseClick = async (ev) => {
+        const modal = Modal.createTrackedDialog('Close Case', '', ConfirmCloseCaseDialog);
 
         const closeCase = await modal.finished;
 
@@ -144,20 +142,19 @@ export default createReactClass({
               dis.dispatch({action: 'message_send_failed'});
           });
         }
-    },
+    };
 
-    onArchiveCaseClick: function(ev) {
-        const ArchiveDialog = sdk.getComponent("dialogs.ConfirmArchiveCaseDialog");
-        Modal.createTrackedDialog('Archive case', '', ArchiveDialog, {
+    onArchiveCaseClick = (ev) => {
+        Modal.createTrackedDialog('Archive case', '', ConfirmArchiveCaseDialog, {
             onFinished: (archiveCase) => {
                 if (!archiveCase) return;
                 dis.dispatch({action: 'view_create_report', room_id: this.props.room.roomId});
             },
             room: this.props.room,
         });
-    },
+    };
 
-    _hasUnreadPins: function() {
+    _hasUnreadPins() {
         const currentPinEvent = this.props.room.currentState.getStateEvents("m.room.pinned_events", '');
         if (!currentPinEvent) return false;
         if (currentPinEvent.getContent().pinned && currentPinEvent.getContent().pinned.length <= 0) {
@@ -174,29 +171,18 @@ export default createReactClass({
 
         // There's pins, and we haven't read any of them
         return true;
-    },
+    }
 
-    _hasPins: function() {
+    _hasPins() {
         const currentPinEvent = this.props.room.currentState.getStateEvents("m.room.pinned_events", '');
         if (!currentPinEvent) return false;
 
         return !(currentPinEvent.getContent().pinned && currentPinEvent.getContent().pinned.length <= 0);
-    },
+    }
 
-    render: function() {
-        const RoomAvatar = sdk.getComponent("avatars.RoomAvatar");
-
+    render() {
         let searchStatus = null;
         let cancelButton = null;
-
-        const dmUserId = DMRoomMap.shared().getUserIdForRoomId(this.props.room.roomId);
-        const joinRules = this.props.room && this.props.room.currentState.getStateEvents("m.room.join_rules", "");
-        const joinRule = joinRules && joinRules.getContent().join_rule;
-        let privateIcon;
-        // Don't show an invite-only icon for DMs. Users know they're invite-only.
-        if (!dmUserId && joinRule === "invite") {
-            privateIcon = <InviteOnlyIcon />;
-        }
 
         if (this.props.onCancelClick) {
             cancelButton = <CancelButton onClick={this.props.onCancelClick} />;
@@ -247,19 +233,20 @@ export default createReactClass({
         }
         const topicElement =
             <div className="mx_RoomHeader_topic" ref={this._topic} title={topic} dir="auto">{ topic }</div>;
-        const avatarSize = 28;
+
         let roomAvatar;
         if (this.props.room) {
-            roomAvatar = (<RoomAvatar
+            roomAvatar = <DecoratedRoomAvatar
                 room={this.props.room}
-                width={avatarSize}
-                height={avatarSize}
+                avatarSize={32}
+                tag={DefaultTagID.Untagged} // to apply room publicity badging
                 oobData={this.props.oobData}
-                viewAvatarOnClick={true} />);
+                viewAvatarOnClick={true} />;
         }
 
         let shareRoomButton;
-        if (this.props.inRoom && !dmUserId && !MatrixClientPeg.get().isGuest()) {
+        const dmUserId = DMRoomMap.shared().getUserIdForRoomId(this.props.room.roomId);
+        if (this.props.inRoom && !this.props.isCaseClosed && !dmUserId && !MatrixClientPeg.get().isGuest()) {
             shareRoomButton =
                 <AccessibleButton className="amp_RoomHeader_share_button"
                     onClick={this.onShareRoomClick}
@@ -273,16 +260,14 @@ export default createReactClass({
         let archiveCaseButton;
 
         if (!MatrixClientPeg.get().isGuest()) {
-          if (!MatrixClientPeg.get().isGuest()) {
-            closeCaseButton =
-                <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
-                                  onClick={this.onCloseCaseClick}
-                                  title={this.props.isCaseClosed ? _t('Case closed') : _t('Close case')}
-                                  disabled={this.props.isCaseClosed}
-                >
-                    <span>{ this.props.isCaseClosed ? _t('Case closed') : _t('Close case') }</span>
-                </AccessibleButton>;
-          }
+          closeCaseButton =
+              <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
+                                onClick={this.onCloseCaseClick}
+                                title={this.props.isCaseClosed ? _t('Case closed') : _t('Close case')}
+                                disabled={this.props.isCaseClosed}
+              >
+                  <span>{ this.props.isCaseClosed ? _t('Case closed') : _t('Close case') }</span>
+              </AccessibleButton>;
 
           archiveCaseButton =
               <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_archive_button_active" : "amp_RoomHeader_archive_button_inactive"}
@@ -305,7 +290,6 @@ export default createReactClass({
             <div className="mx_RoomHeader light-panel">
                 <div className="mx_RoomHeader_wrapper" aria-owns="mx_RightPanel">
                     <div className="mx_RoomHeader_avatar">{ roomAvatar }</div>
-                    { privateIcon }
                     { name }
                     { topicElement }
                     { cancelButton }
@@ -314,5 +298,5 @@ export default createReactClass({
                 </div>
             </div>
         );
-    },
-});
+    }
+}

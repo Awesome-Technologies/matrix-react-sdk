@@ -22,7 +22,7 @@ import dis from '../../../dispatcher/dispatcher';
 import * as Lifecycle from '../../../Lifecycle';
 import AuthPage from "../../views/auth/AuthPage";
 import SettingsStore from "../../../settings/SettingsStore";
-import { SettingLevel } from "../../../settings/SettingsStore";
+import {SettingLevel} from "../../../settings/SettingLevel";
 import ExternalInterface from "../../../interfaces/externalInterface";
 
 const LOGIN_VIEW = {
