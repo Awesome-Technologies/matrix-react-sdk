@@ -404,7 +404,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
                 <aside className="mx_LeftPanel_roomListContainer">
                     {this.renderHeader()}
                     {this.renderSearchExplore()}
-                    {this.renderBreadcrumbs()}
                     <AccessibleButton
                         className="amp_RoomHeader_button"
                         onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}
