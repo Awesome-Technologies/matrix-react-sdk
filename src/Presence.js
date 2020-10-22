@@ -20,6 +20,7 @@ import {MatrixClientPeg} from "./MatrixClientPeg";
 import dis from "./dispatcher/dispatcher";
 import Timer from './utils/Timer';
 import * as Lifecycle from './Lifecycle';
+import CallHandler from './CallHandler';
 
  // Time in ms after that a user is considered as unavailable/away
 const UNAVAILABLE_TIME_MS = 3 * 60 * 1000; // 3 mins
@@ -101,7 +102,10 @@ class Presence {
             console.info("Presence: %s", newState);
             // if user is away, show overlay to insert pin
             if (this.state === "unavailable") {
-                Lifecycle.pinOverlay();
+                // check if a call is happening
+                if (!CallHandler.sharedInstance().getAnyActiveCall()) {
+                    Lifecycle.pinOverlay();
+                }
             }
         } catch (err) {
             console.error("Failed to set presence: %s", err);
