@@ -700,7 +700,7 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                 break;
             case 'view_pin_overlay':
                 // check if pin or third-party-interface is set
-                if (SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled')) {
+                if (SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled')) {
                     this.viewPinOverlay();
                 }
                 break;

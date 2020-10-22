@@ -117,7 +117,7 @@ export default class TopLeftMenu extends React.Component {
             </MenuItem>
         );
 
-        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const switchUserItem = interfaceEnabled ? (
             <MenuItem className="mx_TopLeftMenu_icon_switchUser" onClick={this.switchUser}>
                 {_t("Switch user")}

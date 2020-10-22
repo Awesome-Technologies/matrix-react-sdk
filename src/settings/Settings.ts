@@ -700,9 +700,9 @@ export const SETTINGS: {[setting: string]: ISetting} = {
         displayName: _td("Vendor of the third party software"),
         default: 'none',
     },
-    "ampInterfacesAdress": {
+    "ampInterfacesAddress": {
         supportedLevels: LEVELS_ACCOUNT_SETTINGS,
-        displayName: _td("Adress to the API of the third party software"),
+        displayName: _td("Address to the API of the third party software"),
         default: '',
     },
     "ampInterfacesLoginMethod": {

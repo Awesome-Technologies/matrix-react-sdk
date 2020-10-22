@@ -36,12 +36,21 @@ export default class InterfaceUserSettingsTab extends React.Component {
             enableSettingsTest: true,
             testError: '',
             testInProgress: false,
-            interfaceAdress: SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress'),
+            interfaceAddress: SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress'),
         };
     }
 
-    async componentDidMount() {
-
+    componentDidMount(): void {
+        console.log(SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress'));
+        this.setState({
+            enabled: SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled'),
+            selectedVendor: SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesVendor').toString(10),
+            enableSettingsSave: false,
+            enableSettingsTest: true,
+            testError: '',
+            testInProgress: false,
+            interfaceAddress: SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress'),
+        });
     }
 
     _onVendorChange = (e) => {
@@ -62,7 +71,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
               const content = {};
               content['enabled'] = false;
               content['vendor'] = '';
-              content['interfaceAdress'] = '';
+              content['interfaceAddress'] = '';
               MatrixClientPeg.get().setAccountData("care.amp.interfaces", content);
           }
     };
@@ -76,9 +85,9 @@ export default class InterfaceUserSettingsTab extends React.Component {
         return event.getContent();
     };
 
-    _onInterfaceAdressChanged = (e) => {
+    _onInterfaceAddressChanged = (e) => {
         this.setState({
-            interfaceAdress: e.target.value,
+            interfaceAddress: e.target.value,
             enableSettingsTest: true,
             enableSettingsSave: false,
         });
@@ -87,7 +96,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
     _testSettings = (e) => {
         this.setState({testInProgress: true});
         ExternalInterface.testInterface(this.state.selectedVendor,
-                                        this.state.interfaceAdress,
+                                        this.state.interfaceAddress,
                                         this._onTestSucceeded,
                                         this._onTestFailed);
     };
@@ -107,22 +116,22 @@ export default class InterfaceUserSettingsTab extends React.Component {
         });
     };
 
-    _saveSettings = (e) => {
+    _saveSettings = async (e) => {
         const loginMethod = ExternalInterface.getLoginMethod(this.state.selectedVendor);
-        SettingsStore.setValue("ampInterfacesEnabled", null, SettingLevel.ACCOUNT, true);
-        SettingsStore.setValue("ampInterfacesVendor", null, SettingLevel.ACCOUNT, this.state.selectedVendor);
-        SettingsStore.setValue("ampInterfacesAdress", null, SettingLevel.ACCOUNT, this.state.interfaceAdress);
+        await SettingsStore.setValue("ampInterfacesVendor", null, SettingLevel.ACCOUNT, this.state.selectedVendor);
+        await SettingsStore.setValue("ampInterfacesAddress", null, SettingLevel.ACCOUNT, this.state.interfaceAddress);
+        await SettingsStore.setValue("ampInterfacesEnabled", null, SettingLevel.ACCOUNT, true);
 
-        SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, '');
-        SettingsStore.setValue("ampInterfacesLoginMethod", null, SettingLevel.DEVICE, loginMethod);
-        SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, '');
+        await SettingsStore.setValue("ampInterfacesUsername", null, SettingLevel.DEVICE, '');
+        await SettingsStore.setValue("ampInterfacesLoginMethod", null, SettingLevel.DEVICE, loginMethod);
+        await SettingsStore.setValue("ampInterfacesToken", null, SettingLevel.DEVICE, '');
 
         // persist settings
         const content = this._getSettings("care.amp.interfaces") || {};
         content['enabled'] = true;
         content['vendor'] = this.state.selectedVendor;
         content['loginMethod'] = loginMethod;
-        content['interfaceAdress'] = this.state.interfaceAdress;
+        content['interfaceAddress'] = this.state.interfaceAddress;
 
         MatrixClientPeg.get().setAccountData("care.amp.interfaces", content);
 
@@ -144,7 +153,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
     render() {
         const InlineSpinner = sdk.getComponent('elements.InlineSpinner');
 
-        let interfaceAdress = null;
+        let interfaceAddress = null;
         let testButton = null;
         let vendorsDropdown = null;
         let saveButton = null;
@@ -159,9 +168,9 @@ export default class InterfaceUserSettingsTab extends React.Component {
         if (this.state.enabled) {
             vendorsDropdown = this._renderVendorOptions();
 
-            interfaceAdress = <Field id="interfaceAdress" label={_t("Interface adress")}
-                   type="text" value={this.state.interfaceAdress} autoComplete="off"
-                   onChange={this._onInterfaceAdressChanged} />;
+            interfaceAddress = <Field id="interfaceAddress" label={_t("Interface address")}
+                   type="text" value={this.state.interfaceAddress} autoComplete="off"
+                   onChange={this._onInterfaceAddressChanged} />;
 
             testButton = (
                 <div className='mx_VoiceUserSettingsTab_missingMediaPermissions'>
@@ -197,7 +206,7 @@ export default class InterfaceUserSettingsTab extends React.Component {
                 <div className="mx_SettingsTab_section">
                     {enableDiv}
                     {vendorsDropdown}
-                    {interfaceAdress}
+                    {interfaceAddress}
                     {testButton}
                     {error}{success}
                     {saveButton}

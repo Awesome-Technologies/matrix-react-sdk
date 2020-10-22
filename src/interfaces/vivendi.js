@@ -64,7 +64,7 @@ export default class Vivendi {
      * @return {Object} Result from the login API in json format
      */
     static async login(username, password) {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const body = {username: username, password: password, userGroupType: 3};
         const response = await fetch(url + '/api/v2/LoginUser', {
             method: 'GET',
@@ -107,7 +107,7 @@ export default class Vivendi {
 
     // Loads the list of associated patients
     static async getPatients() {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         return await fetch(url + '/api/v2/Klient/SucheNachZeitraum?MitDetails=true', {
@@ -186,7 +186,7 @@ export default class Vivendi {
     }
 
     static async getBloodpressure(patientId) {
-      const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+      const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
       const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
       return await fetch(url + '/api/v2/Vitalwert?KategorieIds=1&KlientIds=' + patientId, {
@@ -249,7 +249,7 @@ export default class Vivendi {
         return {date: '', value: ''};
 
         /*
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         return await fetch(url + '/api/v2/Bericht?KlientIds=' + patientId, {
@@ -288,7 +288,7 @@ export default class Vivendi {
 
     // Loads vital data for a given patient
     static async getVitalValue(patientId, category) {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         return await fetch(url + '/api/v2/Vitalwert?KategorieIds=' + category + '&KlientIds=' + patientId, {

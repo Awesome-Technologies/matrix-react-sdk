@@ -64,7 +64,7 @@ export default class ProfSys {
     * @return {Object} Result from the login API in json format
     */
     static async login(pin) {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const body = {PIN: pin};
         const response = await fetch(url + '/api/authentication/login', {
             method: 'POST',
@@ -117,7 +117,7 @@ export default class ProfSys {
      * Loads the list of associated patients
      */
     static async getPatients() {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         return await fetch(url + '/api/stammdaten/klient/list', {
@@ -174,7 +174,7 @@ export default class ProfSys {
 
     // Collect all vital data of the given patient
     static async getVitalData(patientId) {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         console.log(patientId);
@@ -270,7 +270,7 @@ export default class ProfSys {
     }
 
     static async getLastDefecation(patientId) {
-        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAdress');
+        const url = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesAddress');
         const token = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesToken');
 
         return await fetch(url + '/api/v2/Bericht?KlientIds=' + patientId, {

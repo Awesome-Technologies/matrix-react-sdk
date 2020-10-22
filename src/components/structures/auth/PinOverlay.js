@@ -64,7 +64,7 @@ export default class PinOverlay extends React.Component {
 
     _initLogin() {
         const loginMethod = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesLoginMethod');
-        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const vendor = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesVendor');
 
         this.setState({interfaceEnabled: interfaceEnabled, vendor: vendor});

@@ -137,7 +137,7 @@
     "Vendor": "Hersteller",
     "Enable interfaces for this account": "Schnittstellen für dieses Konto aktivieren",
     "Test interface settings": "Schnittstelle testen",
-    "Interface adress": "Adresse der Schnittstelle",
+    "Interface address": "Adresse der Schnittstelle",
     "Connection successfully established": "Verbindungstest erfolgreich",
     "Error while connecting: ": "Fehler beim Verbinden: ",
     "Import patient data": "Patientendaten importieren",

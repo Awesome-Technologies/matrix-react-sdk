@@ -79,7 +79,7 @@ export default class CreateCaseDialog extends React.Component {
     }
 
     componentDidMount() {
-        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
 
         if (interfaceEnabled && username !== "") {
@@ -556,7 +556,7 @@ export default class CreateCaseDialog extends React.Component {
         const AdressPicker = sdk.getComponent('views.cases.AdressPicker');
         const InterfaceImport = sdk.getComponent('views.cases.InterfaceImport');
 
-        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesEnabled');
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const importArea = interfaceEnabled ? <InterfaceImport onFinished={this.importData} /> : null;
 
         const noRecipientSelected = this.state.noRecipientSelected ? {} : { display: 'none' };
