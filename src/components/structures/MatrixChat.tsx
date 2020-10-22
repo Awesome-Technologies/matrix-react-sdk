@@ -700,8 +700,11 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                 break;
             case 'view_pin_overlay':
                 // check if pin or third-party-interface is set
-                if (SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled')) {
+                const enabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
+                if (enabled) {
                     this.viewPinOverlay();
+                } else {
+                  dis.dispatch({action: 'view_last_screen'});
                 }
                 break;
             case 'view_create_group': {
@@ -1025,9 +1028,6 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
     private viewPinOverlay() {
         this.setStateForNewView({
             view: Views.PIN_OVERLAY,
-            ready: false,
-            collapseLhs: false,
-            currentRoomId: null,
         });
         this.notifyNewScreen('pin_overlay');
         this.subTitleStatus = '';
