@@ -698,15 +698,16 @@ export default class MatrixChat extends React.PureComponent<IProps, IState> {
                 });
 
                 break;
-            case 'view_pin_overlay':
+            case 'view_pin_overlay': {
                 // check if pin or third-party-interface is set
                 const enabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
                 if (enabled) {
                     this.viewPinOverlay();
                 } else {
-                  dis.dispatch({action: 'view_last_screen'});
+                    dis.dispatch({action: 'view_last_screen'});
                 }
                 break;
+            }
             case 'view_create_group': {
                 let CreateGroupDialog = sdk.getComponent("dialogs.CreateGroupDialog")
                 if (SettingsStore.getValue("feature_communities_v2_prototypes")) {
