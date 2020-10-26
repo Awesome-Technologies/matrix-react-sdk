@@ -390,6 +390,8 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
     private renderGeneralMenu(): React.ReactElement {
         if (!this.showContextMenu) return null; // no menu to show
 
+        const isGuest = MatrixClientPeg.get().isGuest();
+
         let contextMenu = null;
         if (this.state.generalMenuPosition && this.props.tag === DefaultTagID.Archived) {
             contextMenu = <IconizedContextMenu
@@ -435,11 +437,11 @@ export default class RoomTile extends React.PureComponent<IProps, IState> {
                         iconClassName="mx_RoomTile_iconArrowDown"
                     />
 
-                    <IconizedContextMenuOption
+                    {isGuest ? '' : <IconizedContextMenuOption
                         onClick={this.onOpenRoomSettings}
                         label={_t("Settings")}
                         iconClassName="mx_RoomTile_iconSettings"
-                    />
+                    />}
                 </IconizedContextMenuOptionList>
                 <IconizedContextMenuOptionList red>
                     <IconizedContextMenuOption

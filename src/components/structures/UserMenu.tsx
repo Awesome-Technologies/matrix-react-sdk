@@ -271,6 +271,7 @@ export default class UserMenu extends React.Component<IProps, IState> {
     private renderContextMenu = (): React.ReactNode => {
         if (!this.state.contextMenuPosition) return null;
 
+        const isGuest = MatrixClientPeg.get().isGuest();
         const prototypeCommunityName = CommunityPrototypeStore.instance.getSelectedCommunityName();
 
         let hostingLink;
@@ -315,6 +316,32 @@ export default class UserMenu extends React.Component<IProps, IState> {
             />;
         }
 
+        let notificationsButton = null;
+        if (!isGuest) {
+            notificationsButton = <IconizedContextMenuOption
+                iconClassName="mx_UserMenu_iconBell"
+                label={_t("Notification settings")}
+                onClick={(e) => this.onSettingsOpen(e, USER_NOTIFICATIONS_TAB)}
+            />;
+        }
+
+        let securityButton = null;
+        if (!isGuest) {
+            securityButton = <IconizedContextMenuOption
+                iconClassName="mx_UserMenu_iconLock"
+                label={_t("Security & privacy")}
+                onClick={(e) => this.onSettingsOpen(e, USER_SECURITY_TAB)}
+            />;
+        }
+
+        let settingsButton = null;
+        if (!isGuest) {
+            settingsButton = <IconizedContextMenuOption
+                iconClassName="mx_UserMenu_iconSettings"
+                label={_t("All settings")}
+                onClick={(e) => this.onSettingsOpen(e, null)}
+            />;
+        }
 
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const switchUserButton = interfaceEnabled ? (
@@ -339,21 +366,9 @@ export default class UserMenu extends React.Component<IProps, IState> {
             <React.Fragment>
                 <IconizedContextMenuOptionList>
                     {homeButton}
-                    <IconizedContextMenuOption
-                        iconClassName="mx_UserMenu_iconBell"
-                        label={_t("Notification settings")}
-                        onClick={(e) => this.onSettingsOpen(e, USER_NOTIFICATIONS_TAB)}
-                    />
-                    <IconizedContextMenuOption
-                        iconClassName="mx_UserMenu_iconLock"
-                        label={_t("Security & privacy")}
-                        onClick={(e) => this.onSettingsOpen(e, USER_SECURITY_TAB)}
-                    />
-                    <IconizedContextMenuOption
-                        iconClassName="mx_UserMenu_iconSettings"
-                        label={_t("All settings")}
-                        onClick={(e) => this.onSettingsOpen(e, null)}
-                    />
+                    {notificationsButton}
+                    {securityButton}
+                    {settingsButton}
                     {switchUserButton}
                     {/* <IconizedContextMenuOption
                         iconClassName="mx_UserMenu_iconArchive"

@@ -290,6 +290,7 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
 
     private renderSublists(): React.ReactElement[] {
         const components: React.ReactElement[] = [];
+        const isGuest = MatrixClientPeg.get().isGuest();
 
         const tagOrder = TAG_ORDER.reduce((p, c) => {
             if (c === CUSTOM_TAGS_BEFORE_TAG) {
@@ -307,6 +308,10 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
             const totalTiles = orderedRooms.length + (extraTiles ? extraTiles.length : 0);
             if (totalTiles === 0 && !ALWAYS_VISIBLE_TAGS.includes(orderedTagId)) {
                 continue; // skip tag - not needed
+            }
+
+            if (isGuest && orderedTagId === DefaultTagID.DM) {
+                continue; // hide cases if user is a guest
             }
 
             const aesthetics: ITagAesthetics = isCustomTag(orderedTagId)
@@ -333,8 +338,9 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
     }
 
     public render() {
+        const isGuest = MatrixClientPeg.get().isGuest();
         let explorePrompt: JSX.Element;
-        if (RoomListStore.instance.getFirstNameFilterCondition()) {
+        if (RoomListStore.instance.getFirstNameFilterCondition() && !isGuest) {
             explorePrompt = <div className="mx_RoomList_explorePrompt">
                 <div>{_t("Can't see what you’re looking for?")}</div>
                 <AccessibleButton kind="link" onClick={this.onExplore}>

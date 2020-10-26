@@ -184,6 +184,8 @@ export default class RoomHeader extends React.Component {
         let searchStatus = null;
         let cancelButton = null;
 
+        const isGuest = MatrixClientPeg.get().isGuest();
+
         if (this.props.onCancelClick) {
             cancelButton = <CancelButton onClick={this.props.onCancelClick} />;
         }
@@ -218,11 +220,20 @@ export default class RoomHeader extends React.Component {
         }
 
         const textClasses = classNames('mx_RoomHeader_nametext', { mx_RoomHeader_settingsHint: settingsHint });
-        const name =
-            <div className="mx_RoomHeader_name" onClick={this.props.onSettingsClick}>
-                <div dir="auto" className={textClasses} title={roomName}>{ roomName }</div>
-                { searchStatus }
-            </div>;
+        let name;
+        if (isGuest) {
+            name =
+                <div className="mx_RoomHeader_name">
+                    <div dir="auto" className={textClasses} title={roomName}>{ roomName }</div>
+                    { searchStatus }
+                </div>;
+        } else {
+            name =
+                <div className="mx_RoomHeader_name" onClick={this.props.onSettingsClick}>
+                    <div dir="auto" className={textClasses} title={roomName}>{ roomName }</div>
+                    { searchStatus }
+                </div>;
+        }
 
         let topic;
         if (this.props.room) {
@@ -246,7 +257,7 @@ export default class RoomHeader extends React.Component {
 
         let shareRoomButton;
         const dmUserId = DMRoomMap.shared().getUserIdForRoomId(this.props.room.roomId);
-        if (this.props.inRoom && !this.props.isCaseClosed && !dmUserId && !MatrixClientPeg.get().isGuest()) {
+        if (this.props.inRoom && !this.props.isCaseClosed && !dmUserId && !isGuest) {
             shareRoomButton =
                 <AccessibleButton className="amp_RoomHeader_share_button"
                     onClick={this.onShareRoomClick}
@@ -259,7 +270,7 @@ export default class RoomHeader extends React.Component {
         let closeCaseButton;
         let archiveCaseButton;
 
-        if (!MatrixClientPeg.get().isGuest()) {
+        if (!isGuest) {
           closeCaseButton =
               <AccessibleButton className={this.props.isCaseClosed ? "amp_RoomHeader_close_button_inactive" : "amp_RoomHeader_close_button_active"}
                                 onClick={this.onCloseCaseClick}
@@ -286,6 +297,11 @@ export default class RoomHeader extends React.Component {
                 { archiveCaseButton }
             </div>;
 
+        let roomHeaderButton = null;
+        if (!isGuest) {
+            roomHeaderButton = <RoomHeaderButtons />;
+        }
+
         return (
             <div className="mx_RoomHeader light-panel">
                 <div className="mx_RoomHeader_wrapper" aria-owns="mx_RightPanel">
@@ -294,7 +310,7 @@ export default class RoomHeader extends React.Component {
                     { topicElement }
                     { cancelButton }
                     { rightRow }
-                    <RoomHeaderButtons />
+                    { roomHeaderButton }
                 </div>
             </div>
         );

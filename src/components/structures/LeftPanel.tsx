@@ -16,8 +16,6 @@ limitations under the License.
 
 import * as React from "react";
 import { createRef } from "react";
-import TagPanel from "./TagPanel";
-import CustomRoomTagPanel from "./CustomRoomTagPanel";
 import classNames from "classnames";
 import dis from "../../dispatcher/dispatcher";
 import { _t } from "../../languageHandler";
@@ -370,12 +368,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
     }
 
     public render(): React.ReactNode {
-        const tagPanel = !this.state.showTagPanel ? null : (
-            <div className="mx_LeftPanel_tagPanelContainer">
-                <TagPanel />
-                {SettingsStore.getValue("feature_custom_tags") ? <CustomRoomTagPanel /> : null}
-            </div>
-        );
+        const isGuest = MatrixClientPeg.get().isGuest();
 
         const roomList = <RoomList
             onKeyDown={this.onKeyDown}
@@ -389,7 +382,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
         const containerClasses = classNames({
             "mx_LeftPanel": true,
-            "mx_LeftPanel_hasTagPanel": !!tagPanel,
+            "mx_LeftPanel_hasTagPanel": false,
             "mx_LeftPanel_minimized": this.props.isMinimized,
         });
 
@@ -398,16 +391,20 @@ export default class LeftPanel extends React.Component<IProps, IState> {
             "mx_AutoHideScrollbar",
         );
 
+        let newAnonymousCaseButton = null;
+        if (!isGuest) {
+            newAnonymousCaseButton = <AccessibleButton
+                className="amp_RoomHeader_button"
+                onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}
+            </AccessibleButton>;
+        }
+
         return (
             <div className={containerClasses}>
-                {tagPanel}
                 <aside className="mx_LeftPanel_roomListContainer">
                     {this.renderHeader()}
                     {this.renderSearchExplore()}
-                    <AccessibleButton
-                        className="amp_RoomHeader_button"
-                        onClick={() => dis.dispatch({action: 'view_create_room'})}>{_t("New anonymous case")}
-                    </AccessibleButton>
+                    {newAnonymousCaseButton}
                     <RoomListNumResults />
                     <div className="mx_LeftPanel_roomListWrapper">
                         <div
