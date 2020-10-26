@@ -284,4 +284,12 @@ limitations under the License.
     .mx_UserMenu_iconInvite::before {
         mask-image: url('$(res)/img/element-icons/room/invite.svg');
     }
+
+    .mx_UserMenu_icon_privacy::before {
+        mask-image: url('$(res)/img/feather-customised/paragraph.svg');
+    }
+
+    .mx_UserMenu_icon_switchUser::before {
+        mask-image: url('$(res)/img/feather-customised/user-switch.svg');
+    }
 }

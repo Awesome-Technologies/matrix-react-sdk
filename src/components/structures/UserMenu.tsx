@@ -50,6 +50,8 @@ import { RightPanelPhases } from "../../stores/RightPanelStorePhases";
 import ErrorDialog from "../views/dialogs/ErrorDialog";
 import EditCommunityPrototypeDialog from "../views/dialogs/EditCommunityPrototypeDialog";
 import {UIFeature} from "../../settings/UIFeature";
+import * as Lifecycle from '../../Lifecycle';
+import SetDisplaynameDialog from "../views/dialogs/SetDisplaynameDialog";
 
 interface IProps {
     isMinimized: boolean;
@@ -247,6 +249,25 @@ export default class UserMenu extends React.Component<IProps, IState> {
         this.setState({contextMenuPosition: null}); // also close the menu
     };
 
+    private openPrivacyDeclaration = () => {
+        this.onCloseMenu();
+        window.open(
+            'https://amp.care/privacy',
+            '_blank',
+        );
+    };
+
+    private switchUser = () => {
+        this.onCloseMenu();
+        Lifecycle.pinOverlay();
+    };
+
+    private onDisplaynameClicked = () => {
+        Modal.createTrackedDialog('Set Displayname Dialog', '', SetDisplaynameDialog, {
+            title: _t('Set displayname'),
+        });
+    };
+
     private renderContextMenu = (): React.ReactNode => {
         if (!this.state.contextMenuPosition) return null;
 
@@ -294,8 +315,18 @@ export default class UserMenu extends React.Component<IProps, IState> {
             />;
         }
 
+
+        const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
+        const switchUserButton = interfaceEnabled ? (
+            <IconizedContextMenuOption
+                iconClassName="mx_UserMenu_icon_switchUser"
+                label={_t("Switch user")}
+                onClick={this.switchUser}
+            />
+        ) : null;
+
         let primaryHeader = (
-            <div className="mx_UserMenu_contextMenu_name">
+            <div className="mx_UserMenu_contextMenu_name" onClick={this.onDisplaynameClicked}>
                 <span className="mx_UserMenu_contextMenu_displayName">
                     {OwnProfileStore.instance.displayName}
                 </span>
@@ -323,11 +354,17 @@ export default class UserMenu extends React.Component<IProps, IState> {
                         label={_t("All settings")}
                         onClick={(e) => this.onSettingsOpen(e, null)}
                     />
+                    {switchUserButton}
                     {/* <IconizedContextMenuOption
                         iconClassName="mx_UserMenu_iconArchive"
                         label={_t("Archived rooms")}
                         onClick={this.onShowArchived}
                     /> */}
+                    <IconizedContextMenuOption
+                        iconClassName="mx_UserMenu_icon_privacy"
+                        label={_t("Privacy")}
+                        onClick={this.openPrivacyDeclaration}
+                    />
                     { feedbackButton }
                 </IconizedContextMenuOptionList>
                 <IconizedContextMenuOptionList red>
