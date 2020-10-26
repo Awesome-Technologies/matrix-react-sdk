@@ -129,13 +129,6 @@ const TAG_AESTHETICS: {
         isInvite: false,
         defaultHidden: false,
     },
-
-    // TODO: Replace with archived view: https://github.com/vector-im/element-web/issues/14038
-    [DefaultTagID.Archived]: {
-        sectionLabel: _td("Historical"),
-        isInvite: false,
-        defaultHidden: true,
-    },
 };
 
 function customTagAesthetics(tagId: TagID): ITagAesthetics {
