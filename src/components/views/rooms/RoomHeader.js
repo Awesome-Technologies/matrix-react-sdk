@@ -135,12 +135,12 @@ export default class RoomHeader extends React.Component {
 
           const doneContent = {};
           doneContent["done"] = true;
-          client.sendEvent(this.props.room.roomId, 'care.amp.done', doneContent).then(() => {
-              Analytics.trackEvent('AMP.care cases', 'case closed');
-              dis.dispatch({action: 'message_sent'});
-          }, (err) => {
-              dis.dispatch({action: 'message_send_failed'});
+          client._sendCompleteEvent(this.props.room.roomId, {
+            type: 'care.amp.done',
+            state_key: 'care.amp.done',
+            content: doneContent,
           });
+          Analytics.trackEvent('AMP.care cases', 'case closed');
         }
     };
 
