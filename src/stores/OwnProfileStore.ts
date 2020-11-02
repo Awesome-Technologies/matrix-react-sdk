@@ -48,7 +48,11 @@ export class OwnProfileStore extends AsyncStoreWithClient<IState> {
         if (!this.matrixClient) return this.state.displayName || null;
 
         if (this.matrixClient.isGuest()) {
-            return _t("Guest");
+            if (this.state.displayName) {
+                return _t("Guest") + " - " + this.state.displayName;
+            } else {
+                return _t("Guest");
+            }
         } else if (this.state.displayName) {
             return this.state.displayName;
         } else {
