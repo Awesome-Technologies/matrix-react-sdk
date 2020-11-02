@@ -384,10 +384,6 @@ export default class ContentMessages {
     }
 
     async sendContentListToRoom(files: File[], roomId: string, matrixClient: MatrixClient) {
-        if (matrixClient.isGuest()) {
-            dis.dispatch({action: 'require_registration'});
-            return;
-        }
 
         const isQuoting = Boolean(RoomViewStore.getQuotingEvent());
         if (isQuoting) {

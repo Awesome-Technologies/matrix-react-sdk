@@ -194,10 +194,6 @@ class UploadButton extends React.Component {
     };
 
     onUploadClick(ev) {
-        if (MatrixClientPeg.get().isGuest()) {
-            dis.dispatch({action: 'require_registration'});
-            return;
-        }
         this._uploadInput.current.click();
     }
 
