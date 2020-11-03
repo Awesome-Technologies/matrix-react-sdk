@@ -142,12 +142,6 @@ export default class UserSettingsDialog extends React.Component {
             ));
         }
         tabs.push(new Tab(
-            USER_INTERFACES_TAB,
-            _td("Interfaces"),
-            "amp_InterfaceSettingsDialog_interfaceIcon",
-            <InterfaceUserSettingsTab />,
-        ));
-        tabs.push(new Tab(
             USER_HELP_TAB,
             _td("Help & About"),
             "mx_UserSettingsDialog_helpIcon",
