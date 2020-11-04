@@ -384,7 +384,6 @@ export default class ContentMessages {
     }
 
     async sendContentListToRoom(files: File[], roomId: string, matrixClient: MatrixClient) {
-
         const isQuoting = Boolean(RoomViewStore.getQuotingEvent());
         if (isQuoting) {
             const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
