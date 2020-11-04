@@ -69,7 +69,6 @@ const TAG_ORDER: TagID[] = [
 
     DefaultTagID.LowPriority,
     DefaultTagID.ServerNotice,
-    DefaultTagID.Archived,
 ];
 const CUSTOM_TAGS_BEFORE_TAG = DefaultTagID.LowPriority;
 const ALWAYS_VISIBLE_TAGS: TagID[] = [
