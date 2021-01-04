@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import "matrix-js-sdk/src/@types/global"; // load matrix-js-sdk's type extensions first
 import * as ModernizrStatic from "modernizr";
 import ContentMessages from "../ContentMessages";
 import { IMatrixClientPeg } from "../MatrixClientPeg";
@@ -31,6 +32,10 @@ import type {Renderer} from "react-dom";
 import RightPanelStore from "../stores/RightPanelStore";
 import WidgetStore from "../stores/WidgetStore";
 import CallHandler from "../CallHandler";
+import {Analytics} from "../Analytics";
+import CountlyAnalytics from "../CountlyAnalytics";
+import UserActivity from "../UserActivity";
+import {ModalWidgetStore} from "../stores/ModalWidgetStore";
 
 declare global {
     interface Window {
@@ -55,11 +60,22 @@ declare global {
         mxRightPanelStore: RightPanelStore;
         mxWidgetStore: WidgetStore;
         mxCallHandler: CallHandler;
+        mxAnalytics: Analytics;
+        mxCountlyAnalytics: typeof CountlyAnalytics;
+        mxUserActivity: UserActivity;
+        mxModalWidgetStore: ModalWidgetStore;
     }
 
     interface Document {
         // https://developer.mozilla.org/en-US/docs/Web/API/Document/hasStorageAccess
         hasStorageAccess?: () => Promise<boolean>;
+
+        // Safari & IE11 only have this prefixed: we used prefixed versions
+        // previously so let's continue to support them for now
+        webkitExitFullscreen(): Promise<void>;
+        msExitFullscreen(): Promise<void>;
+        readonly webkitFullscreenElement: Element | null;
+        readonly msFullscreenElement: Element | null;
     }
 
     interface Navigator {
@@ -88,5 +104,21 @@ declare global {
 
     interface HTMLAudioElement {
         type?: string;
+    }
+
+    interface Element {
+        // Safari & IE11 only have this prefixed: we used prefixed versions
+        // previously so let's continue to support them for now
+        webkitRequestFullScreen(options?: FullscreenOptions): Promise<void>;
+        msRequestFullscreen(options?: FullscreenOptions): Promise<void>;
+    }
+
+    interface Error {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/fileName
+        fileName?: string;
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/lineNumber
+        lineNumber?: number;
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/columnNumber
+        columnNumber?: number;
     }
 }
