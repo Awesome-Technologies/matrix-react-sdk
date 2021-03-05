@@ -48,6 +48,8 @@ export default class RoomHeader extends React.Component {
         onLeaveClick: PropTypes.func,
         onCancelClick: PropTypes.func,
         e2eStatus: PropTypes.string,
+        onAppsClick: PropTypes.func,
+        appsShown: PropTypes.bool,
         isCaseClosed: PropTypes.bool,
     };
 
@@ -252,7 +254,8 @@ export default class RoomHeader extends React.Component {
                 avatarSize={32}
                 tag={DefaultTagID.Untagged} // to apply room publicity badging
                 oobData={this.props.oobData}
-                viewAvatarOnClick={true} />;
+                viewAvatarOnClick={true}
+            />;
         }
 
         let shareRoomButton;
