@@ -388,6 +388,7 @@ export default class MessageComposer extends React.Component {
     }
 
     render() {
+        const isGuest = MatrixClientPeg.get().isGuest();
         const controls = [
             this.state.me ? <ComposerAvatar key="controls_avatar" me={this.state.me} /> : null,
             this.props.e2eStatus ?
@@ -435,10 +436,12 @@ export default class MessageComposer extends React.Component {
                         <HangupButton key="controls_hangup" roomId={this.props.room.roomId} isConference={false} />,
                     );
                 } else {
-                    controls.push(
-                        <CallButton key="controls_call" roomId={this.props.room.roomId} />,
-                        <VideoCallButton key="controls_videocall" roomId={this.props.room.roomId} />,
-                    );
+                    if (!isGuest) {
+                        controls.push(
+                            <CallButton key="controls_call" roomId={this.props.room.roomId} />,
+                            <VideoCallButton key="controls_videocall" roomId={this.props.room.roomId} />,
+                        );
+                    }
                 }
             }
         } else if (this.state.tombstone) {
