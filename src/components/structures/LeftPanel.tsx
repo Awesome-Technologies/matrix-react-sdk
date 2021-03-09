@@ -384,12 +384,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
     public render(): React.ReactNode {
         const isGuest = MatrixClientPeg.get().isGuest();
-        const groupFilterPanel = !this.state.showGroupFilterPanel ? null : (
-            <div className="mx_LeftPanel_GroupFilterPanelContainer">
-                <GroupFilterPanel />
-                {SettingsStore.getValue("feature_custom_tags") ? <CustomRoomTagPanel /> : null}
-            </div>
-        );
 
         const roomList = <RoomList
             onKeyDown={this.onKeyDown}
@@ -402,7 +396,7 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
         const containerClasses = classNames({
             "mx_LeftPanel": true,
-            "mx_LeftPanel_hasGroupFilterPanel": !!groupFilterPanel,
+            "mx_LeftPanel_hasGroupFilterPanel": false,
             "mx_LeftPanel_minimized": this.props.isMinimized,
         });
 
@@ -421,7 +415,6 @@ export default class LeftPanel extends React.Component<IProps, IState> {
 
         return (
             <div className={containerClasses}>
-                {groupFilterPanel}
                 <aside className="mx_LeftPanel_roomListContainer">
                     {this.renderHeader()}
                     {this.renderSearchExplore()}
