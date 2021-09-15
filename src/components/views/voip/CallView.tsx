@@ -1,6 +1,7 @@
 /*
 Copyright 2015, 2016 OpenMarket Ltd
-Copyright 2019, 2020 The Matrix.org Foundation C.I.C.
+Copyright 2019 - 2021 The Matrix.org Foundation C.I.C.
+Copyright 2021 Šimon Brandner <simon.bra.ag@gmail.com>
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -15,46 +16,62 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import React, { createRef } from 'react';
-import Room from 'matrix-js-sdk/src/models/room';
+import React, { createRef, CSSProperties } from 'react';
 import dis from '../../../dispatcher/dispatcher';
 import CallHandler from '../../../CallHandler';
-import {MatrixClientPeg} from '../../../MatrixClientPeg';
-import { _t } from '../../../languageHandler';
-import VideoFeed, { VideoFeedType } from "./VideoFeed";
+import { MatrixClientPeg } from '../../../MatrixClientPeg';
+import { _t, _td } from '../../../languageHandler';
+import VideoFeed from './VideoFeed';
 import RoomAvatar from "../avatars/RoomAvatar";
-import { CallState, CallType, MatrixCall } from 'matrix-js-sdk/src/webrtc/call';
-import { CallEvent } from 'matrix-js-sdk/src/webrtc/call';
+import { CallEvent, CallState, CallType, MatrixCall } from 'matrix-js-sdk/src/webrtc/call';
 import classNames from 'classnames';
 import AccessibleButton from '../elements/AccessibleButton';
-import {isOnlyCtrlOrCmdKeyEvent, Key} from '../../../Keyboard';
+import { isOnlyCtrlOrCmdKeyEvent, Key } from '../../../Keyboard';
+import { avatarUrlForMember } from '../../../Avatar';
+import { CallFeed } from 'matrix-js-sdk/src/webrtc/callFeed';
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import DesktopCapturerSourcePicker from "../elements/DesktopCapturerSourcePicker";
+import Modal from '../../../Modal';
+import { SDPStreamMetadataPurpose } from 'matrix-js-sdk/src/webrtc/callEventTypes';
+import CallViewSidebar from './CallViewSidebar';
+import CallViewHeader from './CallView/CallViewHeader';
+import CallViewButtons from "./CallView/CallViewButtons";
 
 interface IProps {
-        // js-sdk room object. If set, we will only show calls for the given
-        // room; if not, we will show any active call.
-        room?: Room;
+    // The call for us to display
+    call: MatrixCall;
 
-        // maxHeight style attribute for the video panel
-        maxVideoHeight?: number;
+    // Another ongoing call to display information about
+    secondaryCall?: MatrixCall;
 
-        // a callback which is called when the user clicks on the video div
-        onClick?: React.MouseEventHandler;
+    // a callback which is called when the content in the CallView changes
+    // in a way that is likely to cause a resize.
+    onResize?: (event: Event) => void;
 
-        // a callback which is called when the content in the callview changes
-        // in a way that is likely to cause a resize.
-        onResize?: any;
+    // Whether this call view is for picture-in-picture mode
+    // otherwise, it's the larger call view when viewing the room the call is in.
+    // This is sort of a proxy for a number of things but we currently have no
+    // need to control those things separately, so this is simpler.
+    pipMode?: boolean;
 
-        // Whether to show the hang up icon:W
-        showHangup?: boolean;
+    // Used for dragging the PiP CallView
+    onMouseDownOnHeader?: (event: React.MouseEvent<Element, MouseEvent>) => void;
 }
 
 interface IState {
-    call: MatrixCall;
-    isLocalOnHold: boolean,
-    micMuted: boolean,
-    vidMuted: boolean,
-    callState: CallState,
-    controlsVisible: boolean,
+    isLocalOnHold: boolean;
+    isRemoteOnHold: boolean;
+    micMuted: boolean;
+    vidMuted: boolean;
+    screensharing: boolean;
+    callState: CallState;
+    controlsVisible: boolean;
+    hoveringControls: boolean;
+    showMoreMenu: boolean;
+    showDialpad: boolean;
+    primaryFeed: CallFeed;
+    secondaryFeeds: Array<CallFeed>;
+    sidebarShown: boolean;
 }
 
 function getFullScreenElement() {
@@ -85,29 +102,34 @@ function exitFullscreen() {
     if (exitMethod) exitMethod.call(document);
 }
 
-const CONTROLS_HIDE_DELAY = 1000;
-// Height of the header duplicated from CSS because we need to subtract it from our max
-// height to get the max height of the video
-const HEADER_HEIGHT = 44;
-
+@replaceableComponent("views.voip.CallView")
 export default class CallView extends React.Component<IProps, IState> {
     private dispatcherRef: string;
     private contentRef = createRef<HTMLDivElement>();
-    private controlsHideTimer: number = null;
+    private buttonsRef = createRef<CallViewButtons>();
+
     constructor(props: IProps) {
         super(props);
 
-        const call = this.getCall();
-        this.state = {
-            call,
-            isLocalOnHold: call ? call.isLocalOnHold() : null,
-            micMuted: call ? call.isMicrophoneMuted() : null,
-            vidMuted: call ? call.isLocalVideoMuted() : null,
-            callState: call ? call.state : null,
-            controlsVisible: true,
-        }
+        const { primary, secondary } = CallView.getOrderedFeeds(this.props.call.getFeeds());
 
-        this.updateCallListeners(null, call);
+        this.state = {
+            isLocalOnHold: this.props.call.isLocalOnHold(),
+            isRemoteOnHold: this.props.call.isRemoteOnHold(),
+            micMuted: this.props.call.isMicrophoneMuted(),
+            vidMuted: this.props.call.isLocalVideoMuted(),
+            screensharing: this.props.call.isScreensharing(),
+            callState: this.props.call.state,
+            controlsVisible: true,
+            hoveringControls: false,
+            showMoreMenu: false,
+            showDialpad: false,
+            primaryFeed: primary,
+            secondaryFeeds: secondary,
+            sidebarShown: true,
+        };
+
+        this.updateCallListeners(null, this.props.call);
     }
 
     public componentDidMount() {
@@ -116,9 +138,36 @@ export default class CallView extends React.Component<IProps, IState> {
     }
 
     public componentWillUnmount() {
+        if (getFullScreenElement()) {
+            exitFullscreen();
+        }
+
         document.removeEventListener("keydown", this.onNativeKeyDown);
-        this.updateCallListeners(this.state.call, null);
+        this.updateCallListeners(this.props.call, null);
         dis.unregister(this.dispatcherRef);
+    }
+
+    static getDerivedStateFromProps(props: IProps): Partial<IState> {
+        const { primary, secondary } = CallView.getOrderedFeeds(props.call.getFeeds());
+
+        return {
+            primaryFeed: primary,
+            secondaryFeeds: secondary,
+        };
+    }
+
+    public componentDidUpdate(prevProps: IProps): void {
+        if (this.props.call === prevProps.call) return;
+
+        this.setState({
+            isLocalOnHold: this.props.call.isLocalOnHold(),
+            isRemoteOnHold: this.props.call.isRemoteOnHold(),
+            micMuted: this.props.call.isMicrophoneMuted(),
+            vidMuted: this.props.call.isLocalVideoMuted(),
+            callState: this.props.call.state,
+        });
+
+        this.updateCallListeners(null, this.props.call);
     }
 
     private onAction = (payload) => {
@@ -134,128 +183,115 @@ export default class CallView extends React.Component<IProps, IState> {
                 }
                 break;
             }
-            case 'call_state': {
-                const newCall = this.getCall();
-                if (newCall !== this.state.call) {
-                    this.updateCallListeners(this.state.call, newCall);
-                    let newControlsVisible = this.state.controlsVisible;
-                    if (newCall && !this.state.call) {
-                        newControlsVisible = true;
-                        if (this.controlsHideTimer !== null) {
-                            clearTimeout(this.controlsHideTimer);
-                        }
-                        this.controlsHideTimer = window.setTimeout(this.onControlsHideTimer, CONTROLS_HIDE_DELAY);
-                    }
-                    this.setState({
-                        call: newCall,
-                        isLocalOnHold: newCall ? newCall.isLocalOnHold() : null,
-                        micMuted: newCall ? newCall.isMicrophoneMuted() : null,
-                        vidMuted: newCall ? newCall.isLocalVideoMuted() : null,
-                        callState: newCall ? newCall.state : null,
-                        controlsVisible: newControlsVisible,
-                    });
-                }
-                if (!newCall && getFullScreenElement()) {
-                    exitFullscreen();
-                }
-                break;
-            }
         }
     };
-
-    private getCall(): MatrixCall {
-        let call: MatrixCall;
-
-        if (this.props.room) {
-            const roomId = this.props.room.roomId;
-            call = CallHandler.sharedInstance().getCallForRoom(roomId);
-        } else {
-            call = CallHandler.sharedInstance().getAnyActiveCall();
-            // Ignore calls if we can't get the room associated with them.
-            // I think the underlying problem is that the js-sdk sends events
-            // for calls before it has made the rooms available in the store,
-            // although this isn't confirmed.
-            if (MatrixClientPeg.get().getRoom(call.roomId) === null) {
-                call = null;
-            }
-        }
-
-        if (call && [CallState.Ended, CallState.Ringing].includes(call.state)) return null;
-        return call;
-    }
 
     private updateCallListeners(oldCall: MatrixCall, newCall: MatrixCall) {
         if (oldCall === newCall) return;
 
-        if (oldCall) oldCall.removeListener(CallEvent.HoldUnhold, this.onCallHoldUnhold);
-        if (newCall) newCall.on(CallEvent.HoldUnhold, this.onCallHoldUnhold);
+        if (oldCall) {
+            oldCall.removeListener(CallEvent.State, this.onCallState);
+            oldCall.removeListener(CallEvent.LocalHoldUnhold, this.onCallLocalHoldUnhold);
+            oldCall.removeListener(CallEvent.RemoteHoldUnhold, this.onCallRemoteHoldUnhold);
+            oldCall.removeListener(CallEvent.FeedsChanged, this.onFeedsChanged);
+        }
+        if (newCall) {
+            newCall.on(CallEvent.State, this.onCallState);
+            newCall.on(CallEvent.LocalHoldUnhold, this.onCallLocalHoldUnhold);
+            newCall.on(CallEvent.RemoteHoldUnhold, this.onCallRemoteHoldUnhold);
+            newCall.on(CallEvent.FeedsChanged, this.onFeedsChanged);
+        }
     }
 
-    private onCallHoldUnhold = () => {
+    private onCallState = (state) => {
         this.setState({
-            isLocalOnHold: this.state.call ? this.state.call.isLocalOnHold() : null,
+            callState: state,
         });
     };
 
-    private onFullscreenClick = () => {
-        dis.dispatch({
-            action: 'video_fullscreen',
-            fullscreen: true,
-        });
-    };
-
-    private onExpandClick = () => {
-        dis.dispatch({
-            action: 'view_room',
-            room_id: this.state.call.roomId,
-        });
-    };
-
-    private onControlsHideTimer = () => {
-        this.controlsHideTimer = null;
+    private onFeedsChanged = (newFeeds: Array<CallFeed>) => {
+        const { primary, secondary } = CallView.getOrderedFeeds(newFeeds);
         this.setState({
-            controlsVisible: false,
+            primaryFeed: primary,
+            secondaryFeeds: secondary,
         });
-    }
+    };
+
+    private onCallLocalHoldUnhold = () => {
+        this.setState({
+            isLocalOnHold: this.props.call.isLocalOnHold(),
+        });
+    };
+
+    private onCallRemoteHoldUnhold = () => {
+        this.setState({
+            isRemoteOnHold: this.props.call.isRemoteOnHold(),
+            // update both here because isLocalOnHold changes when we hold the call too
+            isLocalOnHold: this.props.call.isLocalOnHold(),
+        });
+    };
 
     private onMouseMove = () => {
-        this.showControls();
+        this.buttonsRef.current?.showControls();
+    };
+
+    static getOrderedFeeds(feeds: Array<CallFeed>): { primary: CallFeed, secondary: Array<CallFeed> } {
+        let primary;
+
+        // Try to use a screensharing as primary, a remote one if possible
+        const screensharingFeeds = feeds.filter((feed) => feed.purpose === SDPStreamMetadataPurpose.Screenshare);
+        primary = screensharingFeeds.find((feed) => !feed.isLocal()) || screensharingFeeds[0];
+        // If we didn't find remote screen-sharing stream, try to find any remote stream
+        if (!primary) {
+            primary = feeds.find((feed) => !feed.isLocal());
+        }
+
+        const secondary = [...feeds];
+        // Remove the primary feed from the array
+        if (primary) secondary.splice(secondary.indexOf(primary), 1);
+        secondary.sort((a, b) => {
+            if (a.isLocal() && !b.isLocal()) return -1;
+            if (!a.isLocal() && b.isLocal()) return 1;
+            return 0;
+        });
+
+        return { primary, secondary };
     }
 
-    private showControls() {
-        if (!this.state.controlsVisible) {
-            this.setState({
-                controlsVisible: true,
-            });
-        }
-        if (this.controlsHideTimer !== null) {
-            clearTimeout(this.controlsHideTimer);
-        }
-        this.controlsHideTimer = window.setTimeout(this.onControlsHideTimer, CONTROLS_HIDE_DELAY);
-    }
-
-    private onMicMuteClick = () => {
-        if (!this.state.call) return;
-
+    private onMicMuteClick = (): void => {
         const newVal = !this.state.micMuted;
 
-        this.state.call.setMicrophoneMuted(newVal);
-        this.setState({micMuted: newVal});
-    }
+        this.props.call.setMicrophoneMuted(newVal);
+        this.setState({ micMuted: newVal });
+    };
 
-    private onVidMuteClick = () => {
-        if (!this.state.call) return;
-
+    private onVidMuteClick = (): void => {
         const newVal = !this.state.vidMuted;
 
-        this.state.call.setLocalVideoMuted(newVal);
-        this.setState({vidMuted: newVal});
-    }
+        this.props.call.setLocalVideoMuted(newVal);
+        this.setState({ vidMuted: newVal });
+    };
+
+    private onScreenshareClick = async (): Promise<void> => {
+        const isScreensharing = await this.props.call.setScreensharingEnabled(
+            !this.state.screensharing,
+            async (): Promise<DesktopCapturerSource> => {
+                const { finished } = Modal.createDialog(DesktopCapturerSourcePicker);
+                const [source] = await finished;
+                return source;
+            },
+        );
+
+        this.setState({
+            sidebarShown: true,
+            screensharing: isScreensharing,
+        });
+    };
 
     // we register global shortcuts here, they *must not conflict* with local shortcuts elsewhere or both will fire
-    // Note that this assumes we always have a callview on screen at any given time
+    // Note that this assumes we always have a CallView on screen at any given time
     // CallHandler would probably be a better place for this
-    private onNativeKeyDown = ev => {
+    private onNativeKeyDown = (ev): void => {
         let handled = false;
         const ctrlCmdOnly = isOnlyCtrlOrCmdKeyEvent(ev);
 
@@ -264,7 +300,7 @@ export default class CallView extends React.Component<IProps, IState> {
                 if (ctrlCmdOnly) {
                     this.onMicMuteClick();
                     // show the controls to give feedback
-                    this.showControls();
+                    this.buttonsRef.current?.showControls();
                     handled = true;
                 }
                 break;
@@ -273,7 +309,7 @@ export default class CallView extends React.Component<IProps, IState> {
                 if (ctrlCmdOnly) {
                     this.onVidMuteClick();
                     // show the controls to give feedback
-                    this.showControls();
+                    this.buttonsRef.current?.showControls();
                     handled = true;
                 }
                 break;
@@ -285,152 +321,304 @@ export default class CallView extends React.Component<IProps, IState> {
         }
     };
 
-    private onRoomAvatarClick = () => {
+    private onCallResumeClick = (): void => {
+        const userFacingRoomId = CallHandler.sharedInstance().roomIdForCall(this.props.call);
+        CallHandler.sharedInstance().setActiveCallRoomId(userFacingRoomId);
+    };
+
+    private onTransferClick = (): void => {
+        const transfereeCall = CallHandler.sharedInstance().getTransfereeForCallId(this.props.call.callId);
+        this.props.call.transferToCall(transfereeCall);
+    };
+
+    private onHangupClick = (): void => {
         dis.dispatch({
-            action: 'view_room',
-            room_id: this.state.call.roomId,
+            action: 'hangup',
+            room_id: CallHandler.sharedInstance().roomIdForCall(this.props.call),
         });
+    };
+
+    private onToggleSidebar = (): void => {
+        this.setState({ sidebarShown: !this.state.sidebarShown });
+    };
+
+    private renderCallControls(): JSX.Element {
+        // We don't support call upgrades (yet) so hide the video mute button in voice calls
+        const vidMuteButtonShown = this.props.call.type === CallType.Video;
+        // Screensharing is possible, if we can send a second stream and
+        // identify it using SDPStreamMetadata or if we can replace the already
+        // existing usermedia track by a screensharing track. We also need to be
+        // connected to know the state of the other side
+        const screensharingButtonShown = (
+            (this.props.call.opponentSupportsSDPStreamMetadata() || this.props.call.type === CallType.Video) &&
+            this.props.call.state === CallState.Connected
+        );
+        // To show the sidebar we need secondary feeds, if we don't have them,
+        // we can hide this button. If we are in PiP, sidebar is also hidden, so
+        // we can hide the button too
+        const sidebarButtonShown = (
+            this.state.primaryFeed?.purpose === SDPStreamMetadataPurpose.Screenshare ||
+            this.props.call.isScreensharing()
+        );
+        // The dial pad & 'more' button actions are only relevant in a connected call
+        const contextMenuButtonShown = this.state.callState === CallState.Connected;
+        const dialpadButtonShown = (
+            this.state.callState === CallState.Connected &&
+            this.props.call.opponentSupportsDTMF()
+        );
+
+        return (
+            <CallViewButtons
+                ref={this.buttonsRef}
+                call={this.props.call}
+                pipMode={this.props.pipMode}
+                handlers={{
+                    onToggleSidebarClick: this.onToggleSidebar,
+                    onScreenshareClick: this.onScreenshareClick,
+                    onHangupClick: this.onHangupClick,
+                    onMicMuteClick: this.onMicMuteClick,
+                    onVidMuteClick: this.onVidMuteClick,
+                }}
+                buttonsState={{
+                    micMuted: this.state.micMuted,
+                    vidMuted: this.state.vidMuted,
+                    sidebarShown: this.state.sidebarShown,
+                    screensharing: this.state.screensharing,
+                }}
+                buttonsVisibility={{
+                    vidMute: vidMuteButtonShown,
+                    screensharing: screensharingButtonShown,
+                    sidebar: sidebarButtonShown,
+                    contextMenu: contextMenuButtonShown,
+                    dialpad: dialpadButtonShown,
+                }}
+            />
+        );
     }
 
     public render() {
-        if (!this.state.call) return null;
-
         const client = MatrixClientPeg.get();
-        const callRoom = client.getRoom(this.state.call.roomId);
+        const callRoomId = CallHandler.sharedInstance().roomIdForCall(this.props.call);
+        const secondaryCallRoomId = CallHandler.sharedInstance().roomIdForCall(this.props.secondaryCall);
+        const callRoom = client.getRoom(callRoomId);
+        const secCallRoom = this.props.secondaryCall ? client.getRoom(secondaryCallRoomId) : null;
+        const avatarSize = this.props.pipMode ? 76 : 160;
+        const transfereeCall = CallHandler.sharedInstance().getTransfereeForCallId(this.props.call.callId);
+        const isOnHold = this.state.isLocalOnHold || this.state.isRemoteOnHold;
+        const isScreensharing = this.props.call.isScreensharing();
+        const sidebarShown = this.state.sidebarShown;
+        const someoneIsScreensharing = this.props.call.getFeeds().some((feed) => {
+            return feed.purpose === SDPStreamMetadataPurpose.Screenshare;
+        });
+        const isVideoCall = this.props.call.type === CallType.Video;
 
-        let callControls;
-        if (this.props.room) {
-            const micClasses = classNames({
-                mx_CallView_callControls_button: true,
-                mx_CallView_callControls_button_micOn: !this.state.micMuted,
-                mx_CallView_callControls_button_micOff: this.state.micMuted,
-            });
-
-            const vidClasses = classNames({
-                mx_CallView_callControls_button: true,
-                mx_CallView_callControls_button_vidOn: !this.state.vidMuted,
-                mx_CallView_callControls_button_vidOff: this.state.vidMuted,
-            });
-
-            // Put the other states of the mic/video icons in the document to make sure they're cached
-            // (otherwise the icon disappears briefly when toggled)
-            const micCacheClasses = classNames({
-                mx_CallView_callControls_button: true,
-                mx_CallView_callControls_button_micOn: this.state.micMuted,
-                mx_CallView_callControls_button_micOff: !this.state.micMuted,
-                mx_CallView_callControls_button_invisible: true,
-            });
-
-            const vidCacheClasses = classNames({
-                mx_CallView_callControls_button: true,
-                mx_CallView_callControls_button_vidOn: this.state.micMuted,
-                mx_CallView_callControls_button_vidOff: !this.state.micMuted,
-                mx_CallView_callControls_button_invisible: true,
-            });
-
-            const callControlsClasses = classNames({
-                mx_CallView_callControls: true,
-                mx_CallView_callControls_hidden: !this.state.controlsVisible,
-            });
-
-            const vidMuteButton = this.state.call.type === CallType.Video ? <div
-                className={vidClasses}
-                onClick={this.onVidMuteClick}
-            /> : null;
-
-            callControls = <div className={callControlsClasses}>
-                <div
-                    className={micClasses}
-                    onClick={this.onMicMuteClick}
-                />
-                <div
-                    className="mx_CallView_callControls_button mx_CallView_callControls_button_hangup"
-                    onClick={() => {
-                        dis.dispatch({
-                            action: 'hangup',
-                            room_id: this.state.call.roomId,
-                        });
-                    }}
-                />
-                {vidMuteButton}
-                <div className={micCacheClasses} />
-                <div className={vidCacheClasses} />
-            </div>;
-        }
-
-        // The 'content' for the call, ie. the videos for a video call and profile picture
-        // for voice calls (fills the bg)
         let contentView: React.ReactNode;
+        let holdTransferContent;
 
-        if (this.state.call.type === CallType.Video) {
-            // if we're fullscreen, we don't want to set a maxHeight on the video element.
-            const maxVideoHeight = getFullScreenElement() ? null : this.props.maxVideoHeight - HEADER_HEIGHT;
-            contentView = <div className="mx_CallView_video" ref={this.contentRef} onMouseMove={this.onMouseMove}>
-                <VideoFeed type={VideoFeedType.Remote} call={this.state.call} onResize={this.props.onResize}
-                    maxHeight={maxVideoHeight}
+        if (transfereeCall) {
+            const transferTargetRoom = MatrixClientPeg.get().getRoom(
+                CallHandler.sharedInstance().roomIdForCall(this.props.call),
+            );
+            const transferTargetName = transferTargetRoom ? transferTargetRoom.name : _t("unknown person");
+
+            const transfereeRoom = MatrixClientPeg.get().getRoom(
+                CallHandler.sharedInstance().roomIdForCall(transfereeCall),
+            );
+            const transfereeName = transfereeRoom ? transfereeRoom.name : _t("unknown person");
+
+            holdTransferContent = <div className="mx_CallView_holdTransferContent">
+                { _t(
+                    "Consulting with %(transferTarget)s. <a>Transfer to %(transferee)s</a>",
+                    {
+                        transferTarget: transferTargetName,
+                        transferee: transfereeName,
+                    },
+                    {
+                        a: sub => <AccessibleButton kind="link" onClick={this.onTransferClick}>
+                            { sub }
+                        </AccessibleButton>,
+                    },
+                ) }
+            </div>;
+        } else if (isOnHold) {
+            let onHoldText = null;
+            if (this.state.isRemoteOnHold) {
+                const holdString = CallHandler.sharedInstance().hasAnyUnheldCall() ?
+                    _td("You held the call <a>Switch</a>") : _td("You held the call <a>Resume</a>");
+                onHoldText = _t(holdString, {}, {
+                    a: sub => <AccessibleButton kind="link" onClick={this.onCallResumeClick}>
+                        { sub }
+                    </AccessibleButton>,
+                });
+            } else if (this.state.isLocalOnHold) {
+                onHoldText = _t("%(peerName)s held the call", {
+                    peerName: this.props.call.getOpponentMember().name,
+                });
+            }
+            holdTransferContent = <div className="mx_CallView_holdTransferContent">
+                { onHoldText }
+            </div>;
+        }
+
+        let sidebar;
+        if (
+            !isOnHold &&
+            !transfereeCall &&
+            sidebarShown &&
+            (isVideoCall || someoneIsScreensharing)
+        ) {
+            sidebar = (
+                <CallViewSidebar
+                    feeds={this.state.secondaryFeeds}
+                    call={this.props.call}
+                    pipMode={this.props.pipMode}
                 />
-                <VideoFeed type={VideoFeedType.Local} call={this.state.call} />
-                {callControls}
-            </div>;
-        } else {
-            const avatarSize = this.props.room ? 200 : 75;
-            contentView = <div className="mx_CallView_voice" onMouseMove={this.onMouseMove}>
-                <RoomAvatar
-                    room={callRoom}
-                    height={avatarSize}
-                    width={avatarSize}
-                />
-                {callControls}
-            </div>;
+            );
         }
 
-        const callTypeText = this.state.call.type === CallType.Video ? _t("Video Call") : _t("Voice Call");
-        let myClassName;
+        // This is a bit messy. I can't see a reason to have two onHold/transfer screens
+        if (isOnHold || transfereeCall) {
+            if (isVideoCall) {
+                const containerClasses = classNames({
+                    mx_CallView_content: true,
+                    mx_CallView_video: true,
+                    mx_CallView_video_hold: isOnHold,
+                });
+                let onHoldBackground = null;
+                const backgroundStyle: CSSProperties = {};
+                const backgroundAvatarUrl = avatarUrlForMember(
+                    // is it worth getting the size of the div to pass here?
+                    this.props.call.getOpponentMember(), 1024, 1024, 'crop',
+                );
+                backgroundStyle.backgroundImage = 'url(' + backgroundAvatarUrl + ')';
+                onHoldBackground = <div className="mx_CallView_video_holdBackground" style={backgroundStyle} />;
 
-        let fullScreenButton;
-        if (this.state.call.type === CallType.Video && this.props.room) {
-            fullScreenButton = <div className="mx_CallView_header_button mx_CallView_header_button_fullscreen"
-                onClick={this.onFullscreenClick} title={_t("Fill Screen")}
-            />;
-        }
+                contentView = (
+                    <div className={containerClasses} ref={this.contentRef} onMouseMove={this.onMouseMove}>
+                        { onHoldBackground }
+                        { holdTransferContent }
+                        { this.renderCallControls() }
+                    </div>
+                );
+            } else {
+                const classes = classNames({
+                    mx_CallView_content: true,
+                    mx_CallView_voice: true,
+                    mx_CallView_voice_hold: isOnHold,
+                });
 
-        let expandButton;
-        if (!this.props.room) {
-            expandButton = <div className="mx_CallView_header_button mx_CallView_header_button_expand"
-                onClick={this.onExpandClick} title={_t("Return to call")}
-            />;
-        }
+                contentView = (
+                    <div className={classes} onMouseMove={this.onMouseMove}>
+                        <div className="mx_CallView_voice_avatarsContainer">
+                            <div
+                                className="mx_CallView_voice_avatarContainer"
+                                style={{ width: avatarSize, height: avatarSize }}
+                            >
+                                <RoomAvatar
+                                    room={callRoom}
+                                    height={avatarSize}
+                                    width={avatarSize}
+                                />
+                            </div>
+                        </div>
+                        { holdTransferContent }
+                        { this.renderCallControls() }
+                    </div>
+                );
+            }
+        } else if (this.props.call.noIncomingFeeds()) {
+            // Here we're reusing the css classes from voice on hold, because
+            // I am lazy. If this gets merged, the CallView might be subject
+            // to change anyway - I might take an axe to this file in order to
+            // try to get other things working
+            const classes = classNames({
+                mx_CallView_content: true,
+                mx_CallView_voice: true,
+            });
 
-        const headerControls = <div className="mx_CallView_header_controls">
-            {fullScreenButton}
-            {expandButton}
-        </div>;
-
-        let header: React.ReactNode;
-        if (this.props.room) {
-            header = <div className="mx_CallView_header">
-                <div className="mx_CallView_header_phoneIcon"></div>
-                <span className="mx_CallView_header_callType">{callTypeText}</span>
-                {headerControls}
-            </div>;
-            myClassName = 'mx_CallView_large';
-        } else {
-            header = <div className="mx_CallView_header">
-                <AccessibleButton onClick={this.onRoomAvatarClick}>
-                    <RoomAvatar room={callRoom} height={32} width={32} />
-                </AccessibleButton>
-                <div>
-                    <div className="mx_CallView_header_roomName">{callRoom.name}</div>
-                    <div className="mx_CallView_header_callTypeSmall">{callTypeText}</div>
+            // Saying "Connecting" here isn't really true, but the best thing
+            // I can come up with, but this might be subject to change as well
+            contentView = (
+                <div
+                    className={classes}
+                    onMouseMove={this.onMouseMove}
+                >
+                    { sidebar }
+                    <div className="mx_CallView_voice_avatarsContainer">
+                        <div
+                            className="mx_CallView_voice_avatarContainer"
+                            style={{ width: avatarSize, height: avatarSize }}
+                        >
+                            <RoomAvatar
+                                room={callRoom}
+                                height={avatarSize}
+                                width={avatarSize}
+                            />
+                        </div>
+                    </div>
+                    <div className="mx_CallView_holdTransferContent">{ _t("Connecting") }</div>
+                    { this.renderCallControls() }
                 </div>
-                {headerControls}
-            </div>;
-            myClassName = 'mx_CallView_pip';
+            );
+        } else {
+            const containerClasses = classNames({
+                mx_CallView_content: true,
+                mx_CallView_video: true,
+            });
+
+            let toast;
+            if (someoneIsScreensharing) {
+                const presentingClasses = classNames({
+                    mx_CallView_presenting: true,
+                    mx_CallView_presenting_hidden: !this.state.controlsVisible,
+                });
+                const sharerName = this.state.primaryFeed.getMember().name;
+                let text = isScreensharing
+                    ? _t("You are presenting")
+                    : _t('%(sharerName)s is presenting', { sharerName });
+                if (!this.state.sidebarShown && isVideoCall) {
+                    text += " • " + (this.props.call.isLocalVideoMuted()
+                        ? _t("Your camera is turned off")
+                        : _t("Your camera is still enabled"));
+                }
+
+                toast = (
+                    <div className={presentingClasses}>
+                        { text }
+                    </div>
+                );
+            }
+
+            contentView = (
+                <div
+                    className={containerClasses}
+                    ref={this.contentRef}
+                    onMouseMove={this.onMouseMove}
+                >
+                    { toast }
+                    { sidebar }
+                    <VideoFeed
+                        feed={this.state.primaryFeed}
+                        call={this.props.call}
+                        pipMode={this.props.pipMode}
+                        onResize={this.props.onResize}
+                        primary={true}
+                    />
+                    { this.renderCallControls() }
+                </div>
+            );
         }
+
+        const myClassName = this.props.pipMode ? 'mx_CallView_pip' : 'mx_CallView_large';
 
         return <div className={"mx_CallView " + myClassName}>
-            {header}
-            {contentView}
+            <CallViewHeader
+                onPipMouseDown={this.props.onMouseDownOnHeader}
+                pipMode={this.props.pipMode}
+                type={this.props.call.type}
+                callRooms={[callRoom, secCallRoom]}
+            />
+            { contentView }
         </div>;
     }
 }

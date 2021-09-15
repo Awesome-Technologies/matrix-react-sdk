@@ -17,28 +17,31 @@ limitations under the License.
 */
 
 import React from 'react';
-import {_t} from "../../../../../languageHandler";
+import { _t } from "../../../../../languageHandler";
 import ProfileSettings from "../../ProfileSettings";
 import * as languageHandler from "../../../../../languageHandler";
 import SettingsStore from "../../../../../settings/SettingsStore";
 import LanguageDropdown from "../../../elements/LanguageDropdown";
+import SpellCheckSettings from "../../SpellCheckSettings";
 import AccessibleButton from "../../../elements/AccessibleButton";
 import DeactivateAccountDialog from "../../../dialogs/DeactivateAccountDialog";
 import PropTypes from "prop-types";
 import PlatformPeg from "../../../../../PlatformPeg";
-import {MatrixClientPeg} from "../../../../../MatrixClientPeg";
+import { MatrixClientPeg } from "../../../../../MatrixClientPeg";
 import * as sdk from "../../../../..";
 import Modal from "../../../../../Modal";
 import dis from "../../../../../dispatcher/dispatcher";
-import {Service, startTermsFlow} from "../../../../../Terms";
-import {SERVICE_TYPES} from "matrix-js-sdk";
+import { Service, startTermsFlow } from "../../../../../Terms";
+import { SERVICE_TYPES } from "matrix-js-sdk/src/service-types";
 import IdentityAuthClient from "../../../../../IdentityAuthClient";
-import {abbreviateUrl} from "../../../../../utils/UrlUtils";
+import { abbreviateUrl } from "../../../../../utils/UrlUtils";
 import { getThreepidsWithBindStatus } from '../../../../../boundThreepids';
 import Spinner from "../../../elements/Spinner";
-import {SettingLevel} from "../../../../../settings/SettingLevel";
-import {UIFeature} from "../../../../../settings/UIFeature";
+import { SettingLevel } from "../../../../../settings/SettingLevel";
+import { UIFeature } from "../../../../../settings/UIFeature";
+import { replaceableComponent } from "../../../../../utils/replaceableComponent";
 
+@replaceableComponent("views.settings.tabs.user.GeneralUserSettingsTab")
 export default class GeneralUserSettingsTab extends React.Component {
     static propTypes = {
         closeSettingsFn: PropTypes.func.isRequired,
@@ -49,6 +52,7 @@ export default class GeneralUserSettingsTab extends React.Component {
 
         this.state = {
             language: languageHandler.getCurrentLanguage(),
+            spellCheckLanguages: [],
             haveIdServer: Boolean(MatrixClientPeg.get().getIdentityServerUrl()),
             serverSupportsSeparateAddAndBind: null,
             idServerHasUnsignedTerms: false,
@@ -80,9 +84,18 @@ export default class GeneralUserSettingsTab extends React.Component {
         // the enabled flag value.
         const canChangePassword = !changePasswordCap || changePasswordCap['enabled'] !== false;
 
-        this.setState({serverSupportsSeparateAddAndBind, canChangePassword});
+        this.setState({ serverSupportsSeparateAddAndBind, canChangePassword });
 
         this._getThreepidState();
+    }
+
+    async componentDidMount() {
+        const plaf = PlatformPeg.get();
+        if (plaf) {
+            this.setState({
+                spellCheckLanguages: await plaf.getSpellCheckLanguages(),
+            });
+        }
     }
 
     componentWillUnmount() {
@@ -91,7 +104,7 @@ export default class GeneralUserSettingsTab extends React.Component {
 
     _onAction = (payload) => {
         if (payload.action === 'id_server_changed') {
-            this.setState({haveIdServer: Boolean(MatrixClientPeg.get().getIdentityServerUrl())});
+            this.setState({ haveIdServer: Boolean(MatrixClientPeg.get().getIdentityServerUrl()) });
             this._getThreepidState();
         }
     };
@@ -132,7 +145,7 @@ export default class GeneralUserSettingsTab extends React.Component {
 
     async _checkTerms() {
         if (!this.state.haveIdServer) {
-            this.setState({idServerHasUnsignedTerms: false});
+            this.setState({ idServerHasUnsignedTerms: false });
             return;
         }
 
@@ -178,16 +191,29 @@ export default class GeneralUserSettingsTab extends React.Component {
         if (this.state.language === newLanguage) return;
 
         SettingsStore.setValue("language", null, SettingLevel.DEVICE, newLanguage);
-        this.setState({language: newLanguage});
-        PlatformPeg.get().reload();
+        this.setState({ language: newLanguage });
+        const platform = PlatformPeg.get();
+        if (platform) {
+            platform.setLanguage(newLanguage);
+            platform.reload();
+        }
+    };
+
+    _onSpellCheckLanguagesChange = (languages) => {
+        this.setState({ spellCheckLanguages: languages });
+
+        const plaf = PlatformPeg.get();
+        if (plaf) {
+            plaf.setSpellCheckLanguages(languages);
+        }
     };
 
     _onPasswordChangeError = (err) => {
         // TODO: Figure out a design that doesn't involve replacing the current dialog
-        let errMsg = err.error || "";
+        let errMsg = err.error || err.message || "";
         if (err.httpStatus === 403) {
             errMsg = _t("Failed to change password. Is your password correct?");
-        } else if (err.httpStatus) {
+        } else if (!errMsg) {
             errMsg += ` (HTTP status ${err.httpStatus})`;
         }
         const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
@@ -263,11 +289,11 @@ export default class GeneralUserSettingsTab extends React.Component {
                     onMsisdnsChange={this._onMsisdnsChange}
                 />;
             threepidSection = <div>
-                <span className="mx_SettingsTab_subheading">{_t("Email addresses")}</span>
-                {emails}
+                <span className="mx_SettingsTab_subheading">{ _t("Email addresses") }</span>
+                { emails }
 
-                <span className="mx_SettingsTab_subheading">{_t("Phone numbers")}</span>
-                {msisdns}
+                <span className="mx_SettingsTab_subheading">{ _t("Phone numbers") }</span>
+                { msisdns }
             </div>;
         } else if (this.state.serverSupportsSeparateAddAndBind === null) {
             threepidSection = <Spinner />;
@@ -282,12 +308,12 @@ export default class GeneralUserSettingsTab extends React.Component {
 
         return (
             <div className="mx_SettingsTab_section mx_GeneralUserSettingsTab_accountSection">
-                <span className="mx_SettingsTab_subheading">{_t("Account")}</span>
+                <span className="mx_SettingsTab_subheading">{ _t("Account") }</span>
                 <p className="mx_SettingsTab_subsectionText">
-                    {passwordChangeText}
+                    { passwordChangeText }
                 </p>
-                {passwordChangeForm}
-                {threepidSection}
+                { passwordChangeForm }
+                { threepidSection }
             </div>
         );
     }
@@ -296,9 +322,24 @@ export default class GeneralUserSettingsTab extends React.Component {
         // TODO: Convert to new-styled Field
         return (
             <div className="mx_SettingsTab_section">
-                <span className="mx_SettingsTab_subheading">{_t("Language and region")}</span>
-                <LanguageDropdown className="mx_GeneralUserSettingsTab_languageInput"
-                                  onOptionChange={this._onLanguageChange} value={this.state.language} />
+                <span className="mx_SettingsTab_subheading">{ _t("Language and region") }</span>
+                <LanguageDropdown
+                    className="mx_GeneralUserSettingsTab_languageInput"
+                    onOptionChange={this._onLanguageChange}
+                    value={this.state.language}
+                />
+            </div>
+        );
+    }
+
+    _renderSpellCheckSection() {
+        return (
+            <div className="mx_SettingsTab_section">
+                <span className="mx_SettingsTab_subheading">{ _t("Spell check dictionaries") }</span>
+                <SpellCheckSettings
+                    languages={this.state.spellCheckLanguages}
+                    onLanguagesChange={this._onSpellCheckLanguagesChange}
+                />
             </div>
         );
     }
@@ -309,11 +350,11 @@ export default class GeneralUserSettingsTab extends React.Component {
         if (this.state.requiredPolicyInfo.hasTerms) {
             const InlineTermsAgreement = sdk.getComponent("views.terms.InlineTermsAgreement");
             const intro = <span className="mx_SettingsTab_subsectionText">
-                {_t(
+                { _t(
                     "Agree to the identity server (%(serverName)s) Terms of Service to " +
                     "allow yourself to be discoverable by email address or phone number.",
-                    {serverName: this.state.idServerName},
-                )}
+                    { serverName: this.state.idServerName },
+                ) }
             </span>;
             return (
                 <div>
@@ -323,7 +364,7 @@ export default class GeneralUserSettingsTab extends React.Component {
                         onFinished={this.state.requiredPolicyInfo.resolve}
                         introElement={intro}
                     />
-                    { /* has its own heading as it includes the current ID server */ }
+                    { /* has its own heading as it includes the current identity server */ }
                     <SetIdServer missingTerms={true} />
                 </div>
             );
@@ -336,17 +377,17 @@ export default class GeneralUserSettingsTab extends React.Component {
         const msisdns = this.state.loading3pids ? <Spinner /> : <PhoneNumbers msisdns={this.state.msisdns} />;
 
         const threepidSection = this.state.haveIdServer ? <div className='mx_GeneralUserSettingsTab_discovery'>
-            <span className="mx_SettingsTab_subheading">{_t("Email addresses")}</span>
-            {emails}
+            <span className="mx_SettingsTab_subheading">{ _t("Email addresses") }</span>
+            { emails }
 
-            <span className="mx_SettingsTab_subheading">{_t("Phone numbers")}</span>
-            {msisdns}
+            <span className="mx_SettingsTab_subheading">{ _t("Phone numbers") }</span>
+            { msisdns }
         </div> : null;
 
         return (
             <div className="mx_SettingsTab_section">
-                {threepidSection}
-                { /* has its own heading as it includes the current ID server */ }
+                { threepidSection }
+                { /* has its own heading as it includes the current identity server */ }
                 <SetIdServer />
             </div>
         );
@@ -356,12 +397,12 @@ export default class GeneralUserSettingsTab extends React.Component {
         // TODO: Improve warning text for account deactivation
         return (
             <div className="mx_SettingsTab_section">
-                <span className="mx_SettingsTab_subheading">{_t("Account management")}</span>
+                <span className="mx_SettingsTab_subheading">{ _t("Account management") }</span>
                 <span className="mx_SettingsTab_subsectionText">
-                    {_t("Deactivating your account is a permanent action - be careful!")}
+                    { _t("Deactivating your account is a permanent action - be careful!") }
                 </span>
                 <AccessibleButton onClick={this._onDeactivateClicked} kind="danger">
-                    {_t("Deactivate Account")}
+                    { _t("Deactivate Account") }
                 </AccessibleButton>
             </div>
         );
@@ -381,36 +422,44 @@ export default class GeneralUserSettingsTab extends React.Component {
     }
 
     render() {
+        const plaf = PlatformPeg.get();
+        const supportsMultiLanguageSpellCheck = plaf.supportsMultiLanguageSpellCheck();
+
         const discoWarning = this.state.requiredPolicyInfo.hasTerms
-            ? <img className='mx_GeneralUserSettingsTab_warningIcon'
+            ? <img
+                className='mx_GeneralUserSettingsTab_warningIcon'
                 src={require("../../../../../../res/img/feather-customised/warning-triangle.svg")}
-                width="18" height="18" alt={_t("Warning")} />
+                width="18"
+                height="18"
+                alt={_t("Warning")}
+            />
             : null;
 
         let accountManagementSection;
         if (SettingsStore.getValue(UIFeature.Deactivate)) {
             accountManagementSection = <>
-                <div className="mx_SettingsTab_heading">{_t("Deactivate account")}</div>
-                {this._renderManagementSection()}
+                <div className="mx_SettingsTab_heading">{ _t("Deactivate account") }</div>
+                { this._renderManagementSection() }
             </>;
         }
 
         let discoverySection;
         if (SettingsStore.getValue(UIFeature.IdentityServer)) {
             discoverySection = <>
-                <div className="mx_SettingsTab_heading">{discoWarning} {_t("Discovery")}</div>
-                {this._renderDiscoverySection()}
+                <div className="mx_SettingsTab_heading">{ discoWarning } { _t("Discovery") }</div>
+                { this._renderDiscoverySection() }
             </>;
         }
 
         return (
             <div className="mx_SettingsTab">
-                <div className="mx_SettingsTab_heading">{_t("General")}</div>
-                {this._renderProfileSection()}
-                {this._renderAccountSection()}
-                {this._renderLanguageSection()}
+                <div className="mx_SettingsTab_heading">{ _t("General") }</div>
+                { this._renderProfileSection() }
+                { this._renderAccountSection() }
+                { this._renderLanguageSection() }
+                { supportsMultiLanguageSpellCheck ? this._renderSpellCheckSection() : null }
                 { discoverySection }
-                {this._renderIntegrationManagerSection() /* Has its own title */}
+                { this._renderIntegrationManagerSection() /* Has its own title */ }
                 { accountManagementSection }
             </div>
         );

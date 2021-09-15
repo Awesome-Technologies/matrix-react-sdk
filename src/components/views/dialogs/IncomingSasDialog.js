@@ -16,9 +16,11 @@ limitations under the License.
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {MatrixClientPeg} from '../../../MatrixClientPeg';
+import { MatrixClientPeg } from '../../../MatrixClientPeg';
 import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import { mediaFromMxc } from "../../../customisations/Media";
 
 const PHASE_START = 0;
 const PHASE_SHOW_SAS = 1;
@@ -26,6 +28,7 @@ const PHASE_WAIT_FOR_PARTNER_TO_CONFIRM = 2;
 const PHASE_VERIFIED = 3;
 const PHASE_CANCELLED = 4;
 
+@replaceableComponent("views.dialogs.IncomingSasDialog")
 export default class IncomingSasDialog extends React.Component {
     static propTypes = {
         verifier: PropTypes.object.isRequired,
@@ -83,9 +86,9 @@ export default class IncomingSasDialog extends React.Component {
     }
 
     _onContinueClick = () => {
-        this.setState({phase: PHASE_WAIT_FOR_PARTNER_TO_CONFIRM});
+        this.setState({ phase: PHASE_WAIT_FOR_PARTNER_TO_CONFIRM });
         this.props.verifier.verify().then(() => {
-            this.setState({phase: PHASE_VERIFIED});
+            this.setState({ phase: PHASE_VERIFIED });
         }).catch((e) => {
             console.log("Verification failed", e);
         });
@@ -121,65 +124,69 @@ export default class IncomingSasDialog extends React.Component {
         const Spinner = sdk.getComponent("views.elements.Spinner");
         const BaseAvatar = sdk.getComponent("avatars.BaseAvatar");
 
-        const isSelf = this.props.verifier.userId == MatrixClientPeg.get().getUserId();
+        const isSelf = this.props.verifier.userId === MatrixClientPeg.get().getUserId();
 
         let profile;
-        if (this.state.opponentProfile) {
+        const oppProfile = this.state.opponentProfile;
+        if (oppProfile) {
+            const url = oppProfile.avatar_url
+                ? mediaFromMxc(oppProfile.avatar_url).getSquareThumbnailHttp(48)
+                : null;
             profile = <div className="mx_IncomingSasDialog_opponentProfile">
-                <BaseAvatar name={this.state.opponentProfile.displayname}
+                <BaseAvatar
+                    name={oppProfile.displayname}
                     idName={this.props.verifier.userId}
-                    url={MatrixClientPeg.get().mxcUrlToHttp(
-                        this.state.opponentProfile.avatar_url,
-                        Math.floor(48 * window.devicePixelRatio),
-                        Math.floor(48 * window.devicePixelRatio),
-                        'crop',
-                    )}
-                    width={48} height={48} resizeMethod='crop'
+                    url={url}
+                    width={48}
+                    height={48}
+                    resizeMethod='crop'
                 />
-                <h2>{this.state.opponentProfile.displayname}</h2>
+                <h2>{ oppProfile.displayname }</h2>
             </div>;
         } else if (this.state.opponentProfileError) {
             profile = <div>
-                <BaseAvatar name={this.props.verifier.userId.slice(1)}
+                <BaseAvatar
+                    name={this.props.verifier.userId.slice(1)}
                     idName={this.props.verifier.userId}
-                    width={48} height={48}
+                    width={48}
+                    height={48}
                 />
-                <h2>{this.props.verifier.userId}</h2>
+                <h2>{ this.props.verifier.userId }</h2>
             </div>;
         } else {
             profile = <Spinner />;
         }
 
         const userDetailText = [
-            <p key="p1">{_t(
+            <p key="p1">{ _t(
                 "Verify this user to mark them as trusted. " +
                 "Trusting users gives you extra peace of mind when using " +
                 "end-to-end encrypted messages.",
-            )}</p>,
-            <p key="p2">{_t(
+            ) }</p>,
+            <p key="p2">{ _t(
                 // NB. Below wording adjusted to singular 'session' until we have
                 // cross-signing
                 "Verifying this user will mark their session as trusted, and " +
                 "also mark your session as trusted to them.",
-            )}</p>,
+            ) }</p>,
         ];
 
         const selfDetailText = [
-            <p key="p1">{_t(
+            <p key="p1">{ _t(
                 "Verify this device to mark it as trusted. " +
                 "Trusting this device gives you and other users extra peace of mind when using " +
                 "end-to-end encrypted messages.",
-            )}</p>,
-            <p key="p2">{_t(
+            ) }</p>,
+            <p key="p2">{ _t(
                 "Verifying this device will mark it as trusted, and users who have verified with " +
                 "you will trust this device.",
-            )}</p>,
+            ) }</p>,
         ];
 
         return (
             <div>
-                {profile}
-                {isSelf ? selfDetailText : userDetailText}
+                { profile }
+                { isSelf ? selfDetailText : userDetailText }
                 <DialogButtons
                     primaryButton={_t('Continue')}
                     hasCancel={true}
@@ -207,7 +214,7 @@ export default class IncomingSasDialog extends React.Component {
         return (
             <div>
                 <Spinner />
-                <p>{_t("Waiting for partner to confirm...")}</p>
+                <p>{ _t("Waiting for partner to confirm...") }</p>
             </div>
         );
     }
@@ -249,7 +256,7 @@ export default class IncomingSasDialog extends React.Component {
                 onFinished={this._onFinished}
                 fixedWidth={false}
             >
-                {body}
+                { body }
             </BaseDialog>
         );
     }

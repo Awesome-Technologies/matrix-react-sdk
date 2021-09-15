@@ -50,6 +50,7 @@ describe('MemberEventListSummary', function() {
                 getAvatarUrl: () => {
                     return "avatar.jpeg";
                 },
+                getMxcAvatarUrl: () => 'mxc://avatar.url/image.png',
             },
         });
         // Override random event ID to allow for equality tests against tiles from
@@ -89,7 +90,7 @@ describe('MemberEventListSummary', function() {
 
     it('renders expanded events if there are less than props.threshold', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
         ]);
         const props = {
             events: events,
@@ -105,14 +106,14 @@ describe('MemberEventListSummary', function() {
         const result = wrapper.props.children;
 
         expect(result.props.children).toEqual([
-          <div className="event_tile" key="event0">Expanded membership</div>,
+            <div className="event_tile" key="event0">Expanded membership</div>,
         ]);
     });
 
     it('renders expanded events if there are less than props.threshold', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
         ]);
         const props = {
             events: events,
@@ -128,16 +129,16 @@ describe('MemberEventListSummary', function() {
         const result = wrapper.props.children;
 
         expect(result.props.children).toEqual([
-          <div className="event_tile" key="event0">Expanded membership</div>,
-          <div className="event_tile" key="event1">Expanded membership</div>,
+            <div className="event_tile" key="event0">Expanded membership</div>,
+            <div className="event_tile" key="event1">Expanded membership</div>,
         ]);
     });
 
     it('renders collapsed events if events.length = props.threshold', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
         ]);
         const props = {
             events: events,
@@ -160,20 +161,20 @@ describe('MemberEventListSummary', function() {
 
     it('truncates long join,leave repetitions', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
         ]);
         const props = {
             events: events,
@@ -202,20 +203,20 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_1:some.domain",
                 prevMembership: "leave",
@@ -244,8 +245,7 @@ describe('MemberEventListSummary', function() {
         );
     });
 
-    it('truncates multiple sequences of repetitions with other events between',
-    function() {
+    it('truncates multiple sequences of repetitions with other events between', function() {
         const events = generateEvents([
             {
                 userId: "@user_1:some.domain",
@@ -253,22 +253,22 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_1:some.domain",
                 prevMembership: "leave",
                 membership: "ban",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_1:some.domain", prevMembership: "ban", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "ban", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_1:some.domain",
                 prevMembership: "leave",
@@ -307,10 +307,10 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_1:some.domain",
                 prevMembership: "leave",
@@ -324,10 +324,10 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_2:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_2:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_2:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_2:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_2:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_2:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_2:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_2:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_2:some.domain",
                 prevMembership: "leave",
@@ -363,10 +363,10 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {prevMembership: "leave", membership: "join"},
-            {prevMembership: "join", membership: "leave"},
-            {prevMembership: "leave", membership: "join"},
-            {prevMembership: "join", membership: "leave"},
+            { prevMembership: "leave", membership: "join" },
+            { prevMembership: "join", membership: "leave" },
+            { prevMembership: "leave", membership: "join" },
+            { prevMembership: "join", membership: "leave" },
             {
                 prevMembership: "leave",
                 membership: "ban",
@@ -394,8 +394,7 @@ describe('MemberEventListSummary', function() {
         );
     });
 
-    it('correctly orders sequences of transitions by the order of their first event',
-    function() {
+    it('correctly orders sequences of transitions by the order of their first event', function() {
         const events = generateEvents([
             {
                 userId: "@user_2:some.domain",
@@ -409,20 +408,20 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_1:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_1:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             {
                 userId: "@user_1:some.domain",
                 prevMembership: "leave",
                 membership: "ban",
                 senderId: "@some_other_user:some.domain",
             },
-            {userId: "@user_2:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_2:some.domain", prevMembership: "join", membership: "leave"},
-            {userId: "@user_2:some.domain", prevMembership: "leave", membership: "join"},
-            {userId: "@user_2:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_2:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_2:some.domain", prevMembership: "join", membership: "leave" },
+            { userId: "@user_2:some.domain", prevMembership: "leave", membership: "join" },
+            { userId: "@user_2:some.domain", prevMembership: "join", membership: "leave" },
         ]);
         const props = {
             events: events,
@@ -449,11 +448,11 @@ describe('MemberEventListSummary', function() {
     it('correctly identifies transitions', function() {
         const events = generateEvents([
             // invited
-            {userId: "@user_1:some.domain", membership: "invite"},
+            { userId: "@user_1:some.domain", membership: "invite" },
             // banned
-            {userId: "@user_1:some.domain", membership: "ban"},
+            { userId: "@user_1:some.domain", membership: "ban" },
             // joined
-            {userId: "@user_1:some.domain", membership: "join"},
+            { userId: "@user_1:some.domain", membership: "join" },
             // invite_reject
             {
                 userId: "@user_1:some.domain",
@@ -461,7 +460,7 @@ describe('MemberEventListSummary', function() {
                 membership: "leave",
             },
             // left
-            {userId: "@user_1:some.domain", prevMembership: "join", membership: "leave"},
+            { userId: "@user_1:some.domain", prevMembership: "join", membership: "leave" },
             // invite_withdrawal
             {
                 userId: "@user_1:some.domain",
@@ -567,8 +566,7 @@ describe('MemberEventListSummary', function() {
         );
     });
 
-    it('handles invitation plurals correctly when there are multiple invites',
-    function() {
+    it('handles invitation plurals correctly when there are multiple invites', function() {
         const events = generateEvents([
             {
                 userId: "@user_1:some.domain",
@@ -604,10 +602,10 @@ describe('MemberEventListSummary', function() {
 
     it('handles a summary length = 2, with no "others"', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", membership: "join"},
-            {userId: "@user_1:some.domain", membership: "join"},
-            {userId: "@user_2:some.domain", membership: "join"},
-            {userId: "@user_2:some.domain", membership: "join"},
+            { userId: "@user_1:some.domain", membership: "join" },
+            { userId: "@user_1:some.domain", membership: "join" },
+            { userId: "@user_2:some.domain", membership: "join" },
+            { userId: "@user_2:some.domain", membership: "join" },
         ]);
         const props = {
             events: events,
@@ -632,9 +630,9 @@ describe('MemberEventListSummary', function() {
 
     it('handles a summary length = 2, with 1 "other"', function() {
         const events = generateEvents([
-            {userId: "@user_1:some.domain", membership: "join"},
-            {userId: "@user_2:some.domain", membership: "join"},
-            {userId: "@user_3:some.domain", membership: "join"},
+            { userId: "@user_1:some.domain", membership: "join" },
+            { userId: "@user_2:some.domain", membership: "join" },
+            { userId: "@user_3:some.domain", membership: "join" },
         ]);
         const props = {
             events: events,
@@ -659,7 +657,7 @@ describe('MemberEventListSummary', function() {
 
     it('handles a summary length = 2, with many "others"', function() {
         const events = generateEventsForUsers("@user_$:some.domain", 20, [
-            {membership: "join"},
+            { membership: "join" },
         ]);
         const props = {
             events: events,

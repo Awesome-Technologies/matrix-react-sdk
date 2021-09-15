@@ -21,12 +21,14 @@ import PropTypes from 'prop-types';
 import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
 import ContentMessages from '../../../ContentMessages';
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 /*
  * Tells the user about files we know cannot be uploaded before we even try uploading
  * them. This is named fairly generically but the only thing we check right now is
  * the size of the file.
  */
+@replaceableComponent("views.dialogs.UploadFailureDialog")
 export default class UploadFailureDialog extends React.Component {
     static propTypes = {
         badFiles: PropTypes.arrayOf(PropTypes.object).isRequired,
@@ -58,7 +60,7 @@ export default class UploadFailureDialog extends React.Component {
                     limit: filesize(this.props.contentMessages.getUploadLimit()),
                     sizeOfThisFile: filesize(this.props.badFiles[0].size),
                 }, {
-                    b: sub => <b>{sub}</b>,
+                    b: sub => <b>{ sub }</b>,
                 },
             );
             buttons = <DialogButtons primaryButton={_t('OK')}
@@ -73,7 +75,7 @@ export default class UploadFailureDialog extends React.Component {
                 {
                     limit: filesize(this.props.contentMessages.getUploadLimit()),
                 }, {
-                    b: sub => <b>{sub}</b>,
+                    b: sub => <b>{ sub }</b>,
                 },
             );
             buttons = <DialogButtons primaryButton={_t('OK')}
@@ -88,7 +90,7 @@ export default class UploadFailureDialog extends React.Component {
                 {
                     limit: filesize(this.props.contentMessages.getUploadLimit()),
                 }, {
-                    b: sub => <b>{sub}</b>,
+                    b: sub => <b>{ sub }</b>,
                 },
             );
             const howManyOthers = this.props.totalFiles - this.props.badFiles.length;
@@ -109,11 +111,11 @@ export default class UploadFailureDialog extends React.Component {
                 contentId='mx_Dialog_content'
             >
                 <div id='mx_Dialog_content'>
-                    {message}
-                    {preview}
+                    { message }
+                    { preview }
                 </div>
 
-                {buttons}
+                { buttons }
             </BaseDialog>
         );
     }

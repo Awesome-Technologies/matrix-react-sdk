@@ -23,9 +23,10 @@ import classNames from 'classnames';
 
 import { Key } from '../../../Keyboard';
 import AccessibleButton from '../elements/AccessibleButton';
-import {MatrixClientPeg} from '../../../MatrixClientPeg';
+import { MatrixClientPeg } from '../../../MatrixClientPeg';
 import { _t } from "../../../languageHandler";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 /*
  * Basic container for modal dialogs.
@@ -33,6 +34,7 @@ import MatrixClientContext from "../../../contexts/MatrixClientContext";
  * Includes a div for the title, and a keypress handler which cancels the
  * dialog on escape.
  */
+@replaceableComponent("views.dialogs.BaseDialog")
 export default class BaseDialog extends React.Component {
     static propTypes = {
         // onFinished callback to call when Escape is pressed
@@ -116,9 +118,7 @@ export default class BaseDialog extends React.Component {
 
         let headerImage;
         if (this.props.headerImage) {
-            headerImage = <img className="mx_Dialog_titleImage" src={this.props.headerImage}
-                alt=""
-            />;
+            headerImage = <img className="mx_Dialog_titleImage" src={this.props.headerImage} alt="" />;
         }
 
         return (
@@ -147,7 +147,7 @@ export default class BaseDialog extends React.Component {
                         'mx_Dialog_headerWithCancel': !!cancelButton,
                     })}>
                         <div className={classNames('mx_Dialog_title', this.props.titleClass)} id='mx_BaseDialog_title'>
-                            {headerImage}
+                            { headerImage }
                             { this.props.title }
                         </div>
                         { this.props.headerButton }

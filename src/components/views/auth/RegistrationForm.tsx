@@ -17,7 +17,6 @@ limitations under the License.
 
 import React from 'react';
 
-import * as sdk from '../../../index';
 import * as Email from '../../../email';
 import { looksValid as phoneNumberLooksValid } from '../../../phonenumber';
 import Modal from '../../../Modal';
@@ -25,9 +24,13 @@ import { _t } from '../../../languageHandler';
 import SdkConfig from '../../../SdkConfig';
 import { SAFE_LOCALPART_REGEX } from '../../../Registration';
 import withValidation from '../elements/Validation';
-import {ValidatedServerConfig} from "../../../utils/AutoDiscoveryUtils";
+import { ValidatedServerConfig } from "../../../utils/AutoDiscoveryUtils";
 import PassphraseField from "./PassphraseField";
 import CountlyAnalytics from "../../../CountlyAnalytics";
+import Field from '../elements/Field';
+import RegistrationEmailPromptDialog from '../dialogs/RegistrationEmailPromptDialog';
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import CountryDropdown from "./CountryDropdown";
 
 enum RegistrationField {
     Email = "field_email",
@@ -37,7 +40,7 @@ enum RegistrationField {
     PasswordConfirm = "field_password_confirm",
 }
 
-const PASSWORD_MIN_SCORE = 3; // safely unguessable: moderate protection from offline slow-hash scenario.
+export const PASSWORD_MIN_SCORE = 3; // safely unguessable: moderate protection from offline slow-hash scenario.
 
 interface IProps {
     // Values pre-filled in the input boxes when the component loads
@@ -51,7 +54,6 @@ interface IProps {
     }[];
     serverConfig: ValidatedServerConfig;
     canSubmit?: boolean;
-    serverRequiresIdServer?: boolean;
 
     onRegisterClick(params: {
         username: string;
@@ -79,6 +81,7 @@ interface IState {
 /*
  * A pure UI component which displays a registration form.
  */
+@replaceableComponent("views.auth.RegistrationForm")
 export default class RegistrationForm extends React.PureComponent<IProps, IState> {
     static defaultProps = {
         onValidationChange: console.error,
@@ -104,6 +107,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
 
     private onSubmit = async ev => {
         ev.preventDefault();
+        ev.persist();
 
         if (!this.props.canSubmit) return;
 
@@ -114,38 +118,24 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         }
 
         if (this.state.email === '') {
-            const haveIs = Boolean(this.props.serverConfig.isUrl);
-
-            let desc;
-            if (this.props.serverRequiresIdServer && !haveIs) {
-                desc = _t(
-                    "No identity server is configured so you cannot add an email address in order to " +
-                    "reset your password in the future.",
-                );
-            } else if (this.showEmail()) {
-                desc = _t(
-                    "If you don't specify an email address, you won't be able to reset your password. " +
-                    "Are you sure?",
-                );
+            if (this.showEmail()) {
+                CountlyAnalytics.instance.track("onboarding_registration_submit_warn");
+                Modal.createTrackedDialog("Email prompt dialog", '', RegistrationEmailPromptDialog, {
+                    onFinished: async (confirmed: boolean, email?: string) => {
+                        if (confirmed) {
+                            this.setState({
+                                email,
+                            }, () => {
+                                this.doSubmit(ev);
+                            });
+                        }
+                    },
+                });
             } else {
                 // user can't set an e-mail so don't prompt them to
                 this.doSubmit(ev);
                 return;
             }
-
-            CountlyAnalytics.instance.track("onboarding_registration_submit_warn");
-
-            const QuestionDialog = sdk.getComponent("dialogs.QuestionDialog");
-            Modal.createTrackedDialog('If you don\'t specify an email address...', '', QuestionDialog, {
-                title: _t("Warning!"),
-                description: desc,
-                button: _t("Continue"),
-                onFinished: (confirmed) => {
-                    if (confirmed) {
-                        this.doSubmit(ev);
-                    }
-                },
-            });
         } else {
             this.doSubmit(ev);
         }
@@ -206,7 +196,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
 
         // Validation and state updates are async, so we need to wait for them to complete
         // first. Queue a `setState` callback and wait for it to resolve.
-        await new Promise(resolve => this.setState({}, resolve));
+        await new Promise<void>(resolve => this.setState({}, resolve));
 
         if (this.allFieldsValid()) {
             return true;
@@ -357,7 +347,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
             {
                 key: "email",
                 test: ({ value }) => !value || phoneNumberLooksValid(value),
-                invalid: () => _t("Doesn't look like a valid phone number"),
+                invalid: () => _t("That phone number doesn't look quite right, please check and try again"),
             },
         ],
     });
@@ -416,11 +406,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
     }
 
     private showEmail() {
-        const haveIs = Boolean(this.props.serverConfig.isUrl);
-        if (
-            (this.props.serverRequiresIdServer && !haveIs) ||
-            !this.authStepIsUsed('m.login.email.identity')
-        ) {
+        if (!this.authStepIsUsed('m.login.email.identity')) {
             return false;
         }
         return true;
@@ -428,12 +414,7 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
 
     private showPhoneNumber() {
         const threePidLogin = !SdkConfig.get().disable_3pid_login;
-        const haveIs = Boolean(this.props.serverConfig.isUrl);
-        if (
-            !threePidLogin ||
-            (this.props.serverRequiresIdServer && !haveIs) ||
-            !this.authStepIsUsed('m.login.msisdn')
-        ) {
+        if (!threePidLogin || !this.authStepIsUsed('m.login.msisdn')) {
             return false;
         }
         return true;
@@ -443,7 +424,6 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         if (!this.showEmail()) {
             return null;
         }
-        const Field = sdk.getComponent('elements.Field');
         const emailPlaceholder = this.authStepIsRequired('m.login.email.identity') ?
             _t("Email") :
             _t("Email (optional)");
@@ -473,7 +453,6 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
     }
 
     renderPasswordConfirm() {
-        const Field = sdk.getComponent('elements.Field');
         return <Field
             id="mx_RegistrationForm_passwordConfirm"
             ref={field => this[RegistrationField.PasswordConfirm] = field}
@@ -492,8 +471,6 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         if (!this.showPhoneNumber()) {
             return null;
         }
-        const CountryDropdown = sdk.getComponent('views.auth.CountryDropdown');
-        const Field = sdk.getComponent('elements.Field');
         const phoneLabel = this.authStepIsRequired('m.login.msisdn') ?
             _t("Phone") :
             _t("Phone (optional)");
@@ -515,13 +492,13 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
     }
 
     renderUsername() {
-        const Field = sdk.getComponent('elements.Field');
         return <Field
             id="mx_RegistrationForm_username"
             ref={field => this[RegistrationField.Username] = field}
             type="text"
             autoFocus={true}
             label={_t("Username")}
+            placeholder={_t("Username").toLocaleLowerCase()}
             value={this.state.username}
             onChange={this.onUsernameChange}
             onValidate={this.onUsernameValidate}
@@ -539,47 +516,38 @@ export default class RegistrationForm extends React.PureComponent<IProps, IState
         if (this.showEmail()) {
             if (this.showPhoneNumber()) {
                 emailHelperText = <div>
-                    {_t(
-                        "Set an email for account recovery. " +
-                        "Use email or phone to optionally be discoverable by existing contacts.",
-                    )}
+                    {
+                        _t("Add an email to be able to reset your password.")
+                    } {
+                        _t("Use email or phone to optionally be discoverable by existing contacts.")
+                    }
                 </div>;
             } else {
                 emailHelperText = <div>
-                    {_t(
-                        "Set an email for account recovery. " +
-                        "Use email to optionally be discoverable by existing contacts.",
-                    )}
+                    {
+                        _t("Add an email to be able to reset your password.")
+                    } {
+                        _t("Use email to optionally be discoverable by existing contacts.")
+                    }
                 </div>;
             }
-        }
-        const haveIs = Boolean(this.props.serverConfig.isUrl);
-        let noIsText = null;
-        if (this.props.serverRequiresIdServer && !haveIs) {
-            noIsText = <div>
-                {_t(
-                    "No identity server is configured so you cannot add an email address in order to " +
-                    "reset your password in the future.",
-                )}
-            </div>;
         }
 
         return (
             <div>
                 <form onSubmit={this.onSubmit}>
                     <div className="mx_AuthBody_fieldRow">
-                        {this.renderUsername()}
+                        { this.renderUsername() }
                     </div>
                     <div className="mx_AuthBody_fieldRow">
-                        {this.renderPassword()}
-                        {this.renderPasswordConfirm()}
+                        { this.renderPassword() }
+                        { this.renderPasswordConfirm() }
                     </div>
                     <div className="mx_AuthBody_fieldRow">
-                        {this.renderEmail()}
-                        {this.renderPhoneNumber()}
+                        { this.renderEmail() }
+                        { this.renderPhoneNumber() }
                     </div>
                     { emailHelperText }
-                    { noIsText }
                     { registerButton }
                 </form>
             </div>

@@ -1,5 +1,5 @@
 /*
-Copyright 2015, 2016, 2017, 2019 New Vector Ltd.
+Copyright 2015, 2016, 2017, 2019 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,14 +19,14 @@ import classNames from 'classnames';
 
 import { _t } from '../../../languageHandler';
 import SdkConfig from '../../../SdkConfig';
-import {ValidatedServerConfig} from "../../../utils/AutoDiscoveryUtils";
+import { ValidatedServerConfig } from "../../../utils/AutoDiscoveryUtils";
 import AccessibleButton from "../elements/AccessibleButton";
 import CountlyAnalytics from "../../../CountlyAnalytics";
 import withValidation from "../elements/Validation";
 import * as Email from "../../../email";
 import Field from "../elements/Field";
 import CountryDropdown from "./CountryDropdown";
-import SignInToText from "./SignInToText";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 // For validating phone numbers without country codes
 const PHONE_NUMBER_REGEX = /^[0-9()\-\s]*$/;
@@ -47,14 +47,13 @@ interface IProps {
     onUsernameBlur?(username: string): void;
     onPhoneCountryChanged?(phoneCountry: string): void;
     onPhoneNumberChanged?(phoneNumber: string): void;
-    onEditServerDetailsClick?(): void;
     onForgotPasswordClick?(): void;
 }
 
 interface IState {
     fieldValid: Partial<Record<LoginField, boolean>>;
-    loginType: LoginField.Email | LoginField.MatrixId | LoginField.Phone,
-    password: "",
+    loginType: LoginField.Email | LoginField.MatrixId | LoginField.Phone;
+    password: "";
 }
 
 enum LoginField {
@@ -68,9 +67,9 @@ enum LoginField {
  * A pure UI component which displays a username/password form.
  * The email/username/phone fields are fully-controlled, the password field is not.
  */
+@replaceableComponent("views.auth.PasswordLogin")
 export default class PasswordLogin extends React.PureComponent<IProps, IState> {
     static defaultProps = {
-        onEditServerDetailsClick: null,
         onUsernameChanged: function() {},
         onUsernameBlur: function() {},
         onPhoneCountryChanged: function() {},
@@ -167,7 +166,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
     };
 
     private onPasswordChanged = ev => {
-        this.setState({password: ev.target.value});
+        this.setState({ password: ev.target.value });
     };
 
     private async verifyFieldsBeforeSubmit() {
@@ -199,7 +198,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
 
         // Validation and state updates are async, so we need to wait for them to complete
         // first. Queue a `setState` callback and wait for it to resolve.
-        await new Promise(resolve => this.setState({}, resolve));
+        await new Promise<void>(resolve => this.setState({}, resolve));
 
         if (this.allFieldsValid()) {
             return true;
@@ -296,7 +295,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
             }, {
                 key: "number",
                 test: ({ value }) => !value || PHONE_NUMBER_REGEX.test(value),
-                invalid: () => _t("Doesn't look like a valid phone number"),
+                invalid: () => _t("That phone number doesn't look quite right, please check and try again"),
             },
         ],
     });
@@ -323,7 +322,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
         const result = await this.validatePasswordRules(fieldState);
         this.markFieldValid(LoginField.Password, result.valid);
         return result;
-    }
+    };
 
     private renderLoginField(loginType: IState["loginType"], autoFocus: boolean) {
         const classes = {
@@ -357,6 +356,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
                     key="username_input"
                     type="text"
                     label={_t("Username")}
+                    placeholder={_t("Username").toLocaleLowerCase()}
                     value={this.props.username}
                     onChange={this.onUsernameChanged}
                     onFocus={this.onUsernameFocus}
@@ -410,20 +410,14 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
         let forgotPasswordJsx;
 
         if (this.props.onForgotPasswordClick) {
-            forgotPasswordJsx = <span>
-                {_t('Not sure of your password? <a>Set a new one</a>', {}, {
-                    a: sub => (
-                        <AccessibleButton
-                            className="mx_Login_forgot"
-                            disabled={this.props.busy}
-                            kind="link"
-                            onClick={this.onForgotPasswordClick}
-                        >
-                            {sub}
-                        </AccessibleButton>
-                    ),
-                })}
-            </span>;
+            forgotPasswordJsx = <AccessibleButton
+                className="mx_Login_forgot"
+                disabled={this.props.busy}
+                kind="link"
+                onClick={this.onForgotPasswordClick}
+            >
+                { _t("Forgot password?") }
+            </AccessibleButton>;
         }
 
         const pwFieldClass = classNames({
@@ -447,16 +441,16 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
                         disabled={this.props.disableSubmit}
                     >
                         <option key={LoginField.MatrixId} value={LoginField.MatrixId}>
-                            {_t('Username')}
+                            { _t('Username') }
                         </option>
                         <option
                             key={LoginField.Email}
                             value={LoginField.Email}
                         >
-                            {_t('Email address')}
+                            { _t('Email address') }
                         </option>
                         <option key={LoginField.Password} value={LoginField.Password}>
-                            {_t('Phone')}
+                            { _t('Phone') }
                         </option>
                     </Field>
                 </div>
@@ -465,11 +459,9 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
 
         return (
             <div>
-                <SignInToText serverConfig={this.props.serverConfig}
-                    onEditServerDetailsClick={this.props.onEditServerDetailsClick} />
                 <form onSubmit={this.onSubmitForm}>
-                    {loginType}
-                    {loginField}
+                    { loginType }
+                    { loginField }
                     <Field
                         className={pwFieldClass}
                         type="password"
@@ -482,7 +474,7 @@ export default class PasswordLogin extends React.PureComponent<IProps, IState> {
                         onValidate={this.onPasswordValidate}
                         ref={field => this[LoginField.Password] = field}
                     />
-                    {forgotPasswordJsx}
+                    { forgotPasswordJsx }
                     { !this.props.busy && <input className="mx_Login_submit"
                         type="submit"
                         value={_t('Sign in')}

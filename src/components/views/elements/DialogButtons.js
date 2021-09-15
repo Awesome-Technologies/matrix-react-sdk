@@ -19,10 +19,12 @@ limitations under the License.
 import React from "react";
 import PropTypes from "prop-types";
 import { _t } from '../../../languageHandler';
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 /**
  * Basic container for buttons in modal dialogs.
  */
+@replaceableComponent("views.elements.DialogButtons")
 export default class DialogButtons extends React.Component {
     static propTypes = {
         // The primary button which is styled differently and has default focus.
@@ -90,7 +92,7 @@ export default class DialogButtons extends React.Component {
 
         let additive = null;
         if (this.props.additive) {
-            additive = <div className="mx_Dialog_buttons_additive">{this.props.additive}</div>;
+            additive = <div className="mx_Dialog_buttons_additive">{ this.props.additive }</div>;
         }
 
         return (

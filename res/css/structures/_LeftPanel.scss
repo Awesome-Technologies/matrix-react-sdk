@@ -14,41 +14,54 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-$groupFilterPanelWidth: 56px; // only applies in this file, used for calculations
+$roomListCollapsedWidth: 68px;
+
+.mx_MatrixChat--with-avatar {
+    .mx_LeftPanel,
+    .mx_LeftPanel .mx_LeftPanel_roomListContainer {
+        background-color: transparent;
+    }
+}
+
+.mx_LeftPanel_wrapper {
+    display: flex;
+    max-width: 50%;
+    position: relative;
+
+    // Contain the amount of layers rendered by constraining what actually needs re-layering via css
+    contain: layout paint;
+
+    .mx_LeftPanel_wrapper--user {
+        background-color: $roomlist-bg-color;
+        display: flex;
+        overflow: hidden;
+        position: relative;
+
+        &[data-collapsed] {
+            max-width: $roomListCollapsedWidth;
+        }
+    }
+}
+
+
 
 .mx_LeftPanel {
     background-color: $roomlist-bg-color;
-    min-width: 260px;
-    max-width: 50%;
+    // TODO decrease this once Spaces launches as it'll no longer need to include the 56px Community Panel
 
     // Create a row-based flexbox for the GroupFilterPanel and the room list
     display: flex;
-
-    .mx_LeftPanel_GroupFilterPanelContainer {
-        flex-grow: 0;
-        flex-shrink: 0;
-        flex-basis: $groupFilterPanelWidth;
-        height: 100%;
-
-        // Create another flexbox so the GroupFilterPanel fills the container
-        display: flex;
-        flex-direction: column;
-
-        // GroupFilterPanel handles its own CSS
-    }
-
-    &:not(.mx_LeftPanel_hasGroupFilterPanel) {
-        .mx_LeftPanel_roomListContainer {
-            width: 100%;
-        }
-    }
+    contain: content;
+    position: relative;
+    flex-grow: 1;
+    overflow: hidden;
 
     // Note: The 'room list' in this context is actually everything that isn't the tag
     // panel, such as the menu options, breadcrumbs, filtering, etc
     .mx_LeftPanel_roomListContainer {
-        width: calc(100% - $groupFilterPanelWidth);
         background-color: $roomlist-bg-color;
-
+        flex: 1 0 0;
+        min-width: 0;
         // Create another flexbox (this time a column) for the room list components
         display: flex;
         flex-direction: column;
@@ -74,6 +87,7 @@ $groupFilterPanelWidth: 56px; // only applies in this file, used for calculation
             // aligned correctly. This is also a row-based flexbox.
             display: flex;
             align-items: center;
+            contain: content;
 
             &.mx_IndicatorScrollbar_leftOverflow {
                 mask-image: linear-gradient(90deg, transparent, black 5%);
@@ -113,6 +127,29 @@ $groupFilterPanelWidth: 56px; // only applies in this file, used for calculation
                 }
             }
 
+            .mx_LeftPanel_dialPadButton {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                background-color: $roomlist-button-bg-color;
+                position: relative;
+                margin-left: 8px;
+
+                &::before {
+                    content: '';
+                    position: absolute;
+                    top: 8px;
+                    left: 8px;
+                    width: 16px;
+                    height: 16px;
+                    mask-image: url('$(res)/img/element-icons/call/dialpad.svg');
+                    mask-position: center;
+                    mask-size: contain;
+                    mask-repeat: no-repeat;
+                    background: $secondary-content;
+                }
+            }
+
             .mx_LeftPanel_exploreButton {
                 width: 32px;
                 height: 32px;
@@ -132,7 +169,11 @@ $groupFilterPanelWidth: 56px; // only applies in this file, used for calculation
                     mask-position: center;
                     mask-size: contain;
                     mask-repeat: no-repeat;
-                    background: $secondary-fg-color;
+                    background: $secondary-content;
+                }
+
+                &.mx_LeftPanel_exploreButton_space::before {
+                    mask-image: url('$(res)/img/element-icons/roomlist/browse.svg');
                 }
             }
         }
@@ -146,6 +187,8 @@ $groupFilterPanelWidth: 56px; // only applies in this file, used for calculation
         }
 
         .mx_LeftPanel_roomListWrapper {
+            // Make the y-scrollbar more responsive
+            padding-right: 2px;
             overflow: hidden;
             margin-top: 10px; // so we're not up against the search/filter
             flex: 1 0 0; // needed in Safari to properly set flex-basis
@@ -167,23 +210,28 @@ $groupFilterPanelWidth: 56px; // only applies in this file, used for calculation
 
     // These styles override the defaults for the minimized (66px) layout
     &.mx_LeftPanel_minimized {
+        flex-grow: 0;
         min-width: unset;
-
-        // We have to forcefully set the width to override the resizer's style attribute.
-        &.mx_LeftPanel_hasGroupFilterPanel {
-            width: calc(68px + $groupFilterPanelWidth) !important;
-        }
-        &:not(.mx_LeftPanel_hasGroupFilterPanel) {
-            width: 68px !important;
-        }
+        width: unset !important;
 
         .mx_LeftPanel_roomListContainer {
-            width: 68px;
+            width: $roomListCollapsedWidth;
+
+            .mx_LeftPanel_userHeader {
+                flex-direction: row;
+                justify-content: center;
+            }
 
             .mx_LeftPanel_filterContainer {
                 // Organize the flexbox into a centered column layout
                 flex-direction: column;
                 justify-content: center;
+
+                .mx_LeftPanel_dialPadButton {
+                    margin-left: 0;
+                    margin-top: 8px;
+                    background-color: transparent;
+                }
 
                 .mx_LeftPanel_exploreButton {
                     margin-left: 0;

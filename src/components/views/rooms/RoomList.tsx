@@ -1,7 +1,5 @@
 /*
-Copyright 2015, 2016 OpenMarket Ltd
-Copyright 2017, 2018 Vector Creations Ltd
-Copyright 2020 The Matrix.org Foundation C.I.C.
+Copyright 2015-2018, 2020, 2021 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,13 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import * as React from "react";
+import React, { ReactComponentElement } from "react";
 import { Dispatcher } from "flux";
 import { Room } from "matrix-js-sdk/src/models/room";
+import * as fbEmitter from "fbemitter";
+import { EventType } from "matrix-js-sdk/src/@types/event";
 
 import { _t, _td } from "../../../languageHandler";
 import { RovingTabIndexProvider } from "../../../accessibility/RovingTabIndex";
-import { ResizeNotifier } from "../../../utils/ResizeNotifier";
+import ResizeNotifier from "../../../utils/ResizeNotifier";
 import RoomListStore, { LISTS_UPDATE_EVENT } from "../../../stores/room-list/RoomListStore";
 import RoomViewStore from "../../../stores/RoomViewStore";
 import { ITagMap } from "../../../stores/room-list/algorithms/models";
@@ -33,35 +33,41 @@ import RoomSublist from "./RoomSublist";
 import { ActionPayload } from "../../../dispatcher/payloads";
 import { MatrixClientPeg } from "../../../MatrixClientPeg";
 import GroupAvatar from "../avatars/GroupAvatar";
-import TemporaryTile from "./TemporaryTile";
+import ExtraTile from "./ExtraTile";
 import { StaticNotificationState } from "../../../stores/notifications/StaticNotificationState";
-import { NotificationColor } from "../../../stores/notifications/NotificationColor";
 import { Action } from "../../../dispatcher/actions";
 import { ViewRoomDeltaPayload } from "../../../dispatcher/payloads/ViewRoomDeltaPayload";
 import { RoomNotificationStateStore } from "../../../stores/notifications/RoomNotificationStateStore";
-import SettingsStore from "../../../settings/SettingsStore";
 import CustomRoomTagStore from "../../../stores/CustomRoomTagStore";
 import { arrayFastClone, arrayHasDiff } from "../../../utils/arrays";
 import { objectShallowClone, objectWithOnly } from "../../../utils/objects";
 import { IconizedContextMenuOption, IconizedContextMenuOptionList } from "../context_menus/IconizedContextMenu";
 import AccessibleButton from "../elements/AccessibleButton";
 import { CommunityPrototypeStore } from "../../../stores/CommunityPrototypeStore";
+import SpaceStore, { ISuggestedRoom, SUGGESTED_ROOMS } from "../../../stores/SpaceStore";
+import { showAddExistingRooms, showCreateNewRoom, showSpaceInvite } from "../../../utils/space";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import RoomAvatar from "../avatars/RoomAvatar";
 
 interface IProps {
     onKeyDown: (ev: React.KeyboardEvent) => void;
     onFocus: (ev: React.FocusEvent) => void;
     onBlur: (ev: React.FocusEvent) => void;
     onResize: () => void;
+    onListCollapse?: (isExpanded: boolean) => void;
     resizeNotifier: ResizeNotifier;
     isMinimized: boolean;
+    activeSpace: Room;
 }
 
 interface IState {
     sublists: ITagMap;
     isNameFiltering: boolean;
+    currentRoomId?: string;
+    suggestedRooms: ISuggestedRoom[];
 }
 
-const TAG_ORDER: TagID[] = [
+export const TAG_ORDER: TagID[] = [
     DefaultTagID.Invite,
     DefaultTagID.Favourite,
     DefaultTagID.DM,
@@ -71,6 +77,7 @@ const TAG_ORDER: TagID[] = [
 
     DefaultTagID.LowPriority,
     DefaultTagID.ServerNotice,
+    DefaultTagID.Suggested,
     DefaultTagID.Archived,
 ];
 const CUSTOM_TAGS_BEFORE_TAG = DefaultTagID.LowPriority;
@@ -89,10 +96,12 @@ interface ITagAesthetics {
     defaultHidden: boolean;
 }
 
-const TAG_AESTHETICS: {
+interface ITagAestheticsMap {
     // @ts-ignore - TS wants this to be a string but we know better
     [tagId: TagID]: ITagAesthetics;
-} = {
+}
+
+const TAG_AESTHETICS: ITagAestheticsMap = {
     [DefaultTagID.Invite]: {
         sectionLabel: _td("Invites"),
         isInvite: true,
@@ -109,7 +118,7 @@ const TAG_AESTHETICS: {
         defaultHidden: false,
         addRoomLabel: _td("Start chat"),
         onAddRoom: (dispatcher?: Dispatcher<ActionPayload>) => {
-            (dispatcher || defaultDispatcher).dispatch({action: 'view_create_chat'});
+            (dispatcher || defaultDispatcher).dispatch({ action: 'view_create_chat' });
         },
     },
     [DefaultTagID.Untagged]: {
@@ -118,6 +127,50 @@ const TAG_AESTHETICS: {
         defaultHidden: false,
         addRoomLabel: _td("Add room"),
         addRoomContextMenu: (onFinished: () => void) => {
+            if (SpaceStore.instance.activeSpace) {
+                const canAddRooms = SpaceStore.instance.activeSpace.currentState.maySendStateEvent(EventType.SpaceChild,
+                    MatrixClientPeg.get().getUserId());
+
+                return <IconizedContextMenuOptionList first>
+                    <IconizedContextMenuOption
+                        label={_t("Create new room")}
+                        iconClassName="mx_RoomList_iconPlus"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onFinished();
+                            showCreateNewRoom(SpaceStore.instance.activeSpace);
+                        }}
+                        disabled={!canAddRooms}
+                        tooltip={canAddRooms ? undefined
+                            : _t("You do not have permissions to create new rooms in this space")}
+                    />
+                    <IconizedContextMenuOption
+                        label={_t("Add existing room")}
+                        iconClassName="mx_RoomList_iconHash"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onFinished();
+                            showAddExistingRooms(SpaceStore.instance.activeSpace);
+                        }}
+                        disabled={!canAddRooms}
+                        tooltip={canAddRooms ? undefined
+                            : _t("You do not have permissions to add rooms to this space")}
+                    />
+                    <IconizedContextMenuOption
+                        label={_t("Explore rooms")}
+                        iconClassName="mx_RoomList_iconBrowse"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onFinished();
+                            defaultDispatcher.fire(Action.ViewRoomDirectory);
+                        }}
+                    />
+                </IconizedContextMenuOptionList>;
+            }
+
             return <IconizedContextMenuOptionList first>
                 <IconizedContextMenuOption
                     label={_t("Create new room")}
@@ -126,7 +179,7 @@ const TAG_AESTHETICS: {
                         e.preventDefault();
                         e.stopPropagation();
                         onFinished();
-                        defaultDispatcher.dispatch({action: "view_create_room"});
+                        defaultDispatcher.dispatch({ action: "view_create_room" });
                     }}
                 />
                 <IconizedContextMenuOption
@@ -161,6 +214,12 @@ const TAG_AESTHETICS: {
         isInvite: false,
         defaultHidden: true,
     },
+
+    [DefaultTagID.Suggested]: {
+        sectionLabel: _td("Suggested Rooms"),
+        isInvite: false,
+        defaultHidden: false,
+    },
 };
 
 function customTagAesthetics(tagId: TagID): ITagAesthetics {
@@ -175,9 +234,11 @@ function customTagAesthetics(tagId: TagID): ITagAesthetics {
     };
 }
 
+@replaceableComponent("views.rooms.RoomList")
 export default class RoomList extends React.PureComponent<IProps, IState> {
     private dispatcherRef;
     private customTagStoreRef;
+    private roomStoreToken: fbEmitter.EventSubscription;
 
     constructor(props: IProps) {
         super(props);
@@ -185,22 +246,32 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
         this.state = {
             sublists: {},
             isNameFiltering: !!RoomListStore.instance.getFirstNameFilterCondition(),
+            suggestedRooms: SpaceStore.instance.suggestedRooms,
         };
-
-        this.dispatcherRef = defaultDispatcher.register(this.onAction);
     }
 
     public componentDidMount(): void {
+        this.dispatcherRef = defaultDispatcher.register(this.onAction);
+        this.roomStoreToken = RoomViewStore.addListener(this.onRoomViewStoreUpdate);
+        SpaceStore.instance.on(SUGGESTED_ROOMS, this.updateSuggestedRooms);
         RoomListStore.instance.on(LISTS_UPDATE_EVENT, this.updateLists);
         this.customTagStoreRef = CustomRoomTagStore.addListener(this.updateLists);
         this.updateLists(); // trigger the first update
     }
 
     public componentWillUnmount() {
+        SpaceStore.instance.off(SUGGESTED_ROOMS, this.updateSuggestedRooms);
         RoomListStore.instance.off(LISTS_UPDATE_EVENT, this.updateLists);
         defaultDispatcher.unregister(this.dispatcherRef);
         if (this.customTagStoreRef) this.customTagStoreRef.remove();
+        if (this.roomStoreToken) this.roomStoreToken.remove();
     }
+
+    private onRoomViewStoreUpdate = () => {
+        this.setState({
+            currentRoomId: RoomViewStore.getRoomId(),
+        });
+    };
 
     private onAction = (payload: ActionPayload) => {
         if (payload.action === Action.ViewRoomDelta) {
@@ -214,12 +285,14 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
                     show_room_tile: true, // to make sure the room gets scrolled into view
                 });
             }
+        } else if (payload.action === Action.PstnSupportUpdated) {
+            this.updateLists();
         }
     };
 
     private getRoomDelta = (roomId: string, delta: number, unread = false) => {
         const lists = RoomListStore.instance.orderedLists;
-        const rooms: Room = [];
+        const rooms: Room[] = [];
         TAG_ORDER.forEach(t => {
             let listRooms = lists[t];
 
@@ -240,13 +313,12 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
         return room;
     };
 
+    private updateSuggestedRooms = (suggestedRooms: ISuggestedRoom[]) => {
+        this.setState({ suggestedRooms });
+    };
+
     private updateLists = () => {
         const newLists = RoomListStore.instance.orderedLists;
-        if (SettingsStore.getValue("advancedRoomListLogging")) {
-            // TODO: Remove debug: https://github.com/vector-im/element-web/issues/14602
-            console.log("new lists", newLists);
-        }
-
         const previousListIds = Object.keys(this.state.sublists);
         const newListIds = Object.keys(newLists).filter(t => {
             if (!isCustomTag(t)) return true; // always include non-custom tags
@@ -278,7 +350,7 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
             const newSublists = objectWithOnly(newLists, newListIds);
             const sublists = objectShallowClone(newSublists, (k, v) => arrayFastClone(v));
 
-            this.setState({sublists, isNameFiltering}, () => {
+            this.setState({ sublists, isNameFiltering }, () => {
                 this.props.onResize();
             });
         }
@@ -294,7 +366,52 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
         dis.dispatch({ action: Action.ViewRoomDirectory, initialText });
     };
 
-    private renderCommunityInvites(): TemporaryTile[] {
+    private onSpaceInviteClick = () => {
+        const initialText = RoomListStore.instance.getFirstNameFilterCondition()?.search;
+        showSpaceInvite(this.props.activeSpace, initialText);
+    };
+
+    private renderSuggestedRooms(): ReactComponentElement<typeof ExtraTile>[] {
+        return this.state.suggestedRooms.map(room => {
+            const name = room.name || room.canonical_alias || room.aliases?.[0] || _t("Empty room");
+            const avatar = (
+                <RoomAvatar
+                    oobData={{
+                        name,
+                        avatarUrl: room.avatar_url,
+                    }}
+                    width={32}
+                    height={32}
+                    resizeMethod="crop"
+                />
+            );
+            const viewRoom = () => {
+                defaultDispatcher.dispatch({
+                    action: "view_room",
+                    room_alias: room.canonical_alias || room.aliases?.[0],
+                    room_id: room.room_id,
+                    via_servers: room.viaServers,
+                    oobData: {
+                        avatarUrl: room.avatar_url,
+                        name,
+                    },
+                });
+            };
+            return (
+                <ExtraTile
+                    isMinimized={this.props.isMinimized}
+                    isSelected={this.state.currentRoomId === room.room_id}
+                    displayName={name}
+                    avatar={avatar}
+                    onClick={viewRoom}
+                    key={`suggestedRoomTile_${room.room_id}`}
+                />
+            );
+        });
+    }
+
+    private renderCommunityInvites(): ReactComponentElement<typeof ExtraTile>[] {
+        if (SpaceStore.spacesEnabled) return [];
         // TODO: Put community invites in a more sensible place (not in the room list)
         // See https://github.com/vector-im/element-web/issues/14456
         return MatrixClientPeg.get().getGroups().filter(g => {
@@ -305,7 +422,9 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
                     groupId={g.groupId}
                     groupName={g.name}
                     groupAvatarUrl={g.avatarUrl}
-                    width={32} height={32} resizeMethod='crop'
+                    width={32}
+                    height={32}
+                    resizeMethod='crop'
                 />
             );
             const openGroup = () => {
@@ -315,12 +434,12 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
                 });
             };
             return (
-                <TemporaryTile
+                <ExtraTile
                     isMinimized={this.props.isMinimized}
                     isSelected={false}
                     displayName={g.name}
                     avatar={avatar}
-                    notificationState={StaticNotificationState.forSymbol("!", NotificationColor.Red)}
+                    notificationState={StaticNotificationState.RED_EXCLAMATION}
                     onClick={openGroup}
                     key={`temporaryGroupTile_${g.groupId}`}
                 />
@@ -329,96 +448,117 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
     }
 
     private renderSublists(): React.ReactElement[] {
-        const components: React.ReactElement[] = [];
-
-        const tagOrder = TAG_ORDER.reduce((p, c) => {
-            if (c === CUSTOM_TAGS_BEFORE_TAG) {
-                const customTags = Object.keys(this.state.sublists)
-                    .filter(t => isCustomTag(t));
-                p.push(...customTags);
-            }
-            p.push(c);
-            return p;
-        }, [] as TagID[]);
-
         // show a skeleton UI if the user is in no rooms and they are not filtering
         const showSkeleton = !this.state.isNameFiltering &&
             Object.values(RoomListStore.instance.unfilteredLists).every(list => !list?.length);
 
-        for (const orderedTagId of tagOrder) {
-            const orderedRooms = this.state.sublists[orderedTagId] || [];
-            const extraTiles = orderedTagId === DefaultTagID.Invite ? this.renderCommunityInvites() : null;
-            const totalTiles = orderedRooms.length + (extraTiles ? extraTiles.length : 0);
-            if (totalTiles === 0 && !ALWAYS_VISIBLE_TAGS.includes(orderedTagId)) {
-                continue; // skip tag - not needed
+        return TAG_ORDER.reduce((tags, tagId) => {
+            if (tagId === CUSTOM_TAGS_BEFORE_TAG) {
+                const customTags = Object.keys(this.state.sublists)
+                    .filter(tagId => isCustomTag(tagId));
+                tags.push(...customTags);
             }
+            tags.push(tagId);
+            return tags;
+        }, [] as TagID[])
+            .map(orderedTagId => {
+                let extraTiles = null;
+                if (orderedTagId === DefaultTagID.Invite) {
+                    extraTiles = this.renderCommunityInvites();
+                } else if (orderedTagId === DefaultTagID.Suggested) {
+                    extraTiles = this.renderSuggestedRooms();
+                }
 
-            const aesthetics: ITagAesthetics = isCustomTag(orderedTagId)
-                ? customTagAesthetics(orderedTagId)
-                : TAG_AESTHETICS[orderedTagId];
-            if (!aesthetics) throw new Error(`Tag ${orderedTagId} does not have aesthetics`);
+                const aesthetics: ITagAesthetics = isCustomTag(orderedTagId)
+                    ? customTagAesthetics(orderedTagId)
+                    : TAG_AESTHETICS[orderedTagId];
+                if (!aesthetics) throw new Error(`Tag ${orderedTagId} does not have aesthetics`);
 
-            components.push(<RoomSublist
-                key={`sublist-${orderedTagId}`}
-                tagId={orderedTagId}
-                forRooms={true}
-                startAsHidden={aesthetics.defaultHidden}
-                label={aesthetics.sectionLabelRaw ? aesthetics.sectionLabelRaw : _t(aesthetics.sectionLabel)}
-                onAddRoom={aesthetics.onAddRoom}
-                addRoomLabel={aesthetics.addRoomLabel ? _t(aesthetics.addRoomLabel) : aesthetics.addRoomLabel}
-                addRoomContextMenu={aesthetics.addRoomContextMenu}
-                isMinimized={this.props.isMinimized}
-                onResize={this.props.onResize}
-                showSkeleton={showSkeleton}
-                extraBadTilesThatShouldntExist={extraTiles}
-            />);
-        }
-
-        return components;
+                // The cost of mounting/unmounting this component offsets the cost
+                // of keeping it in the DOM and hiding it when it is not required
+                return <RoomSublist
+                    key={`sublist-${orderedTagId}`}
+                    tagId={orderedTagId}
+                    forRooms={true}
+                    startAsHidden={aesthetics.defaultHidden}
+                    label={aesthetics.sectionLabelRaw ? aesthetics.sectionLabelRaw : _t(aesthetics.sectionLabel)}
+                    onAddRoom={aesthetics.onAddRoom}
+                    addRoomLabel={aesthetics.addRoomLabel ? _t(aesthetics.addRoomLabel) : aesthetics.addRoomLabel}
+                    addRoomContextMenu={aesthetics.addRoomContextMenu}
+                    isMinimized={this.props.isMinimized}
+                    showSkeleton={showSkeleton}
+                    extraTiles={extraTiles}
+                    resizeNotifier={this.props.resizeNotifier}
+                    alwaysVisible={ALWAYS_VISIBLE_TAGS.includes(orderedTagId)}
+                    onListCollapse={this.props.onListCollapse}
+                />;
+            });
     }
 
     public render() {
+        const cli = MatrixClientPeg.get();
+        const userId = cli.getUserId();
+
         let explorePrompt: JSX.Element;
         if (!this.props.isMinimized) {
             if (this.state.isNameFiltering) {
                 explorePrompt = <div className="mx_RoomList_explorePrompt">
-                    <div>{_t("Can't see what you’re looking for?")}</div>
+                    <div>{ _t("Can't see what you’re looking for?") }</div>
                     <AccessibleButton
                         className="mx_RoomList_explorePrompt_startChat"
                         kind="link"
                         onClick={this.onStartChat}
                     >
-                        {_t("Start a new chat")}
+                        { _t("Start a new chat") }
                     </AccessibleButton>
                     <AccessibleButton
                         className="mx_RoomList_explorePrompt_explore"
                         kind="link"
                         onClick={this.onExplore}
                     >
-                        {_t("Explore all public rooms")}
+                        { this.props.activeSpace ? _t("Explore rooms") : _t("Explore all public rooms") }
                     </AccessibleButton>
                 </div>;
+            } else if (
+                this.props.activeSpace?.canInvite(userId) || this.props.activeSpace?.getMyMembership() === "join"
+            ) {
+                explorePrompt = <div className="mx_RoomList_explorePrompt">
+                    <div>{ _t("Quick actions") }</div>
+                    { this.props.activeSpace.canInvite(userId) && <AccessibleButton
+                        className="mx_RoomList_explorePrompt_spaceInvite"
+                        onClick={this.onSpaceInviteClick}
+                    >
+                        { _t("Invite people") }
+                    </AccessibleButton> }
+                    { this.props.activeSpace.getMyMembership() === "join" && <AccessibleButton
+                        className="mx_RoomList_explorePrompt_spaceExplore"
+                        onClick={this.onExplore}
+                    >
+                        { _t("Explore rooms") }
+                    </AccessibleButton> }
+                </div>;
             } else if (Object.values(this.state.sublists).some(list => list.length > 0)) {
-                const unfilteredLists = RoomListStore.instance.unfilteredLists
+                const unfilteredLists = RoomListStore.instance.unfilteredLists;
                 const unfilteredRooms = unfilteredLists[DefaultTagID.Untagged] || [];
                 const unfilteredHistorical = unfilteredLists[DefaultTagID.Archived] || [];
+                const unfilteredFavourite = unfilteredLists[DefaultTagID.Favourite] || [];
                 // show a prompt to join/create rooms if the user is in 0 rooms and no historical
-                if (unfilteredRooms.length < 1 && unfilteredHistorical < 1) {
+                if (unfilteredRooms.length < 1 && unfilteredHistorical < 1 && unfilteredFavourite < 1) {
                     explorePrompt = <div className="mx_RoomList_explorePrompt">
-                        <div>{_t("Use the + to make a new room or explore existing ones below")}</div>
+                        <div>{ _t("Use the + to make a new room or explore existing ones below") }</div>
                         <AccessibleButton
                             className="mx_RoomList_explorePrompt_startChat"
                             kind="link"
                             onClick={this.onStartChat}
                         >
-                            {_t("Start a new chat")}
+                            { _t("Start a new chat") }
                         </AccessibleButton>
                         <AccessibleButton
                             className="mx_RoomList_explorePrompt_explore"
                             kind="link"
                             onClick={this.onExplore}
                         >
-                            {_t("Explore all public rooms")}
+                            { _t("Explore all public rooms") }
                         </AccessibleButton>
                     </div>;
                 }
@@ -428,7 +568,7 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
         const sublists = this.renderSublists();
         return (
             <RovingTabIndexProvider handleHomeEnd={true} onKeyDown={this.props.onKeyDown}>
-                {({onKeyDownHandler}) => (
+                { ({ onKeyDownHandler }) => (
                     <div
                         onFocus={this.props.onFocus}
                         onBlur={this.props.onBlur}
@@ -437,10 +577,10 @@ export default class RoomList extends React.PureComponent<IProps, IState> {
                         role="tree"
                         aria-label={_t("Rooms")}
                     >
-                        {sublists}
-                        {explorePrompt}
+                        { sublists }
+                        { explorePrompt }
                     </div>
-                )}
+                ) }
             </RovingTabIndexProvider>
         );
     }
