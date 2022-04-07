@@ -275,6 +275,14 @@ export default class UserMenu extends React.Component<IProps, IState> {
         );
     };
 
+    private openLegalNotice = () => {
+        this.onCloseMenu();
+        window.open(
+            'https://amp.care/imprint',
+            '_blank',
+        );
+    };
+
     private switchUser = () => {
         this.onCloseMenu();
         Lifecycle.pinOverlay();
@@ -380,6 +388,18 @@ export default class UserMenu extends React.Component<IProps, IState> {
             />;
         }
 
+        const privacyButton = <IconizedContextMenuOption
+            iconClassName="mx_UserMenu_icon_privacy"
+            label={_t("Privacy")}
+            onClick={this.openPrivacyDeclaration}
+        />;
+
+        const legalNoticeButton = <IconizedContextMenuOption
+            iconClassName="mx_UserMenu_icon_privacy"
+            label={_t("Legal notice")}
+            onClick={this.openLegalNotice}
+        />;
+
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const switchUserButton = interfaceEnabled ? (
             <IconizedContextMenuOption
@@ -412,12 +432,9 @@ export default class UserMenu extends React.Component<IProps, IState> {
                         label={_t("Archived rooms")}
                         onClick={this.onShowArchived}
                     /> */}
-                    <IconizedContextMenuOption
-                        iconClassName="mx_UserMenu_icon_privacy"
-                        label={_t("Privacy")}
-                        onClick={this.openPrivacyDeclaration}
-                    />
                     { feedbackButton }
+                    { privacyButton }
+                    { legalNoticeButton }
                 </IconizedContextMenuOptionList>
                 <IconizedContextMenuOptionList red>
                     <IconizedContextMenuOption
@@ -492,6 +509,8 @@ export default class UserMenu extends React.Component<IProps, IState> {
                             onClick={(e) => this.onSettingsOpen(e, null)}
                         />
                         { feedbackButton }
+                        { privacyButton }
+                        { legalNoticeButton }
                     </IconizedContextMenuOptionList>
                     <IconizedContextMenuOptionList red>
                         <IconizedContextMenuOption
@@ -513,6 +532,8 @@ export default class UserMenu extends React.Component<IProps, IState> {
                             onClick={(e) => this.onSettingsOpen(e, null)}
                         />
                         { feedbackButton }
+                        { privacyButton }
+                        { legalNoticeButton }
                     </IconizedContextMenuOptionList>
                 </React.Fragment>
             );
