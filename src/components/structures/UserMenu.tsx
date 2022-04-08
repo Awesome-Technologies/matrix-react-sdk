@@ -332,6 +332,22 @@ export default class UserMenu extends React.Component<IProps, IState> {
         SettingsStore.setValue("doNotDisturb", null, SettingLevel.DEVICE, !current);
     };
 
+    private openPrivacyDeclaration = () => {
+        this.onCloseMenu();
+        window.open(
+            'https://amp.chat/privacy',
+            '_blank',
+        );
+    };
+
+    private openLegalNotice = () => {
+        this.onCloseMenu();
+        window.open(
+            'https://amp.chat/imprint',
+            '_blank',
+        );
+    };
+
     private renderContextMenu = (): React.ReactNode => {
         if (!this.state.contextMenuPosition) return null;
 
@@ -391,6 +407,18 @@ export default class UserMenu extends React.Component<IProps, IState> {
             />;
         }
 
+        const privacyButton = <IconizedContextMenuOption
+            iconClassName="mx_UserMenu_icon_privacy"
+            label={_t("Privacy")}
+            onClick={this.openPrivacyDeclaration}
+        />;
+
+        const legalNoticeButton = <IconizedContextMenuOption
+            iconClassName="mx_UserMenu_icon_privacy"
+            label={_t("Legal notice")}
+            onClick={this.openLegalNotice}
+        />;
+
         let primaryHeader = (
             <div className="mx_UserMenu_contextMenu_name">
                 <span className="mx_UserMenu_contextMenu_displayName">
@@ -426,6 +454,8 @@ export default class UserMenu extends React.Component<IProps, IState> {
                         onClick={this.onShowArchived}
                     /> */ }
                     { feedbackButton }
+                    { privacyButton }
+                    { legalNoticeButton }
                 </IconizedContextMenuOptionList>
                 <IconizedContextMenuOptionList red>
                     <IconizedContextMenuOption
@@ -521,6 +551,8 @@ export default class UserMenu extends React.Component<IProps, IState> {
                             onClick={(e) => this.onSettingsOpen(e, null)}
                         />
                         { feedbackButton }
+                        { privacyButton }
+                        { legalNoticeButton }
                     </IconizedContextMenuOptionList>
                 </React.Fragment>
             );
