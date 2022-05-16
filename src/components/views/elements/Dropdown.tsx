@@ -182,14 +182,16 @@ export default class Dropdown extends React.Component<IProps, IState> {
         if (this.props.disabled) return;
 
         if (!this.state.expanded) {
-            this.setState({
-                expanded: true,
-            });
+            this.setState({ expanded: true });
             ev.preventDefault();
         } else if ((ev as React.KeyboardEvent).key === Key.ENTER) {
             // the accessible button consumes enter onKeyDown for firing onClick, so handle it here
             this.props.onOptionChange(this.state.highlightedOption);
             this.close();
+        } else if (!(ev as React.KeyboardEvent).key) {
+            // collapse on other non-keyboard event activations
+            this.setState({ expanded: false });
+            ev.preventDefault();
         }
     };
 
@@ -220,14 +222,22 @@ export default class Dropdown extends React.Component<IProps, IState> {
                 this.close();
                 break;
             case Key.ARROW_DOWN:
-                this.setState({
-                    highlightedOption: this.nextOption(this.state.highlightedOption),
-                });
+                if (this.state.expanded) {
+                    this.setState({
+                        highlightedOption: this.nextOption(this.state.highlightedOption),
+                    });
+                } else {
+                    this.setState({ expanded: true });
+                }
                 break;
             case Key.ARROW_UP:
-                this.setState({
-                    highlightedOption: this.prevOption(this.state.highlightedOption),
-                });
+                if (this.state.expanded) {
+                    this.setState({
+                        highlightedOption: this.prevOption(this.state.highlightedOption),
+                    });
+                } else {
+                    this.setState({ expanded: true });
+                }
                 break;
             default:
                 handled = false;
@@ -303,7 +313,7 @@ export default class Dropdown extends React.Component<IProps, IState> {
             );
         });
         if (options.length === 0) {
-            return [<div key="0" className="mx_Dropdown_option" role="option">
+            return [<div key="0" className="mx_Dropdown_option" role="option" aria-selected={false}>
                 { _t("No results") }
             </div>];
         }
@@ -321,6 +331,7 @@ export default class Dropdown extends React.Component<IProps, IState> {
             if (this.props.searchEnabled) {
                 currentValue = (
                     <input
+                        id={`${this.props.id}_input`}
                         type="text"
                         autoFocus={true}
                         className="mx_Dropdown_option"
@@ -329,7 +340,8 @@ export default class Dropdown extends React.Component<IProps, IState> {
                         role="combobox"
                         aria-autocomplete="list"
                         aria-activedescendant={`${this.props.id}__${this.state.highlightedOption}`}
-                        aria-owns={`${this.props.id}_listbox`}
+                        aria-expanded={this.state.expanded}
+                        aria-controls={`${this.props.id}_listbox`}
                         aria-disabled={this.props.disabled}
                         aria-label={this.props.label}
                         onKeyDown={this.onKeyDown}
@@ -372,6 +384,7 @@ export default class Dropdown extends React.Component<IProps, IState> {
                 inputRef={this.buttonRef}
                 aria-label={this.props.label}
                 aria-describedby={`${this.props.id}_value`}
+                aria-owns={`${this.props.id}_input`}
                 onKeyDown={this.onKeyDown}
             >
                 { currentValue }

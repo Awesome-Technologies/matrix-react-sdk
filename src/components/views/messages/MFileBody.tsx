@@ -16,6 +16,8 @@ limitations under the License.
 
 import React, { createRef } from 'react';
 import filesize from 'filesize';
+import { logger } from "matrix-js-sdk/src/logger";
+
 import { _t } from '../../../languageHandler';
 import Modal from '../../../Modal';
 import AccessibleButton from "../elements/AccessibleButton";
@@ -121,6 +123,11 @@ export default class MFileBody extends React.Component<IProps, IState> {
         this.state = {};
     }
 
+    private getContentUrl(): string | null {
+        if (this.props.forExport) return null;
+        const media = mediaFromContent(this.props.mxEvent.getContent());
+        return media.srcHttp;
+    }
     private get content(): IMediaEventContent {
         return this.props.mxEvent.getContent<IMediaEventContent>();
     }
@@ -147,11 +154,6 @@ export default class MFileBody extends React.Component<IProps, IState> {
         });
     }
 
-    private getContentUrl(): string {
-        const media = mediaFromContent(this.props.mxEvent.getContent());
-        return media.srcHttp;
-    }
-
     public componentDidUpdate(prevProps, prevState) {
         if (this.props.onHeightChanged && !prevState.decryptedBlob && this.state.decryptedBlob) {
             this.props.onHeightChanged();
@@ -168,7 +170,7 @@ export default class MFileBody extends React.Component<IProps, IState> {
                 decryptedBlob: await this.props.mediaEventHelper.sourceBlob.value,
             });
         } catch (err) {
-            console.warn("Unable to decrypt attachment: ", err);
+            logger.warn("Unable to decrypt attachment: ", err);
             Modal.createTrackedDialog('Error decrypting attachment', '', ErrorDialog, {
                 title: _t("Error"),
                 description: _t("Error decrypting attachment"),
@@ -211,7 +213,18 @@ export default class MFileBody extends React.Component<IProps, IState> {
             );
         }
 
-        const showDownloadLink = this.props.tileShape || !this.props.showGenericPlaceholder;
+        if (this.props.forExport) {
+            const content = this.props.mxEvent.getContent();
+            // During export, the content url will point to the MSC, which will later point to a local url
+            return <span className="mx_MFileBody">
+                <a href={content.file?.url || content.url}>
+                    { placeholder }
+                </a>
+            </span>;
+        }
+
+        const showDownloadLink = (this.props.tileShape || !this.props.showGenericPlaceholder) &&
+            this.props.tileShape !== TileShape.Thread;
 
         if (isEncrypted) {
             if (!this.state.decryptedBlob) {
@@ -240,12 +253,15 @@ export default class MFileBody extends React.Component<IProps, IState> {
                 <span className="mx_MFileBody">
                     { placeholder }
                     { showDownloadLink && <div className="mx_MFileBody_download">
-                        <div style={{ display: "none" }}>
+                        <div aria-hidden style={{ display: "none" }}>
                             { /*
                               * Add dummy copy of the "a" tag
                               * We'll use it to learn how the download link
                               * would have been styled if it was rendered inline.
                               */ }
+                            { /* this violates multiple eslint rules
+                            so ignore it completely */ }
+                            { /* eslint-disable-next-line */ }
                             <a ref={this.dummyLink} />
                         </div>
                         { /*
@@ -256,6 +272,8 @@ export default class MFileBody extends React.Component<IProps, IState> {
                             be suitable to just remove this bit of code.
                          */ }
                         <iframe
+                            aria-hidden
+                            title={presentableTextForFile(this.content, _t("Attachment"), true, true)}
                             src={url}
                             onLoad={() => this.downloadFile(this.fileName, this.linkText)}
                             ref={this.iframe}
@@ -283,7 +301,7 @@ export default class MFileBody extends React.Component<IProps, IState> {
             if (["application/pdf"].includes(fileType) && !fileTooBig) {
                 // We want to force a download on this type, so use an onClick handler.
                 downloadProps["onClick"] = (e) => {
-                    console.log(`Downloading ${fileType} as blob (unencrypted)`);
+                    logger.log(`Downloading ${fileType} as blob (unencrypted)`);
 
                     // Avoid letting the <a> do its thing
                     e.preventDefault();
