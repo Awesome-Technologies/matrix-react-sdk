@@ -29,6 +29,7 @@ import {MatrixClientPeg} from '../../MatrixClientPeg';
  */
 
 class CaseObservationsPanel extends React.Component {
+
     static propTypes = {
         // true to give the component a 'display: none' style.
         hidden: PropTypes.bool,
@@ -116,6 +117,186 @@ class CaseObservationsPanel extends React.Component {
         this._readMarkerGhostNode = null;
 
         this._isMounted = true;
+
+        this.form_data = {
+      "name": "Formular Name",
+      "type": "formular_maerkisch",
+      "form": [[{
+          "name": "reason",
+          "label": "Anlass",
+          "group": "case",
+          "type": "Dropdown",
+          "mandatory": true,
+          "default": "other",
+          "values": [
+            {
+              "value": "careLevel",
+              "label": "Pflegegradeinstufung"
+            },
+            {
+              "value": "assistence",
+              "label": "Hilfsmittelunterstützung"
+            },
+            {
+              "value": "disability",
+              "label": "Schwerbehinderung"
+            },
+            {
+              "value": "ambulantCare",
+              "label": "ambulante Versorgung"
+            },
+            {
+              "value": "selfMgmt",
+              "label": "Selbstmanagement"
+            },
+            {
+              "value": "careError",
+              "label": "Pflegefehler"
+            },
+            {
+              "value": "other",
+              "label": "Sonstiges"
+            }
+          ],
+          "width": 4,
+          "printable": true
+        }],
+        [{
+          "name": "name",
+          "label": "Name",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "enabled": true,
+          "hint": "Bitte geben Sie den Namen des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "birthdate",
+          "label": "Geburtsdatum",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "date",
+          "mandatory": true,
+          "hint": "Bitte geben Sie das Geburtsdatum des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "gender",
+          "label": "Geschlecht",
+          "group": "patient",
+          "type": "Dropdown",
+          "mandatory": true,
+          "values": [
+            {
+              "value": "unknown",
+              "label": "unbekannt"
+            },
+            {
+              "value": "male",
+              "label": "männlich"
+            },
+            {
+              "value": "female",
+              "label": "weiblich"
+            },
+            {
+              "value": "undefined",
+              "label": "undefiniert"
+            }
+          ],
+          "hint": "Bitte wählen Sie das Geschlecht des Patienten aus",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "address",
+          "label": "Adresse",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie die Adresse des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "contactPerson",
+          "label": "weiterer Ansprechpartner",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie einen weiteren Ansprechpartner des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "vollmachtVorhanden",
+          "label": "Vollmacht vorhanden?",
+          "group": "patient",
+          "type": "SingleSelect",
+          "mandatory": false,
+          "values": [
+            {
+              "value": "yes",
+              "label": "Ja"
+            },
+            {
+              "value": "no",
+              "label": "Nein"
+            }
+          ],
+          "width": 4,
+          "printable": true
+        },
+        {
+          "name": "contact",
+          "label": "Kontaktdaten",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie eine Telefonnummer oder eine Emailadresse für den Kontakt ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "legalApproval",
+          "label": "Rechtsgültige Zustimmung",
+          "group": "patient",
+          "type": "SingleSelect",
+          "mandatory": true,
+          "values": [
+            {
+              "value": "yes",
+              "label": "Ja"
+            },
+            {
+              "value": "no",
+              "label": "Nein"
+            }
+          ],
+          "hint": "Bitte geben Sie an ob eine rechtsgültige Zustimmung des Patienten vorliegt",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "diagnosis",
+          "label": "Aktuelle Diagnose",
+          "group": "case",
+          "type": "Multiline",
+          "mandatory": true,
+          "hint": "Bitte geben Sie Fragen oder Anmerkungen an",
+          "width": 6,
+          "printable": true
+        }
+      ]
+      ]
+      }
     }
 
     componentWillUnmount() {
@@ -410,47 +591,58 @@ class CaseObservationsPanel extends React.Component {
           localEvent = mxEv._clearEvent;
       }
 
-      let caseTitle = '-';
-      let caseNote = '-';
-      let caseSeverity = '-';
-      let caseRequester = '-';
+      const json = this.form_data.form;
 
-      if (localEvent.content.title !== undefined) {
-          caseTitle = localEvent.content.title;
+      let renderItems = [];
+
+      for(var i=0; i<json.length; i++) {
+        json[i].forEach((item, index) => {
+          if (item.group === 'case') {
+            if (localEvent.content[item.name]) {
+              console.log("Case has field " + item.name + " with information " + localEvent.content[item.name]);
+              renderItems.push({name: item.name, type: item.type, subtype: item.type_annotation, label: item.label, value: localEvent.content[item.name]});
+            }
+          }
+        });
       }
-      if (localEvent.content.note !== undefined) {
-          caseNote = localEvent.content.note;
+
+
+    //TODO build styled output render
+    let headerItems = [];
+    let bodyItems = [];
+    for(var i=0; i<renderItems.length; i++) {
+      // print header
+      headerItems.push(<td><span className="amp_CaseObservationsPanel_caseData_header">{_t(renderItems[i].label)}</span></td>);
+
+      // format dates
+      if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
+        const date = new Date(renderItems[i].value);
+        renderItems[i].value = date.toLocaleDateString();
       }
-      if (localEvent.content.severity !== undefined) {
-          caseSeverity = localEvent.content.severity;
+
+      // translate items from dropdowns
+      if (renderItems[i].type == 'Dropdown') {
+        renderItems[i].value = _t(renderItems[i].value);
       }
-      if (localEvent.content.requester !== undefined) {
-          caseRequester = localEvent.content.requester.reference;
+
+      // convert booleans
+      if (renderItems[i].type == 'SingleSelect') {
+        renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
       }
+
+      // print body
+      bodyItems.push(<td><span className="amp_CaseObservationsPanel_caseData">{renderItems[i].value}</span></td>);
+    }
 
       return (
         <div className="amp_CaseObservationsPanel_CaseDetails">
             <table className="amp_CaseObservationsPanel_Table">
                 <tbody>
                     <tr>
-                        <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Title")}</span></td>
-                        <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Severity")}</span></td>
-                        <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Requester")}</span></td>
+                        {headerItems}
                     </tr>
                     <tr>
-                        <td width="60%"><span className="amp_CaseObservationsPanel_caseData">{caseTitle}</span></td>
-                        <td width="20%"><span className="amp_CaseObservationsPanel_caseData">{_t(caseSeverity)}</span></td>
-                        <td width="20%"><span className="amp_CaseObservationsPanel_caseData">{caseRequester}</span></td>
-                    </tr>
-                </tbody>
-            </table>
-            <table className="amp_CaseObservationsPanel_Table">
-                <tbody>
-                    <tr>
-                        <td><span className="amp_CaseObservationsPanel_caseData_header">{_t("Message")}</span></td>
-                    </tr>
-                    <tr>
-                        <td><span className="amp_CaseObservationsPanel_caseData">{caseNote}</span></td>
+                        {bodyItems}
                     </tr>
                 </tbody>
             </table>
@@ -476,19 +668,49 @@ class CaseObservationsPanel extends React.Component {
             localEvent = mxEv._clearEvent;
         }
 
-        let patientName = '-';
-        let patientGender = '-';
-        let patientBirthdate = '-';
+        //TODO parse form, select fields of group 'patient'
+        //TODO match information of the event with the form fields
+          const json = this.form_data.form;
 
-        if (localEvent.content.name !== '' && localEvent.content.name !== undefined) {
-            patientName = localEvent.content.name;
-        }
-        if (localEvent.content.gender !== undefined) {
-            patientGender = localEvent.content.gender;
-        }
-        if (localEvent.content.birthDate !== '' && localEvent.content.birthDate !== undefined) {
-            const date = new Date(localEvent.content.birthDate);
-            patientBirthdate = date.toLocaleDateString();
+          let renderItems = [];
+
+          for(var i=0; i<json.length; i++) {
+            json[i].forEach((item, index) => {
+              if (item.group === 'patient') {
+                if (localEvent.content[item.name]) {
+                  console.log("Patient has field " + item.name + " with information " + localEvent.content[item.name]);
+                  renderItems.push({name: item.name, type: item.type, subtype: item.type_annotation, label: item.label, value: localEvent.content[item.name]});
+                }
+              }
+            });
+          }
+
+
+        //TODO build styled output render
+        let headerItems = [];
+        let bodyItems = [];
+        for(var i=0; i<renderItems.length; i++) {
+          // print header
+          headerItems.push(<td><span className="amp_CaseObservationsPanel_patientData_header">{_t(renderItems[i].label)}</span></td>);
+
+          // format dates
+          if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
+            const date = new Date(renderItems[i].value);
+            renderItems[i].value = date.toLocaleDateString();
+          }
+
+          // translate items from dropdowns
+          if (renderItems[i].type == 'Dropdown') {
+            renderItems[i].value = _t(renderItems[i].value);
+          }
+
+          // convert booleans
+          if (renderItems[i].type == 'SingleSelect') {
+            renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
+          }
+
+          // print body
+          bodyItems.push(<td><span className="amp_CaseObservationsPanel_patientData">{renderItems[i].value}</span></td>);
         }
 
         return (
@@ -496,14 +718,10 @@ class CaseObservationsPanel extends React.Component {
                     <table className="amp_CaseObservationsPanel_Table_patientData">
                         <tbody>
                             <tr>
-                                <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Patient name")}</span></td>
-                                <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Gender")}</span></td>
-                                <td><span className="amp_CaseObservationsPanel_patientData_header">{_t("Birthday")}</span></td>
+                                {headerItems}
                             </tr>
                             <tr>
-                                <td><span className="amp_CaseObservationsPanel_patientData">{patientName}</span></td>
-                                <td><span className="amp_CaseObservationsPanel_patientData">{_t(patientGender)}</span></td>
-                                <td><span className="amp_CaseObservationsPanel_patientData">{patientBirthdate}</span></td>
+                                {bodyItems}
                             </tr>
                         </tbody>
                     </table>

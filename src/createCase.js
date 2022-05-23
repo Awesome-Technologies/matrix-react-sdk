@@ -138,13 +138,17 @@ export default function createCase(opts) {
             return Promise.resolve();
         }
       }).then(function() {
+          console.log(opts);
+
           // send state event case data
-          client._sendCompleteEvent(roomId, {
-            type: 'care.amp.case',
-            state_key: 'care.amp.case',
-            content: opts.caseData.caseContent,
-          });
-          console.log("AMP.care sent case content");
+          if (opts.caseData.caseContent) { // check if case data is provided
+              client._sendCompleteEvent(roomId, {
+                type: 'care.amp.case',
+                state_key: 'care.amp.case',
+                content: opts.caseData.caseContent,
+              });
+              console.log("AMP.care sent case content");
+          }
 
           // send state event patient data
           if (opts.caseData.patientContent) { // check if patient data is provided
@@ -156,13 +160,14 @@ export default function createCase(opts) {
             console.log("AMP.care sent patient content");
           }
 
-
           // send observation message events
-          for (let i=0; i<=opts.caseData.observationsContent.length-1; i++) {
-            client.sendEvent(roomId, 'care.amp.observation', opts.caseData.observationsContent[i]);
+          if (opts.caseData.observationsContent) {
+              for (let i=0; i<=opts.caseData.observationsContent.length-1; i++) {
+                client.sendEvent(roomId, 'care.amp.observation', opts.caseData.observationsContent[i]);
+              }
+              dis.dispatch({action: 'message_sent'});
+              console.log("AMP.care sent observation content");
           }
-          dis.dispatch({action: 'message_sent'});
-          console.log("AMP.care sent observation content");
 
           Analytics.trackEvent('AMP.care cases', 'case created');
     }).then(function() {

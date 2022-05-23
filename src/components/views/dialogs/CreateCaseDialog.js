@@ -22,10 +22,12 @@ import PatientData from '../cases/PatientData';
 import VitalData from '../cases/VitalData';
 import AnamnesisData from '../cases/AnamnesisData';
 import Field from "../elements/Field";
+import StyledCheckbox from "../elements/StyledCheckbox";
 import Modal from "../../../Modal";
 import colorVariables from '../../../../res/themes/light/css/light.scss';
 import SettingsStore from "../../../settings/SettingsStore";
 import {SettingLevel} from "../../../settings/SettingLevel";
+import {MatrixClientPeg} from '../../../MatrixClientPeg';
 
 export default class CreateCaseDialog extends React.Component {
     static propTypes = {
@@ -37,64 +39,231 @@ export default class CreateCaseDialog extends React.Component {
 
         this.state = {
             invitees: [],
-            caseTitle: '',
-            caseNote: '',
-            caseSeverity: 'info',
-            caseRecipient: '',
-            caseRequesterName: '',
-            caseRequesterDisabled: false,
-            patientData_name: '',
-            patientData_gender: 'unknown',
-            patientData_birthDate: '',
-            vitalData_bloodpressureSys: '',
-            vitalData_bloodpressureDia: '',
-            vitalData_bloodpressureDatetime: '',
-            vitalData_pulse: '',
-            vitalData_pulseDatetime: '',
-            vitalData_temperature: '',
-            vitalData_temperatureDatetime: '',
-            vitalData_sugar: '',
-            vitalData_sugarDatetime: '',
-            vitalData_weight: '',
-            vitalData_weightDatetime: '',
-            vitalData_oxygen: '',
-            vitalData_oxygenDatetime: '',
-            anamnesisData_responsiveness: '',
-            anamnesisData_pain: '',
-            anamnesisData_lastDefecation: '',
-            anamnesisData_misc: '',
-            medicationData_activeAgent: '',
-            medicationData_brand: '',
-            medicationData_strength: '',
-            medicationData_form: '',
-            medicationData_mo: '',
-            medicationData_no: '',
-            medicationData_ev: '',
-            medicationData_ni: '',
-            medicationData_unit: '',
-            medicationData_notes: '',
-            medicationData_reason: '',
             noRecipientSelected: false,
+            form_data: {},
+            data: {},
         };
+
+
+
+        const form_data = {
+  "name": "Formular Name",
+  "type": "formular_maerkisch",
+  "form": [[{
+          "name": "reason",
+          "label": "Anlass",
+          "group": "case",
+          "type": "Dropdown",
+          "mandatory": true,
+          "default": "other",
+          "values": [
+            {
+              "value": "careLevel",
+              "label": "Pflegegradeinstufung"
+            },
+            {
+              "value": "assistence",
+              "label": "Hilfsmittelunterstützung"
+            },
+            {
+              "value": "disability",
+              "label": "Schwerbehinderung"
+            },
+            {
+              "value": "ambulantCare",
+              "label": "ambulante Versorgung"
+            },
+            {
+              "value": "selfMgmt",
+              "label": "Selbstmanagement"
+            },
+            {
+              "value": "careError",
+              "label": "Pflegefehler"
+            },
+            {
+              "value": "other",
+              "label": "Sonstiges"
+            }
+          ],
+          "width": 4,
+          "printable": true
+        }],
+        [{
+          "name": "name",
+          "label": "Name",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "enabled": true,
+          "hint": "Bitte geben Sie den Namen des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "birthdate",
+          "label": "Geburtsdatum",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "date",
+          "mandatory": true,
+          "hint": "Bitte geben Sie das Geburtsdatum des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "gender",
+          "label": "Geschlecht",
+          "group": "patient",
+          "type": "Dropdown",
+          "mandatory": true,
+          "values": [
+            {
+              "value": "unknown",
+              "label": "unbekannt"
+            },
+            {
+              "value": "male",
+              "label": "männlich"
+            },
+            {
+              "value": "female",
+              "label": "weiblich"
+            },
+            {
+              "value": "undefined",
+              "label": "undefiniert"
+            }
+          ],
+          "hint": "Bitte wählen Sie das Geschlecht des Patienten aus",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "address",
+          "label": "Adresse",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie die Adresse des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "contactPerson",
+          "label": "weiterer Ansprechpartner",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie einen weiteren Ansprechpartner des Patienten ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "vollmachtVorhanden",
+          "label": "Vollmacht vorhanden?",
+          "group": "patient",
+          "type": "SingleSelect",
+          "mandatory": false,
+          "values": [
+            {
+              "value": "yes",
+              "label": "Ja"
+            },
+            {
+              "value": "no",
+              "label": "Nein"
+            }
+          ],
+          "width": 4,
+          "printable": true
+        },
+        {
+          "name": "contact",
+          "label": "Kontaktdaten",
+          "group": "patient",
+          "type": "Textline",
+          "type_annotation": "text",
+          "mandatory": true,
+          "hint": "Bitte geben Sie eine Telefonnummer oder eine Emailadresse für den Kontakt ein",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "legalApproval",
+          "label": "Rechtsgültige Zustimmung",
+          "group": "patient",
+          "type": "SingleSelect",
+          "mandatory": true,
+          "values": [
+            {
+              "value": "yes",
+              "label": "Ja"
+            },
+            {
+              "value": "no",
+              "label": "Nein"
+            }
+          ],
+          "hint": "Bitte geben Sie an ob eine rechtsgültige Zustimmung des Patienten vorliegt",
+          "width": 6,
+          "printable": true
+        },
+        {
+          "name": "diagnosis",
+          "label": "Aktuelle Diagnose",
+          "group": "case",
+          "type": "Multiline",
+          "mandatory": true,
+          "hint": "Bitte geben Sie Fragen oder Anmerkungen an",
+          "width": 6,
+          "printable": true
+        }
+      ]
+  ]
+}
+
+
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
 
         if (interfaceEnabled && username !== "") {
             this.setState({caseRequesterName: username, caseRequesterDisabled: true});
         }
+
+        //TODO load form data from synapse
+        const client = MatrixClientPeg.get();
+        let result = await client._http.authedRequest(
+            undefined, "GET", "/capabilities",
+        ).catch((e) => {
+            logger.error(e);
+            return null; // otherwise consume the error
+        }).then((r) => {
+            if (!r) r = {};
+            const form_data = r["capabilities"] || {};
+            console.log("form");
+            console.log(form_data);
+
+            this.setState({ from_data: form_data });
+        });
     }
 
     onOk = () => {
-      console.log("AMP.care: state test");
-      console.log(this.state);
-
       if (this.state.invitees.length < 1) {
         this.setState({noRecipientSelected: true});
       } else {
-        const caseData = this.parseData();
+
+        const caseData = {
+          caseContent: this.state.data.case,
+          patientContent: this.state.data.patient,
+        };
+
         const addrTexts = this.state.invitees.map((addr) => addr.address);
 
         const createOpts = {};
@@ -127,381 +296,132 @@ export default class CreateCaseDialog extends React.Component {
         return ret;
     };
 
-    parseData = () => {
-        // case data
-        const caseContent = {
-            title: this.state.caseTitle,
-            note: this.state.caseNote,
-            severity: this.state.caseSeverity,
-            requester: {
-              reference: this.state.caseRequesterName,
-            },
-        };
-
-        // patient data
-        let patientContent;
-        if (this.state.patientData_name === '' &&
-            this.state.patientData_gender === 'unknown' &&
-            this.state.patientData_birthDate === '') {
-            patientContent = null;
-        } else {
-            patientContent = {
-                name: this.state.patientData_name,
-                gender: this.state.patientData_gender,
-                birthDate: this.formatDate(this.state.patientData_birthDate),
-            };
-        }
-
-        // observation data
-        const observationsContent = [];
-
-        // anamnesis data
-        if (this.state.anamnesisData_responsiveness !== '') {
-            const responsivenessData = {
-                id: 'responsiveness',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this.formatDate('now'),
-                valueString: this.state.anamnesisData_responsiveness,
-            };
-            observationsContent.push(responsivenessData);
-        }
-
-        if (this.state.anamnesisData_pain !== '') {
-            const painData = {
-                id: 'pain',
-                resourceType: 'Observation',
-                code: {
-                    coding: [{
-                      code: '28319-2',
-                      display: 'Pain status',
-                      system: 'http://loinc.org'}],
-                    text: 'Pain status',
-                },
-                subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this.formatDate('now'),
-                valueString: this.state.anamnesisData_pain,
-            };
-            observationsContent.push(painData);
-        }
-
-        if (this.state.anamnesisData_misc !== '') {
-            const miscData = {
-                id: 'misc',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this.formatDate('now'),
-                valueString: this.state.anamnesisData_misc,
-            };
-            observationsContent.push(miscData);
-        }
-
-        if (this.state.anamnesisData_lastDefecation !== '') {
-            const defecationData = {
-                id: 'last-defecation',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                effectiveDateTime: this.formatDate(this.state.anamnesisData_lastDefecation),
-            };
-            observationsContent.push(defecationData);
-        }
-
-        // vital data
-
-        // weight
-        if (this.state.vitalData_weight !== '') {
-            const weightData = {
-                id: 'body-weight',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: { coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '29463-7',
-                    display: 'Body Weight',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Body Weight',
-                },
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                valueQuantity: {
-                  code: 'kg',
-                  system: 'http://unitsofmeasure.org',
-                  unit: 'kg',
-                  value: this.state.vitalData_weight,
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_weightDatetime),
-            };
-            observationsContent.push(weightData);
-        }
-
-        // temperature
-        if (this.state.vitalData_temperature !== '') {
-            const temperatureData = {
-                id: 'body-temperature',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: {
-                  coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '8310-5',
-                    display: 'Body temperature',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Body temperature',
-                },
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                valueQuantity: {
-                  code: 'Cel',
-                  system: 'http://unitsofmeasure.org',
-                  unit: 'C',
-                  value: this.state.vitalData_temperature,
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_temperatureDatetime),
-            };
-            observationsContent.push(temperatureData);
-        }
-
-        // glucose
-        if (this.state.vitalData_sugar !== '') {
-            const glucoseData = {
-                id: 'glucose',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: {
-                  coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '15074-8',
-                    display: 'Glucose [Milligramm/volume] in Blood',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Glucose',
-                },
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                valueQuantity: {
-                  code: 'mg/dl',
-                  system: 'http://unitsofmeasure.org',
-                  unit: 'mg/dl',
-                  value: this.state.vitalData_sugar,
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_sugarDatetime),
-            };
-            observationsContent.push(glucoseData);
-        }
-
-        // bloodpressure
-        if (this.state.vitalData_bloodpressureSys !== '' || this.state.vitalData_bloodpressureDia !== '') {
-            const bloodpressureData = {
-                id: 'blood-pressure',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: {
-                  coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '85354-9',
-                    display: 'Blood pressure panel with all children optional',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Blood pressure systolic & diastolic',
-                },
-                component: [{
-                  code: {
-                    coding: [{
-                      code: '8480-6',
-                      display: 'Systolic blood pressure',
-                      system: 'http://loinc.org',
-                    }],
-                    text: 'Systolic blood pressure',
-                  },
-                  valueQuantity: {
-                    code: 'mm[Hg]',
-                    system: 'http://unitsofmeasure.org',
-                    unit: 'mmHg',
-                    value: this.state.vitalData_bloodpressureSys,
-                  },
-                },
-                {
-                  code: {
-                    coding: [{
-                      code: '8462-4',
-                      display: 'Diastolic blood pressure',
-                      system: 'http://loinc.org',
-                    }],
-                    text: 'Diastolic blood pressure',
-                  },
-                  valueQuantity: {
-                    code: 'mm[Hg]',
-                    system: 'http://unitsofmeasure.org',
-                    unit: 'mmHg',
-                    value: this.state.vitalData_bloodpressureDia,
-                  },
-                }],
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_bloodpressureDatetime),
-            };
-            observationsContent.push(bloodpressureData);
-        }
-
-        // pulse
-        if (this.state.vitalData_pulse !== '') {
-            const pulseData = {
-                id: 'heart-rate',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: {
-                  coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '8867-4',
-                    display: 'Heart rate',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Heart rate',
-                },
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                valueQuantity: {
-                  code: '/min',
-                  system: 'http://unitsofmeasure.org',
-                  unit: 'beats/minute',
-                  value: this.state.vitalData_pulse,
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_pulseDatetime),
-            };
-            observationsContent.push(pulseData);
-        }
-
-        // oxygen
-        if (this.state.vitalData_oxygen !== '') {
-            const oxygenData = {
-                id: 'oxygen',
-                resourceType: 'Observation',
-                subject: 'Patient/' + this.state.patientData_name,
-                category: {
-                  coding: [{
-                    code: 'vital-signs',
-                    display: 'Vital Signs',
-                    system: 'http://hl7.org/fhir/observation-category',
-                  }],
-                  text: 'Vital Signs',
-                },
-                code: {
-                  coding: [{
-                    code: '59408-5',
-                    display: 'Oxygen saturation in Arterial blood by Pulse oximetry',
-                    system: 'http://loinc.org',
-                  }],
-                  text: 'Oxygen saturation',
-                },
-                meta: {
-                  profile: 'http://hl7.org/fhir/StructureDefinition/vitalsigns',
-                },
-                valueQuantity: {
-                  code: '%',
-                  system: 'http://unitsofmeasure.org',
-                  unit: '%',
-                  value: this.state.vitalData_oxygen,
-                },
-                effectiveDateTime: this.formatDate(this.state.vitalData_oxygenDatetime),
-            };
-            observationsContent.push(oxygenData);
-        }
-
-        const content = {
-          caseContent: caseContent,
-          patientContent: patientContent,
-          observationsContent: observationsContent,
-        };
-
-        return (content);
+    onChange = (group, name, value, type) => {
+      if (type === "date") {
+        value = this.formatDate(value);
+      }
+      this.setState({ data: { ...this.state.data, [group]: { ...this.state.data[group], [name]: value } }});
     };
 
-    onCaseTitleChanged = (e) => {
-        this.setState({
-            caseTitle: e.target.value,
-        });
-    };
+    parseFormJson = () => {
 
-    onCaseNoteChanged = (e) => {
-        this.setState({
-            caseNote: e.target.value,
-        });
-    };
+      /* TODO parse json from string
+      try {
+        const json = JSON.parse(this.state.form_data);
+      } catch (e) {
+          console.log("Invalid form json");
+          return false;
+      }
+      */
 
-    onCaseRequesterChanged = (e) => {
-        this.setState({
-            caseRequesterName: e.target.value,
-        });
-    };
+      const json = this.state.form_data.form;
 
-    onCaseSeverityChanged = (e) => {
-        this.setState({
-            caseSeverity: e.target.value,
+      if (!json) {
+        return;
+      }
+
+      let jsx = [];
+
+      for(var i=0; i<json.length; i++) {
+        json[i].forEach((item, index) => {
+
+          if (item.type == "Textline") {
+            if (item.visible) {
+              console.log(item.visible);
+            }
+            jsx.push(
+                <div className="amp_CaseTab_section" key={`item-${index}`}>
+                    <Field
+                        id={item.group + "." + item.name}
+                        className={
+                          item.name
+                        }
+                        label={_t(item.label)}
+                        size={item.width}
+                        type={item.type_annotation}
+                        onChange={(e) => this.onChange(item.group,  item.name, e.target.value, item.type_annotation)}
+                        //disabled={Boolean(item.enabled)}
+                        tooltipContent={item.hint}
+                        forceTooltipVisible={true}
+                    />
+                    {item.errors && (
+                      <div className="invalid-feedback">{item.errors}</div>
+                    )}
+                </div>
+            );
+          }
+
+          if (item.type == "Multiline") {
+            if (item.visible) {
+              console.log(item.visible);
+            }
+            jsx.push(
+                <div className="amp_CaseTab_section" key={`item-${index}`}>
+                    <Field
+                        id={item.group + "." + item.name}
+                        className={
+                          item.name
+                        }
+                        label={_t(item.label)}
+                        element="textarea"
+                        name={item.name}
+                        onChange={(e) => this.onChange(item.group, item.name, e.target.value)}
+                        tooltipContent={item.hint}
+                        forceTooltipVisible={true}
+                    />
+                    {item.errors && (
+                      <div className="invalid-feedback">{item.errors}</div>
+                    )}
+                </div>
+            );
+          }
+
+          if (item.type == "SingleSelect") {
+            jsx.push(
+                <div className="amp_CaseTab_section" key={`item-${index}`}>
+                    <StyledCheckbox
+                        name={item.name}
+                        checked={item.default}
+                        onChange={(e) => this.onChange(item.group, item.name, e.target.checked)}
+                    >
+                        {item.label}
+                    </StyledCheckbox>
+                      {item.errors && (
+                        <div className="invalid-feedback">{item.errors}</div>
+                      )}
+                </div>
+            );
+          }
+
+          if (item.type == "Dropdown") {
+            jsx.push(<div className="row mt-4">
+                <div className="row mt-3" key={`item-${index}`}>
+                  <div className="col">
+                    <Field
+                        id={item.group + "." + item.name}
+                        ref={item.group + "." + item.name}
+                        className="" label={_t(item.label)}
+                        element="select"
+                        onChange={(e) => this.onChange(item.group, item.name, e.target.value)}
+                    >
+                      {item.values.map((subitem, index) => (
+                        <option id={index} value={subitem.value} className="" >{_t(subitem.label)}</option>
+                      ))}
+                    </Field>
+
+                    {item.errors && (
+                      <div className="invalid-feedback">{item.errors}</div>
+                    )}
+                    </div>
+                  </div>
+            </div>);
+          }
         });
 
-        switch (e.target.value) {
-            case "info":
-                document.getElementById("severity").style.backgroundColor =
-                  colorVariables.amp_case_severity_info_color;
-                break;
-            case "request":
-                document.getElementById("severity").style.backgroundColor =
-                  colorVariables.amp_case_severity_request_color;
-                break;
-            case "urgent":
-                document.getElementById("severity").style.backgroundColor =
-                  colorVariables.amp_case_severity_urgent_color;
-                break;
-            case "critical":
-                document.getElementById("severity").style.backgroundColor =
-                  colorVariables.amp_case_severity_critical_color;
-                break;
-            default:
-                break;
-        }
-    };
+      }
+
+      return jsx;
+    }
 
     onAddRecipientClicked = () => {
       const AddressPickerDialog = sdk.getComponent("dialogs.AddressPickerDialog");
@@ -551,6 +471,7 @@ export default class CreateCaseDialog extends React.Component {
     };
 
     render() {
+        console.log(this.state.data);
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
         const AdressPicker = sdk.getComponent('views.cases.AdressPicker');
@@ -566,90 +487,12 @@ export default class CreateCaseDialog extends React.Component {
                 title={_t('Create Case')}
             >
                 <form onSubmit={this.onOk}>
-                    <div className="amp_Dialog_content">
-                      <div>
-                        <div className="amp_CaseTab_section">
-                              <Field id="caseTitle" className="amp_CreateCaseDialog_input_field"
-                                  autoFocus={true} size="64"
-                                  label={_t('Case title')}
-                                  autoComplete="off"
-                                  type="text"
-                                  onChange={this.onCaseTitleChanged}
-                                  value={this.state.caseTitle}
-                              />
-                              <Field id="severity" ref="caseSeverity" className="amp_CreateCaseDialog_input_field" label={_t("Severity")} element="select" onChange={this.onCaseSeverityChanged} value={this.state.caseSeverity} >
-                                  <option id="severityInfo" value="info" className="amp_Severity_info" >{_t("Info")}</option>
-                                  <option id="severityRequest" value="request" className="amp_Severity_request" >{_t("Request")}</option>
-                                  <option id="severityUrgent" value="urgent" className="amp_Severity_urgent" >{_t("Urgent")}</option>
-                                  <option id="severityCritical" value="critical" className="amp_Severity_critical" >{_t("Critical")}</option>
-                              </Field>
-                          </div>
-
-                          <div className="amp_CaseTab_section">
-                              <Field id="caseNote" className="amp_CreateCaseDialog_input_field"
-                                  label={_t('Case note')}
-                                  element="textarea"
-                                  onChange={this.onCaseNoteChanged}
-                                  value={this.state.caseNote}
-                              />
-                          </div>
-
-                          <div className="amp_CaseTab_section">
-                              <Field id="requester" className="amp_CreateCaseDialog_input_field"
-                                  label={_t('Requester')}
-                                  size="64"
-                                  type="text"
-                                  onChange={this.onCaseRequesterChanged}
-                                  value={this.state.caseRequesterName}
-                                  disabled={this.state.caseRequesterDisabled}
-                              />
-                          </div>
-
-                          <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
-                              <label htmlFor="textinput"> { _t('Recipient') } </label>
-                          </div>
-                          <AdressPicker focus={false} onSelectedListChanged={this.onRecipientChanged} placeholder={ _t('Name or AMP.care ID') } />
-                      </div>
-                    <br />
+                    <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
+                        <label htmlFor="textinput"> { _t('Recipient') } </label>
                     </div>
-
-                    {importArea}
-
-                    <h2>{_t("Manual entry")}</h2>
-                    <details className="amp_CreateCaseDialog_details">
-                        <summary className="amp_CreateCaseDialog_details_summary">{ _t('Patient data') }</summary>
-                        <PatientData
-                            onDataChanged={this.onDataChanged}
-                            name={this.state.patientData_name}
-                            gender={this.state.patientData_gender}
-                            birthdate={this.state.patientData_birthDate}
-                         />
-                    </details>
-
-                    <details className="amp_CreateCaseDialog_details">
-                        <summary className="amp_CreateCaseDialog_details_summary">{ _t('Vital data') }</summary>
-                        <VitalData
-                            onDataChanged={this.onDataChanged}
-                            bloodPressureSys={this.state.vitalData_bloodpressureSys}
-                            bloodPressureDia={this.state.vitalData_bloodpressureDia}
-                            bloodpressureDatetime={this.state.vitalData_bloodpressureDatetime}
-                            pulse={this.state.vitalData_pulse}
-                            pulseDatetime={this.state.vitalData_pulseDatetime}
-                            temperature={this.state.vitalData_temperature}
-                            temperatureDatetime={this.state.vitalData_temperatureDatetime}
-                            sugar={this.state.vitalData_sugar}
-                            sugarDatetime={this.state.vitalData_sugarDatetime}
-                            weight={this.state.vitalData_weight}
-                            weightDatetime={this.state.vitalData_weightDatetime}
-                            oxygen={this.state.vitalData_oxygen}
-                            oxygenDatetime={this.state.vitalData_oxygenDatetime}
-                        />
-                    </details>
-
-                    <details className="amp_CreateCaseDialog_details">
-                        <summary className="amp_CreateCaseDialog_details_summary">{ _t('Anamnesis') }</summary>
-                        <AnamnesisData onDataChanged={this.onDataChanged} />
-                    </details>
+                    <AdressPicker focus={false} onSelectedListChanged={this.onRecipientChanged} placeholder={ _t('Name or AMP.care ID') } />
+                    { importArea }
+                    { this.parseFormJson() }
                 </form>
                 <div style={noRecipientSelected} className="amp_CreateCaseDialog_error">
                     { _t('No recipient selected') }
