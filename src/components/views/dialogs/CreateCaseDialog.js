@@ -40,196 +40,13 @@ export default class CreateCaseDialog extends React.Component {
         this.state = {
             invitees: [],
             noRecipientSelected: false,
+            loadingFormData: false,
             form_data: {},
             data: {},
         };
-
-
-
-        const form_data = {
-  "name": "Formular Name",
-  "type": "formular_maerkisch",
-  "form": [[{
-          "name": "reason",
-          "label": "Anlass",
-          "group": "case",
-          "type": "Dropdown",
-          "mandatory": true,
-          "default": "other",
-          "values": [
-            {
-              "value": "careLevel",
-              "label": "Pflegegradeinstufung"
-            },
-            {
-              "value": "assistence",
-              "label": "Hilfsmittelunterstützung"
-            },
-            {
-              "value": "disability",
-              "label": "Schwerbehinderung"
-            },
-            {
-              "value": "ambulantCare",
-              "label": "ambulante Versorgung"
-            },
-            {
-              "value": "selfMgmt",
-              "label": "Selbstmanagement"
-            },
-            {
-              "value": "careError",
-              "label": "Pflegefehler"
-            },
-            {
-              "value": "other",
-              "label": "Sonstiges"
-            }
-          ],
-          "width": 4,
-          "printable": true
-        }],
-        [{
-          "name": "name",
-          "label": "Name",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "enabled": true,
-          "hint": "Bitte geben Sie den Namen des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "birthdate",
-          "label": "Geburtsdatum",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "date",
-          "mandatory": true,
-          "hint": "Bitte geben Sie das Geburtsdatum des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "gender",
-          "label": "Geschlecht",
-          "group": "patient",
-          "type": "Dropdown",
-          "mandatory": true,
-          "values": [
-            {
-              "value": "unknown",
-              "label": "unbekannt"
-            },
-            {
-              "value": "male",
-              "label": "männlich"
-            },
-            {
-              "value": "female",
-              "label": "weiblich"
-            },
-            {
-              "value": "undefined",
-              "label": "undefiniert"
-            }
-          ],
-          "hint": "Bitte wählen Sie das Geschlecht des Patienten aus",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "address",
-          "label": "Adresse",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie die Adresse des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "contactPerson",
-          "label": "weiterer Ansprechpartner",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie einen weiteren Ansprechpartner des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "vollmachtVorhanden",
-          "label": "Vollmacht vorhanden?",
-          "group": "patient",
-          "type": "SingleSelect",
-          "mandatory": false,
-          "values": [
-            {
-              "value": "yes",
-              "label": "Ja"
-            },
-            {
-              "value": "no",
-              "label": "Nein"
-            }
-          ],
-          "width": 4,
-          "printable": true
-        },
-        {
-          "name": "contact",
-          "label": "Kontaktdaten",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie eine Telefonnummer oder eine Emailadresse für den Kontakt ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "legalApproval",
-          "label": "Rechtsgültige Zustimmung",
-          "group": "patient",
-          "type": "SingleSelect",
-          "mandatory": true,
-          "values": [
-            {
-              "value": "yes",
-              "label": "Ja"
-            },
-            {
-              "value": "no",
-              "label": "Nein"
-            }
-          ],
-          "hint": "Bitte geben Sie an ob eine rechtsgültige Zustimmung des Patienten vorliegt",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "diagnosis",
-          "label": "Aktuelle Diagnose",
-          "group": "case",
-          "type": "Multiline",
-          "mandatory": true,
-          "hint": "Bitte geben Sie Fragen oder Anmerkungen an",
-          "width": 6,
-          "printable": true
-        }
-      ]
-  ]
-}
-
-
     }
 
-    async componentDidMount() {
+    componentDidMount() {
         const interfaceEnabled = SettingsStore.getValueAt(SettingLevel.ACCOUNT, 'ampInterfacesEnabled');
         const username = SettingsStore.getValueAt(SettingLevel.DEVICE, 'ampInterfacesUsername');
 
@@ -237,20 +54,18 @@ export default class CreateCaseDialog extends React.Component {
             this.setState({caseRequesterName: username, caseRequesterDisabled: true});
         }
 
-        //TODO load form data from synapse
+        this.setState({ loadingFormData: true });
+
+        // load form data from synapse
         const client = MatrixClientPeg.get();
-        let result = await client._http.authedRequest(
-            undefined, "GET", "/capabilities",
+        let result = client._http.authedRequest(
+            undefined, "GET", "/_matrix/amp/form",{},{},{prefix: ''}
         ).catch((e) => {
-            logger.error(e);
+            console.error(e);
             return null; // otherwise consume the error
         }).then((r) => {
             if (!r) r = {};
-            const form_data = r["capabilities"] || {};
-            console.log("form");
-            console.log(form_data);
-
-            this.setState({ from_data: form_data });
+            this.setState({ form_data: r, loadingFormData: false });
         });
     }
 
@@ -297,9 +112,11 @@ export default class CreateCaseDialog extends React.Component {
     };
 
     onChange = (group, name, value, type) => {
+      console.log(value);
       if (type === "date") {
         value = this.formatDate(value);
       }
+
       this.setState({ data: { ...this.state.data, [group]: { ...this.state.data[group], [name]: value } }});
     };
 
@@ -336,7 +153,7 @@ export default class CreateCaseDialog extends React.Component {
                         className={
                           item.name
                         }
-                        label={_t(item.label)}
+                        label={item.label}
                         size={item.width}
                         type={item.type_annotation}
                         onChange={(e) => this.onChange(item.group,  item.name, e.target.value, item.type_annotation)}
@@ -362,7 +179,7 @@ export default class CreateCaseDialog extends React.Component {
                         className={
                           item.name
                         }
-                        label={_t(item.label)}
+                        label={item.label}
                         element="textarea"
                         name={item.name}
                         onChange={(e) => this.onChange(item.group, item.name, e.target.value)}
@@ -400,12 +217,12 @@ export default class CreateCaseDialog extends React.Component {
                     <Field
                         id={item.group + "." + item.name}
                         ref={item.group + "." + item.name}
-                        className="" label={_t(item.label)}
+                        className="" label={item.label}
                         element="select"
                         onChange={(e) => this.onChange(item.group, item.name, e.target.value)}
                     >
                       {item.values.map((subitem, index) => (
-                        <option id={index} value={subitem.value} className="" >{_t(subitem.label)}</option>
+                        <option id={index} value={subitem.label} className="" >{subitem.label}</option>
                       ))}
                     </Field>
 
@@ -471,7 +288,6 @@ export default class CreateCaseDialog extends React.Component {
     };
 
     render() {
-        console.log(this.state.data);
         const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
         const DialogButtons = sdk.getComponent('views.elements.DialogButtons');
         const AdressPicker = sdk.getComponent('views.cases.AdressPicker');
@@ -482,10 +298,17 @@ export default class CreateCaseDialog extends React.Component {
 
         const noRecipientSelected = this.state.noRecipientSelected ? {} : { display: 'none' };
 
+        const Spinner = sdk.getComponent("elements.Spinner");
+        let spinner = null;
+        if (this.state.loadingFormData) {
+            spinner = <Spinner w={20} h={20} message={ _t("Loading form...") }  />;
+        }
+
         return (
             <BaseDialog className="amp_CreateCaseDialog" onFinished={this.props.onFinished}
                 title={_t('Create Case')}
             >
+                { spinner }
                 <form onSubmit={this.onOk}>
                     <div className="amp_CreateCaseDialog_label amp_CreateCaseDialog_input_field">
                         <label htmlFor="textinput"> { _t('Recipient') } </label>

@@ -96,6 +96,9 @@ class CaseObservationsPanel extends React.Component {
 
         // whether to show reactions for an event
         showReactions: PropTypes.bool,
+
+        // form data for AMP.care
+        formData: PropTypes.object,
     }
 
     componentWillMount() {
@@ -117,186 +120,6 @@ class CaseObservationsPanel extends React.Component {
         this._readMarkerGhostNode = null;
 
         this._isMounted = true;
-
-        this.form_data = {
-      "name": "Formular Name",
-      "type": "formular_maerkisch",
-      "form": [[{
-          "name": "reason",
-          "label": "Anlass",
-          "group": "case",
-          "type": "Dropdown",
-          "mandatory": true,
-          "default": "other",
-          "values": [
-            {
-              "value": "careLevel",
-              "label": "Pflegegradeinstufung"
-            },
-            {
-              "value": "assistence",
-              "label": "Hilfsmittelunterstützung"
-            },
-            {
-              "value": "disability",
-              "label": "Schwerbehinderung"
-            },
-            {
-              "value": "ambulantCare",
-              "label": "ambulante Versorgung"
-            },
-            {
-              "value": "selfMgmt",
-              "label": "Selbstmanagement"
-            },
-            {
-              "value": "careError",
-              "label": "Pflegefehler"
-            },
-            {
-              "value": "other",
-              "label": "Sonstiges"
-            }
-          ],
-          "width": 4,
-          "printable": true
-        }],
-        [{
-          "name": "name",
-          "label": "Name",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "enabled": true,
-          "hint": "Bitte geben Sie den Namen des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "birthdate",
-          "label": "Geburtsdatum",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "date",
-          "mandatory": true,
-          "hint": "Bitte geben Sie das Geburtsdatum des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "gender",
-          "label": "Geschlecht",
-          "group": "patient",
-          "type": "Dropdown",
-          "mandatory": true,
-          "values": [
-            {
-              "value": "unknown",
-              "label": "unbekannt"
-            },
-            {
-              "value": "male",
-              "label": "männlich"
-            },
-            {
-              "value": "female",
-              "label": "weiblich"
-            },
-            {
-              "value": "undefined",
-              "label": "undefiniert"
-            }
-          ],
-          "hint": "Bitte wählen Sie das Geschlecht des Patienten aus",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "address",
-          "label": "Adresse",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie die Adresse des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "contactPerson",
-          "label": "weiterer Ansprechpartner",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie einen weiteren Ansprechpartner des Patienten ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "vollmachtVorhanden",
-          "label": "Vollmacht vorhanden?",
-          "group": "patient",
-          "type": "SingleSelect",
-          "mandatory": false,
-          "values": [
-            {
-              "value": "yes",
-              "label": "Ja"
-            },
-            {
-              "value": "no",
-              "label": "Nein"
-            }
-          ],
-          "width": 4,
-          "printable": true
-        },
-        {
-          "name": "contact",
-          "label": "Kontaktdaten",
-          "group": "patient",
-          "type": "Textline",
-          "type_annotation": "text",
-          "mandatory": true,
-          "hint": "Bitte geben Sie eine Telefonnummer oder eine Emailadresse für den Kontakt ein",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "legalApproval",
-          "label": "Rechtsgültige Zustimmung",
-          "group": "patient",
-          "type": "SingleSelect",
-          "mandatory": true,
-          "values": [
-            {
-              "value": "yes",
-              "label": "Ja"
-            },
-            {
-              "value": "no",
-              "label": "Nein"
-            }
-          ],
-          "hint": "Bitte geben Sie an ob eine rechtsgültige Zustimmung des Patienten vorliegt",
-          "width": 6,
-          "printable": true
-        },
-        {
-          "name": "diagnosis",
-          "label": "Aktuelle Diagnose",
-          "group": "case",
-          "type": "Multiline",
-          "mandatory": true,
-          "hint": "Bitte geben Sie Fragen oder Anmerkungen an",
-          "width": 6,
-          "printable": true
-        }
-      ]
-      ]
-      }
     }
 
     componentWillUnmount() {
@@ -409,6 +232,11 @@ class CaseObservationsPanel extends React.Component {
         const patientEvents = [];
         const observationEvents = [];
         const doneEvents = [];
+
+        const Spinner = sdk.getComponent("elements.Spinner");
+        if (!this.props.formData) {
+            ret.push(<Spinner w={20} h={20} message={ _t("Loading form...") }  />);
+        }
 
         for (i = 0; i < this.props.events.length; i++) {
           const mxEv = this.props.events[i];
@@ -591,61 +419,73 @@ class CaseObservationsPanel extends React.Component {
           localEvent = mxEv._clearEvent;
       }
 
-      const json = this.form_data.form;
+      const arrayChunks = [];
+      // if the form is already loaded
+      if (this.props.formData) {
 
-      let renderItems = [];
+        const json = this.props.formData.form;
 
-      for(var i=0; i<json.length; i++) {
-        json[i].forEach((item, index) => {
-          if (item.group === 'case') {
-            if (localEvent.content[item.name]) {
-              console.log("Case has field " + item.name + " with information " + localEvent.content[item.name]);
-              renderItems.push({name: item.name, type: item.type, subtype: item.type_annotation, label: item.label, value: localEvent.content[item.name]});
+        let renderItems = [];
+
+        for(var i=0; i<json.length; i++) {
+          json[i].forEach((item, index) => {
+            if (item.group === 'case') {
+              if (localEvent.content[item.name]) {
+                renderItems.push({name: item.name, type: item.type, subtype: item.type_annotation, label: item.label, value: localEvent.content[item.name]});
+              }
             }
+          });
+        }
+
+        // build styled output render
+        const bodyItems = [];
+        for (var i=0; i<renderItems.length; i++) {
+          // format dates
+          if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
+            const date = new Date(renderItems[i].value);
+            renderItems[i].value = date.toLocaleDateString();
           }
-        });
+
+          // translate items from dropdowns
+          if (renderItems[i].type == 'Dropdown') {
+            renderItems[i].value = renderItems[i].value;
+          }
+
+          // convert booleans
+          if (renderItems[i].type == 'SingleSelect') {
+            renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
+          }
+
+          // print body and header
+          bodyItems.push(
+          <td style={{ padding: '.5em'}}>
+            <span className="amp_CaseObservationsPanel_caseData_header">
+              {renderItems[i].label}
+            </span>
+            <br />
+            <span className="amp_CaseObservationsPanel_caseData">
+              {renderItems[i].value}
+            </span>
+          </td>);
+        }
+
+        for ( let a = 0; a < bodyItems.length; a += 4) {
+          const arrayChunk = bodyItems.slice(a, a + 4);
+          arrayChunks.push(arrayChunk);
+        }
       }
-
-
-    //TODO build styled output render
-    let headerItems = [];
-    let bodyItems = [];
-    for(var i=0; i<renderItems.length; i++) {
-      // print header
-      headerItems.push(<td><span className="amp_CaseObservationsPanel_caseData_header">{_t(renderItems[i].label)}</span></td>);
-
-      // format dates
-      if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
-        const date = new Date(renderItems[i].value);
-        renderItems[i].value = date.toLocaleDateString();
-      }
-
-      // translate items from dropdowns
-      if (renderItems[i].type == 'Dropdown') {
-        renderItems[i].value = _t(renderItems[i].value);
-      }
-
-      // convert booleans
-      if (renderItems[i].type == 'SingleSelect') {
-        renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
-      }
-
-      // print body
-      bodyItems.push(<td><span className="amp_CaseObservationsPanel_caseData">{renderItems[i].value}</span></td>);
-    }
 
       return (
         <div className="amp_CaseObservationsPanel_CaseDetails">
-            <table className="amp_CaseObservationsPanel_Table">
-                <tbody>
-                    <tr>
-                        {headerItems}
-                    </tr>
-                    <tr>
-                        {bodyItems}
-                    </tr>
-                </tbody>
-            </table>
+          <table className="amp_CaseObservationsPanel_Table">
+            <tbody>
+              { arrayChunks.map((chunk, index) =>
+                <tr key={index}>
+                  {chunk.map((item) => item)}
+                </tr>,
+              )}
+            </tbody>
+          </table>
         </div>
       );
     };
@@ -668,9 +508,13 @@ class CaseObservationsPanel extends React.Component {
             localEvent = mxEv._clearEvent;
         }
 
-        //TODO parse form, select fields of group 'patient'
-        //TODO match information of the event with the form fields
-          const json = this.form_data.form;
+        // parse form, select fields of group 'patient'
+        // match information of the event with the form fields
+        const arrayChunks = [];
+
+        // if form is loaded already
+        if (this.props.formData) {
+          const json = this.props.formData.form;
 
           let renderItems = [];
 
@@ -686,43 +530,53 @@ class CaseObservationsPanel extends React.Component {
           }
 
 
-        //TODO build styled output render
-        let headerItems = [];
-        let bodyItems = [];
-        for(var i=0; i<renderItems.length; i++) {
-          // print header
-          headerItems.push(<td><span className="amp_CaseObservationsPanel_patientData_header">{_t(renderItems[i].label)}</span></td>);
+          // build styled output render
+          const headerItems = [];
+          for (let i=0; i<renderItems.length; i++) {
+            // format dates
+            if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
+              const date = new Date(renderItems[i].value);
+              renderItems[i].value = date.toLocaleDateString();
+            }
 
-          // format dates
-          if (renderItems[i].type == 'Textline' && renderItems[i].subtype == 'date') {
-            const date = new Date(renderItems[i].value);
-            renderItems[i].value = date.toLocaleDateString();
+            // translate items from dropdowns
+            if (renderItems[i].type == 'Dropdown') {
+              renderItems[i].value = renderItems[i].value;
+            }
+
+            // convert booleans
+            if (renderItems[i].type == 'SingleSelect') {
+              renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
+            }
+
+            // print body and header
+            headerItems.push(
+            <td style={{ paddingBottom: '.5em'}}>
+              <span className="amp_CaseObservationsPanel_patientData_header">
+                {renderItems[i].label}
+              </span>
+              <br />
+              <span className="amp_CaseObservationsPanel_patientData">
+                {renderItems[i].value}
+              </span>
+            </td>);
           }
 
-          // translate items from dropdowns
-          if (renderItems[i].type == 'Dropdown') {
-            renderItems[i].value = _t(renderItems[i].value);
+          for ( let a = 0; a < headerItems.length; a += 4) {
+            const arrayChunk = headerItems.slice(a, a + 4);
+            arrayChunks.push(arrayChunk);
           }
-
-          // convert booleans
-          if (renderItems[i].type == 'SingleSelect') {
-            renderItems[i].value = renderItems[i].value == true ? _t("Yes") : _t("No");
-          }
-
-          // print body
-          bodyItems.push(<td><span className="amp_CaseObservationsPanel_patientData">{renderItems[i].value}</span></td>);
         }
 
         return (
             <div className="amp_CaseObservationsPanel_Patient">
                     <table className="amp_CaseObservationsPanel_Table_patientData">
                         <tbody>
-                            <tr>
-                                {headerItems}
-                            </tr>
-                            <tr>
-                                {bodyItems}
-                            </tr>
+                          { arrayChunks.map((chunk, index) =>
+                            <tr key={index}>
+                              {chunk.map((item) => item)}
+                            </tr>,
+                          )}
                         </tbody>
                     </table>
               </div>

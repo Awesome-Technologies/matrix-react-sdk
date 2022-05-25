@@ -205,6 +205,9 @@ class CasePanel extends React.Component {
 
               // how long to show the RM for when it's scrolled off-screen
               readMarkerOutOfViewThresholdMs: SettingsStore.getValue("readMarkerOutOfViewThresholdMs"),
+
+              // form data for AMP.care
+              formData: null
           };
 
           this.dispatcherRef = dis.register(this.onAction);
@@ -230,6 +233,18 @@ class CasePanel extends React.Component {
           if (this.props.manageReadMarkers) {
               this.updateReadMarkerOnUserActivity();
           }
+
+          // load form data from synapse
+          const client = MatrixClientPeg.get();
+          let result = client._http.authedRequest(
+              undefined, "GET", "/_matrix/amp/form",{},{},{prefix: ''}
+          ).catch((e) => {
+              console.error(e);
+              return null; // otherwise consume the error
+          }).then((r) => {
+              if (!r) r = {};
+              this.setState({ formData: r });
+          });
 
           this._initTimeline(this.props);
       }
@@ -1445,6 +1460,7 @@ class CasePanel extends React.Component {
                 getRelationsForEvent={this.getRelationsForEvent}
                 editEvent={this.state.editEvent}
                 showReactions={this.props.showReactions}
+                formData={this.state.formData}
             />
         );
     }
