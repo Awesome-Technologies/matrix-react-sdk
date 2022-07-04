@@ -18,6 +18,7 @@
     "Anamnesis": "Anamnesis",
     "Medication": "Medication",
     "No recipient selected": "No recipient selected",
+    "Not all required inputs contain data": "Not all required inputs contain data",
     "Media": "Media",
     "Blood pressure systolic in mm/Hg": "Blood pressure systolic in mm/Hg",
     "Blood pressure diastolic in mm/Hg": "Blood pressure diastolic in mm/Hg",
@@ -146,7 +147,6 @@
     "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.": "A new device was added to your account '%(displayName)s', which is requesting encryption keys. If this is correct click 'Share keys' to be able to decrypt all your data on the new device.",
     "Share keys": "Share keys",
     "New device": "New device",
-
 
     "This email address is already in use": "This email address is already in use",
     "This phone number is already in use": "This phone number is already in use",
