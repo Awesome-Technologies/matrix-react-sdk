@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 import { MatrixEvent } from "matrix-js-sdk/src/models/event";
+
 import { TagID } from "../models";
 
 /**
@@ -27,5 +28,5 @@ export interface IPreview {
      * @param tagId Optional. The tag where the room the event was sent in resides.
      * @returns The preview.
      */
-    getTextFor(event: MatrixEvent, tagId?: TagID): string;
+    getTextFor(event: MatrixEvent, tagId?: TagID): string | null;
 }

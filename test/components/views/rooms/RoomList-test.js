@@ -1,29 +1,27 @@
 import React from 'react';
 import ReactTestUtils from 'react-dom/test-utils';
 import ReactDOM from 'react-dom';
-import lolex from 'lolex';
+import { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
 
 import * as TestUtils from '../../../test-utils';
-
-import {MatrixClientPeg} from '../../../../src/MatrixClientPeg';
+import { MatrixClientPeg } from '../../../../src/MatrixClientPeg';
 import sdk from '../../../skinned-sdk';
-import { DragDropContext } from 'react-beautiful-dnd';
-
 import dis from '../../../../src/dispatcher/dispatcher';
-import DMRoomMap from '../../../../src/utils/DMRoomMap.js';
-import GroupStore from '../../../../src/stores/GroupStore.js';
-
-import { MatrixClient, Room, RoomMember } from 'matrix-js-sdk';
-import {DefaultTagID} from "../../../../src/stores/room-list/models";
+import DMRoomMap from '../../../../src/utils/DMRoomMap';
+import { DefaultTagID } from "../../../../src/stores/room-list/models";
+import RoomListStore, { RoomListStoreClass } from "../../../../src/stores/room-list/RoomListStore";
+import RoomListLayoutStore from "../../../../src/stores/room-list/RoomListLayoutStore";
 
 function generateRoomId() {
     return '!' + Math.random().toString().slice(2, 10) + ':domain';
 }
 
-
 describe('RoomList', () => {
     function createRoom(opts) {
-        const room = new Room(generateRoomId(), null, client.getUserId());
+        const room = new Room(generateRoomId(), MatrixClientPeg.get(), client.getUserId(), {
+            // The room list now uses getPendingEvents(), so we need a detached ordering.
+            pendingEventOrdering: "detached",
+        });
         if (opts) {
             Object.assign(room, opts);
         }
@@ -34,7 +32,6 @@ describe('RoomList', () => {
     let client = null;
     let root = null;
     const myUserId = '@me:domain';
-    let clock = null;
 
     const movingRoomId = '!someroomid';
     let movingRoom;
@@ -43,14 +40,14 @@ describe('RoomList', () => {
     let myMember;
     let myOtherMember;
 
-    beforeEach(function() {
+    beforeEach(async function(done) {
+        RoomListStoreClass.TEST_MODE = true;
+
         TestUtils.stubClient();
         client = MatrixClientPeg.get();
-        client.credentials = {userId: myUserId};
+        client.credentials = { userId: myUserId };
         //revert this to prototype method as the test-utils monkey-patches this to return a hardcoded value
         client.getUserId = MatrixClient.prototype.getUserId;
-
-        clock = lolex.install();
 
         DMRoomMap.makeShared();
 
@@ -60,13 +57,12 @@ describe('RoomList', () => {
         const RoomList = sdk.getComponent('views.rooms.RoomList');
         const WrappedRoomList = TestUtils.wrapInMatrixClientContext(RoomList);
         root = ReactDOM.render(
-            <DragDropContext>
-                <WrappedRoomList searchFilter="" />
-            </DragDropContext>
-        , parentDiv);
+            <WrappedRoomList searchFilter="" onResize={() => {}} />,
+            parentDiv,
+        );
         ReactTestUtils.findRenderedComponentWithType(root, RoomList);
 
-        movingRoom = createRoom({name: 'Moving room'});
+        movingRoom = createRoom({ name: 'Moving room' });
         expect(movingRoom.roomId).not.toBe(null);
 
         // Mock joined member
@@ -77,7 +73,7 @@ describe('RoomList', () => {
             [client.credentials.userId]: myMember,
         }[userId]);
 
-        otherRoom = createRoom({name: 'Other room'});
+        otherRoom = createRoom({ name: 'Other room' });
         myOtherMember = new RoomMember(otherRoom.roomId, myUserId);
         myOtherMember.membership = 'join';
         otherRoom.updateMyMembership('join');
@@ -89,10 +85,10 @@ describe('RoomList', () => {
         client.getRooms = () => [
             movingRoom,
             otherRoom,
-            createRoom({tags: {'m.favourite': {order: 0.1}}, name: 'Some other room'}),
-            createRoom({tags: {'m.favourite': {order: 0.2}}, name: 'Some other room 2'}),
-            createRoom({tags: {'m.lowpriority': {}}, name: 'Some unimportant room'}),
-            createRoom({tags: {'custom.tag': {}}, name: 'Some room customly tagged'}),
+            createRoom({ tags: { 'm.favourite': { order: 0.1 } }, name: 'Some other room' }),
+            createRoom({ tags: { 'm.favourite': { order: 0.2 } }, name: 'Some other room 2' }),
+            createRoom({ tags: { 'm.lowpriority': {} }, name: 'Some unimportant room' }),
+            createRoom({ tags: { 'custom.tag': {} }, name: 'Some room customly tagged' }),
         ];
         client.getVisibleRooms = client.getRooms;
 
@@ -102,22 +98,28 @@ describe('RoomList', () => {
         });
 
         client.getRoom = (roomId) => roomMap[roomId];
+
+        // Now that everything has been set up, prepare and update the store
+        await RoomListStore.instance.makeReady(client);
+
+        done();
     });
 
-    afterEach((done) => {
+    afterEach(async (done) => {
         if (parentDiv) {
             ReactDOM.unmountComponentAtNode(parentDiv);
             parentDiv.remove();
             parentDiv = null;
         }
 
-        clock.uninstall();
+        await RoomListLayoutStore.instance.resetLayouts();
+        await RoomListStore.instance.resetStore();
 
         done();
     });
 
     function expectRoomInSubList(room, subListTest) {
-        const RoomSubList = sdk.getComponent('structures.RoomSubList');
+        const RoomSubList = sdk.getComponent('views.rooms.RoomSublist');
         const RoomTile = sdk.getComponent('views.rooms.RoomTile');
 
         const subLists = ReactTestUtils.scryRenderedComponentsWithType(root, RoomSubList);
@@ -126,7 +128,7 @@ describe('RoomList', () => {
         let expectedRoomTile;
         try {
             const roomTiles = ReactTestUtils.scryRenderedComponentsWithType(containingSubList, RoomTile);
-            console.info({roomTiles: roomTiles.length});
+            console.info({ roomTiles: roomTiles.length });
             expectedRoomTile = roomTiles.find((tile) => tile.props.room === room);
         } catch (err) {
             // truncate the error message because it's spammy
@@ -140,38 +142,33 @@ describe('RoomList', () => {
         expect(expectedRoomTile.props.room).toBe(room);
     }
 
-    function expectCorrectMove(oldTag, newTag) {
-        const getTagSubListTest = (tag) => {
-            if (tag === undefined) return (s) => s.props.label.endsWith('Rooms');
-            return (s) => s.props.tagName === tag;
+    function expectCorrectMove(oldTagId, newTagId) {
+        const getTagSubListTest = (tagId) => {
+            return (s) => s.props.tagId === tagId;
         };
 
         // Default to finding the destination sublist with newTag
-        const destSubListTest = getTagSubListTest(newTag);
-        const srcSubListTest = getTagSubListTest(oldTag);
+        const destSubListTest = getTagSubListTest(newTagId);
+        const srcSubListTest = getTagSubListTest(oldTagId);
 
         // Set up the room that will be moved such that it has the correct state for a room in
-        // the section for oldTag
-        if (['m.favourite', 'm.lowpriority'].includes(oldTag)) movingRoom.tags = {[oldTag]: {}};
-        if (oldTag === DefaultTagID.DM) {
+        // the section for oldTagId
+        if (oldTagId === DefaultTagID.Favourite || oldTagId === DefaultTagID.LowPriority) {
+            movingRoom.tags = { [oldTagId]: {} };
+        } else if (oldTagId === DefaultTagID.DM) {
             // Mock inverse m.direct
             DMRoomMap.shared().roomToUser = {
                 [movingRoom.roomId]: '@someotheruser:domain',
             };
         }
 
-        dis.dispatch({action: 'MatrixActions.sync', prevState: null, state: 'PREPARED', matrixClient: client});
-
-        clock.runAll();
+        dis.dispatch({ action: 'MatrixActions.sync', prevState: null, state: 'PREPARED', matrixClient: client });
 
         expectRoomInSubList(movingRoom, srcSubListTest);
 
-        dis.dispatch({action: 'RoomListActions.tagRoom.pending', request: {
-            oldTag, newTag, room: movingRoom,
-        }});
-
-        // Run all setTimeouts for dispatches and room list rate limiting
-        clock.runAll();
+        dis.dispatch({ action: 'RoomListActions.tagRoom.pending', request: {
+            oldTagId, newTagId, room: movingRoom,
+        } });
 
         expectRoomInSubList(movingRoom, destSubListTest);
     }
@@ -232,66 +229,6 @@ describe('RoomList', () => {
         });
     }
 
-    describe('when no tags are selected', () => {
-        itDoesCorrectOptimisticUpdatesForDraggedRoomTiles();
-    });
-
-    describe('when tags are selected', () => {
-        function setupSelectedTag() {
-            // Simulate a complete sync BEFORE dispatching anything else
-            dis.dispatch({
-                action: 'MatrixActions.sync',
-                prevState: null,
-                state: 'PREPARED',
-                matrixClient: client,
-            }, true);
-
-            // Simulate joined groups being received
-            dis.dispatch({
-                action: 'GroupActions.fetchJoinedGroups.success',
-                result: {
-                    groups: ['+group:domain'],
-                },
-            }, true);
-
-            // Simulate receiving tag ordering account data
-            dis.dispatch({
-                action: 'MatrixActions.accountData',
-                event_type: 'im.vector.web.tag_ordering',
-                event_content: {
-                    tags: ['+group:domain'],
-                },
-            }, true);
-
-            // GroupStore is not flux, mock and notify
-            GroupStore.getGroupRooms = (groupId) => {
-                return [movingRoom];
-            };
-            GroupStore._notifyListeners();
-
-            // Select tag
-            dis.dispatch({action: 'select_tag', tag: '+group:domain'}, true);
-        }
-
-        beforeEach(() => {
-            setupSelectedTag();
-        });
-
-        it('displays the correct rooms when the groups rooms are changed', () => {
-            GroupStore.getGroupRooms = (groupId) => {
-                return [movingRoom, otherRoom];
-            };
-            GroupStore._notifyListeners();
-
-            // Run through RoomList debouncing
-            clock.runAll();
-
-            // By default, the test will
-            expectRoomInSubList(otherRoom, (s) => s.props.label.endsWith('Rooms'));
-        });
-
-        itDoesCorrectOptimisticUpdatesForDraggedRoomTiles();
-    });
+    itDoesCorrectOptimisticUpdatesForDraggedRoomTiles();
 });
-
 

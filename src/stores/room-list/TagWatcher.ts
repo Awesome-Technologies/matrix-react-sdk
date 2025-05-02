@@ -14,54 +14,55 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { RoomListStore2 } from "./RoomListStore2";
-import TagOrderStore from "../TagOrderStore";
+import { logger } from "matrix-js-sdk/src/logger";
+
+import { RoomListStoreClass } from "./RoomListStore";
+import GroupFilterOrderStore from "../GroupFilterOrderStore";
 import { CommunityFilterCondition } from "./filters/CommunityFilterCondition";
 import { arrayDiff, arrayHasDiff } from "../../utils/arrays";
 
 /**
- * Watches for changes in tags/groups to manage filters on the provided RoomListStore
+ * Watches for changes in groups to manage filters on the provided RoomListStore
  */
 export class TagWatcher {
-    // TODO: Support custom tags, somehow: https://github.com/vector-im/riot-web/issues/14091
     private filters = new Map<string, CommunityFilterCondition>();
 
-    constructor(private store: RoomListStore2) {
-        TagOrderStore.addListener(this.onTagsUpdated);
+    constructor(private store: RoomListStoreClass) {
+        GroupFilterOrderStore.addListener(this.onTagsUpdated);
     }
 
     private onTagsUpdated = () => {
         const lastTags = Array.from(this.filters.keys());
-        const newTags = TagOrderStore.getSelectedTags();
+        const newTags = GroupFilterOrderStore.getSelectedTags();
 
         if (arrayHasDiff(lastTags, newTags)) {
             // Selected tags changed, do some filtering
 
             if (!this.store.matrixClient) {
-                console.warn("Tag update without an associated matrix client - ignoring");
+                logger.warn("Tag update without an associated matrix client - ignoring");
                 return;
             }
 
             const newFilters = new Map<string, CommunityFilterCondition>();
-
-            // TODO: Support custom tags, somehow: https://github.com/vector-im/riot-web/issues/14091
             const filterableTags = newTags.filter(t => t.startsWith("+"));
 
             for (const tag of filterableTags) {
                 const group = this.store.matrixClient.getGroup(tag);
                 if (!group) {
-                    console.warn(`Group selected with no group object available: ${tag}`);
+                    logger.warn(`Group selected with no group object available: ${tag}`);
                     continue;
                 }
 
-                newFilters.set(tag, new CommunityFilterCondition(group));
+                let filter = this.filters.get(tag);
+                if (!filter) {
+                    filter = new CommunityFilterCondition(group);
+                }
+                newFilters.set(tag, filter);
             }
 
             // Update the room list store's filters
             const diff = arrayDiff(lastTags, newTags);
             for (const tag of diff.added) {
-                // TODO: Remove this check when custom tags are supported (as we shouldn't be losing filters)
-                // Ref https://github.com/vector-im/riot-web/issues/14091
                 const filter = newFilters.get(tag);
                 if (!filter) continue;
 
@@ -73,10 +74,6 @@ export class TagWatcher {
                 if (!filter) continue;
 
                 this.store.removeFilter(filter);
-            }
-
-            // Destroy any and all old filter conditions to prevent resource leaks
-            for (const filter of this.filters.values()) {
                 filter.destroy();
             }
 

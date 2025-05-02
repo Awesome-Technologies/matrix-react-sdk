@@ -15,14 +15,38 @@ limitations under the License.
 */
 
 import { MatrixClient } from "matrix-js-sdk/src/client";
+import { Dispatcher } from "flux";
+
 import { AsyncStore } from "./AsyncStore";
 import { ActionPayload } from "../dispatcher/payloads";
-
+import { ReadyWatchingStore } from "./ReadyWatchingStore";
 
 export abstract class AsyncStoreWithClient<T extends Object> extends AsyncStore<T> {
-    protected matrixClient: MatrixClient;
+    protected readyStore: ReadyWatchingStore;
 
-    protected abstract async onAction(payload: ActionPayload);
+    protected constructor(dispatcher: Dispatcher<ActionPayload>, initialState: T = <T>{}) {
+        super(dispatcher, initialState);
+
+        // Create an anonymous class to avoid code duplication
+        const asyncStore = this; // eslint-disable-line @typescript-eslint/no-this-alias
+        this.readyStore = new (class extends ReadyWatchingStore {
+            public get mxClient(): MatrixClient {
+                return this.matrixClient;
+            }
+
+            protected async onReady(): Promise<any> {
+                return asyncStore.onReady();
+            }
+
+            protected async onNotReady(): Promise<any> {
+                return asyncStore.onNotReady();
+            }
+        })(dispatcher);
+    }
+
+    get matrixClient(): MatrixClient {
+        return this.readyStore.mxClient;
+    }
 
     protected async onReady() {
         // Default implementation is to do nothing.
@@ -32,22 +56,9 @@ export abstract class AsyncStoreWithClient<T extends Object> extends AsyncStore<
         // Default implementation is to do nothing.
     }
 
+    protected abstract onAction(payload: ActionPayload): Promise<void>;
+
     protected async onDispatch(payload: ActionPayload) {
         await this.onAction(payload);
-
-        if (payload.action === 'MatrixActions.sync') {
-            // Filter out anything that isn't the first PREPARED sync.
-            if (!(payload.prevState === 'PREPARED' && payload.state !== 'PREPARED')) {
-                return;
-            }
-
-            this.matrixClient = payload.matrixClient;
-            await this.onReady();
-        } else if (payload.action === 'on_client_not_viable' || payload.action === 'on_logged_out') {
-            if (this.matrixClient) {
-                await this.onNotReady();
-                this.matrixClient = null;
-            }
-        }
     }
 }

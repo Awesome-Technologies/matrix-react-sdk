@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Matrix.org Foundation C.I.C.
+Copyright 2019 - 2021 The Matrix.org Foundation C.I.C.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,18 +20,28 @@ limitations under the License.
 }
 
 .mx_InteractiveTooltip {
-    border-radius: 3px;
-    background-color: $interactive-tooltip-bg-color;
-    color: $interactive-tooltip-fg-color;
+    border-radius: 8px;
+    background-color: $background;
+    color: $primary-content;
     position: absolute;
-    font-size: $font-10px;
-    font-weight: 600;
-    padding: 6px;
     z-index: 5001;
+    box-shadow: 0 24px 8px rgb(17 17 26 / 4%), 0 8px 32px rgb(17 17 26 / 4%);
 }
 
 .mx_InteractiveTooltip.mx_InteractiveTooltip_withChevron_top {
     top: 10px; // 8px chevron + 2px spacing
+}
+
+.mx_InteractiveTooltip.mx_InteractiveTooltip_withChevron_left {
+    left: 10px; // 8px chevron + 2px spacing
+}
+
+.mx_InteractiveTooltip.mx_InteractiveTooltip_withChevron_right {
+    right: 10px; // 8px chevron + 2px spacing
+}
+
+.mx_InteractiveTooltip.mx_InteractiveTooltip_withChevron_bottom {
+    bottom: 10px; // 8px chevron + 2px spacing
 }
 
 .mx_InteractiveTooltip_chevron_top {
@@ -41,7 +51,7 @@ limitations under the License.
     width: 0;
     height: 0;
     border-left: 8px solid transparent;
-    border-bottom: 8px solid $interactive-tooltip-bg-color;
+    border-bottom: 8px solid $background;
     border-right: 8px solid transparent;
 }
 
@@ -60,10 +70,6 @@ limitations under the License.
     }
 }
 
-.mx_InteractiveTooltip.mx_InteractiveTooltip_withChevron_bottom {
-    bottom: 10px; // 8px chevron + 2px spacing
-}
-
 .mx_InteractiveTooltip_chevron_bottom {
     position: absolute;
     left: calc(50% - 8px);
@@ -71,7 +77,7 @@ limitations under the License.
     width: 0;
     height: 0;
     border-left: 8px solid transparent;
-    border-top: 8px solid $interactive-tooltip-bg-color;
+    border-top: 8px solid $background;
     border-right: 8px solid transparent;
 }
 

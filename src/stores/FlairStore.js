@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 import EventEmitter from 'events';
+import { logger } from "matrix-js-sdk/src/logger";
 
 const BULK_REQUEST_DEBOUNCE_MS = 200;
 
@@ -65,6 +66,10 @@ class FlairStore extends EventEmitter {
         delete this._userGroups[userId];
     }
 
+    cachedPublicisedGroups(userId) {
+        return this._userGroups[userId];
+    }
+
     getPublicisedGroupsCached(matrixClient, userId) {
         if (this._userGroups[userId]) {
             return Promise.resolve(this._userGroups[userId]);
@@ -92,12 +97,12 @@ class FlairStore extends EventEmitter {
         }).catch((err) => {
             // Indicate whether the homeserver supports groups
             if (err.errcode === 'M_UNRECOGNIZED') {
-                console.warn('Cannot display flair, server does not support groups');
+                logger.warn('Cannot display flair, server does not support groups');
                 groupSupport = false;
                 // Return silently to avoid spamming for non-supporting servers
                 return;
             }
-            console.error('Could not get groups for user', userId, err);
+            logger.error('Could not get groups for user', userId, err);
             throw err;
         }).finally(() => {
             delete this._usersInFlight[userId];
@@ -148,6 +153,23 @@ class FlairStore extends EventEmitter {
         });
     }
 
+    /**
+     * Gets the profile for the given group if known, otherwise returns null.
+     * This triggers `getGroupProfileCached` if needed, though the result of the
+     * call will not be returned by this function.
+     * @param {MatrixClient} matrixClient The matrix client to use to fetch the profile, if needed.
+     * @param {string} groupId The group ID to get the profile for.
+     * @returns {*} The profile if known, otherwise null.
+     */
+    getGroupProfileCachedFast(matrixClient, groupId) {
+        if (!matrixClient || !groupId) return null;
+        if (this._groupProfiles[groupId]) {
+            return this._groupProfiles[groupId];
+        }
+        this.getGroupProfileCached(matrixClient, groupId);
+        return null;
+    }
+
     async getGroupProfileCached(matrixClient, groupId) {
         if (this._groupProfiles[groupId]) {
             return this._groupProfiles[groupId];
@@ -165,14 +187,14 @@ class FlairStore extends EventEmitter {
         }
 
         // No request yet, start one
-        console.log('FlairStore: Request group profile of ' + groupId);
+        logger.log('FlairStore: Request group profile of ' + groupId);
         this._groupProfilesPromise[groupId] = matrixClient.getGroupProfile(groupId);
 
         let profile;
         try {
             profile = await this._groupProfilesPromise[groupId];
         } catch (e) {
-            console.log('FlairStore: Failed to get group profile for ' + groupId, e);
+            logger.log('FlairStore: Failed to get group profile for ' + groupId, e);
             // Don't retry, but allow a retry when the profile is next requested
             delete this._groupProfilesPromise[groupId];
             return null;
@@ -188,7 +210,7 @@ class FlairStore extends EventEmitter {
 
         /// XXX: This is verging on recreating a third "Flux"-looking Store. We really
         /// should replace FlairStore with a Flux store and some async actions.
-        console.log('FlairStore: Emit updateGroupProfile for ' + groupId);
+        logger.log('FlairStore: Emit updateGroupProfile for ' + groupId);
         this.emit('updateGroupProfile');
 
         setTimeout(() => {

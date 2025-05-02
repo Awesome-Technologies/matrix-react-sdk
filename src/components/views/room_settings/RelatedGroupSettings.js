@@ -16,15 +16,19 @@ limitations under the License.
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {MatrixEvent} from 'matrix-js-sdk';
+import { MatrixEvent } from 'matrix-js-sdk/src/models/event';
+import { logger } from "matrix-js-sdk/src/logger";
+
 import * as sdk from '../../../index';
 import { _t } from '../../../languageHandler';
 import Modal from '../../../Modal';
 import ErrorDialog from "../dialogs/ErrorDialog";
 import MatrixClientContext from "../../../contexts/MatrixClientContext";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 const GROUP_ID_REGEX = /\+\S+:\S+/;
 
+@replaceableComponent("views.room_settings.RelatedGroupSettings")
 export default class RelatedGroupSettings extends React.Component {
     static propTypes = {
         roomId: PropTypes.string.isRequired,
@@ -51,7 +55,7 @@ export default class RelatedGroupSettings extends React.Component {
         this.context.sendStateEvent(this.props.roomId, 'm.room.related_groups', {
             groups: newGroupsList,
         }, '').catch((err) => {
-            console.error(err);
+            logger.error(err);
             Modal.createTrackedDialog('Error updating flair', '', ErrorDialog, {
                 title: _t("Error updating flair"),
                 description: _t(
@@ -104,7 +108,7 @@ export default class RelatedGroupSettings extends React.Component {
             <EditableItemList
                 id="relatedGroups"
                 items={this.state.newGroupsList}
-                className={"mx_RelatedGroupSettings"}
+                className="mx_RelatedGroupSettings"
                 newItem={this.state.newGroupId}
                 canRemove={this.props.canSetRelatedGroups}
                 canEdit={this.props.canSetRelatedGroups}
@@ -114,7 +118,7 @@ export default class RelatedGroupSettings extends React.Component {
                 itemsLabel={_t('Showing flair for these communities:')}
                 noItemsLabel={_t('This room is not showing flair for any communities')}
                 placeholder={_t(
-                    'New community ID (e.g. +foo:%(localDomain)s)', {localDomain},
+                    'New community ID (e.g. +foo:%(localDomain)s)', { localDomain },
                 )}
             />
         </div>;

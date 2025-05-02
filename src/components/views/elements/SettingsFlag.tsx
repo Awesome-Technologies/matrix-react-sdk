@@ -16,15 +16,18 @@ limitations under the License.
 */
 
 import React from "react";
+
 import SettingsStore from "../../../settings/SettingsStore";
 import { _t } from '../../../languageHandler';
 import ToggleSwitch from "./ToggleSwitch";
 import StyledCheckbox from "./StyledCheckbox";
+import { SettingLevel } from "../../../settings/SettingLevel";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
 
 interface IProps {
     // The setting must be a boolean
     name: string;
-    level: string;
+    level: SettingLevel;
     roomId?: string; // for per-room settings
     label?: string; // untranslated
     isExplicit?: boolean;
@@ -38,6 +41,7 @@ interface IState {
     value: boolean;
 }
 
+@replaceableComponent("views.elements.SettingsFlag")
 export default class SettingsFlag extends React.Component<IProps, IState> {
     constructor(props: IProps) {
         super(props);
@@ -52,8 +56,8 @@ export default class SettingsFlag extends React.Component<IProps, IState> {
         };
     }
 
-    private onChange = (checked: boolean): void => {
-        this.save(checked);
+    private onChange = async (checked: boolean) => {
+        await this.save(checked);
         this.setState({ value: checked });
         if (this.props.onChange) this.props.onChange(checked);
     };
@@ -62,8 +66,8 @@ export default class SettingsFlag extends React.Component<IProps, IState> {
         this.onChange(e.target.checked);
     };
 
-    private save = (val?: boolean): void => {
-        return SettingsStore.setValue(
+    private save = async (val?: boolean) => {
+        await SettingsStore.setValue(
             this.props.name,
             this.props.roomId,
             this.props.level,
@@ -74,9 +78,10 @@ export default class SettingsFlag extends React.Component<IProps, IState> {
     public render() {
         const canChange = SettingsStore.canSetValue(this.props.name, this.props.roomId, this.props.level);
 
-        let label = this.props.label;
-        if (!label) label = SettingsStore.getDisplayName(this.props.name, this.props.level);
-        else label = _t(label);
+        const label = this.props.label
+            ? _t(this.props.label)
+            : SettingsStore.getDisplayName(this.props.name, this.props.level);
+        const description = SettingsStore.getDescription(this.props.name);
 
         if (this.props.useCheckbox) {
             return <StyledCheckbox
@@ -84,12 +89,17 @@ export default class SettingsFlag extends React.Component<IProps, IState> {
                 onChange={this.checkBoxOnChange}
                 disabled={this.props.disabled || !canChange}
             >
-                {label}
+                { label }
             </StyledCheckbox>;
         } else {
             return (
                 <div className="mx_SettingsFlag">
-                    <span className="mx_SettingsFlag_label">{label}</span>
+                    <label className="mx_SettingsFlag_label">
+                        <span className="mx_SettingsFlag_labelText">{ label }</span>
+                        { description && <div className="mx_SettingsFlag_microcopy">
+                            { description }
+                        </div> }
+                    </label>
                     <ToggleSwitch
                         checked={this.state.value}
                         onChange={this.onChange}

@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { DecryptionFailure, DecryptionFailureTracker } from '../src/DecryptionFailureTracker';
-
 import { MatrixEvent } from 'matrix-js-sdk';
+
+import { DecryptionFailure, DecryptionFailureTracker } from '../src/DecryptionFailureTracker';
 
 class MockDecryptionError extends Error {
     constructor(code) {
@@ -30,9 +30,7 @@ function createFailedDecryptionEvent() {
     const event = new MatrixEvent({
         event_id: "event-id-" + Math.random().toString(16).slice(2),
     });
-    event._setClearData(
-        event._badEncryptedMessage(":("),
-    );
+    event.setClearData(event.badEncryptedMessage(":("));
     return event;
 }
 
@@ -41,7 +39,7 @@ describe('DecryptionFailureTracker', function() {
         const failedDecryptionEvent = createFailedDecryptionEvent();
 
         let count = 0;
-        const tracker = new DecryptionFailureTracker((total) => count += total);
+        const tracker = new DecryptionFailureTracker((total) => count += total, () => "UnknownError");
 
         const err = new MockDecryptionError();
         tracker.eventDecrypted(failedDecryptionEvent, err);
@@ -61,13 +59,13 @@ describe('DecryptionFailureTracker', function() {
         const decryptedEvent = createFailedDecryptionEvent();
         const tracker = new DecryptionFailureTracker((total) => {
             expect(true).toBe(false, 'should not track an event that has since been decrypted correctly');
-        });
+        }, () => "UnknownError");
 
         const err = new MockDecryptionError();
         tracker.eventDecrypted(decryptedEvent, err);
 
         // Indicate successful decryption: clear data can be anything where the msgtype is not m.bad.encrypted
-        decryptedEvent._setClearData({});
+        decryptedEvent.setClearData({});
         tracker.eventDecrypted(decryptedEvent, null);
 
         // Pretend "now" is Infinity
@@ -83,7 +81,7 @@ describe('DecryptionFailureTracker', function() {
         const decryptedEvent2 = createFailedDecryptionEvent();
 
         let count = 0;
-        const tracker = new DecryptionFailureTracker((total) => count += total);
+        const tracker = new DecryptionFailureTracker((total) => count += total, () => "UnknownError");
 
         // Arbitrary number of failed decryptions for both events
         const err = new MockDecryptionError();
@@ -114,7 +112,7 @@ describe('DecryptionFailureTracker', function() {
         const decryptedEvent = createFailedDecryptionEvent();
 
         let count = 0;
-        const tracker = new DecryptionFailureTracker((total) => count += total);
+        const tracker = new DecryptionFailureTracker((total) => count += total, () => "UnknownError");
 
         // Indicate decryption
         const err = new MockDecryptionError();
@@ -142,7 +140,7 @@ describe('DecryptionFailureTracker', function() {
         const decryptedEvent = createFailedDecryptionEvent();
 
         let count = 0;
-        const tracker = new DecryptionFailureTracker((total) => count += total);
+        const tracker = new DecryptionFailureTracker((total) => count += total, () => "UnknownError");
 
         // Indicate decryption
         const err = new MockDecryptionError();
@@ -155,7 +153,7 @@ describe('DecryptionFailureTracker', function() {
         tracker.trackFailures();
 
         // Simulate the browser refreshing by destroying tracker and creating a new tracker
-        const secondTracker = new DecryptionFailureTracker((total) => count += total);
+        const secondTracker = new DecryptionFailureTracker((total) => count += total, () => "UnknownError");
 
         //secondTracker.loadTrackedEventHashMap();
 
@@ -172,28 +170,29 @@ describe('DecryptionFailureTracker', function() {
         const counts = {};
         const tracker = new DecryptionFailureTracker(
             (total, errorCode) => counts[errorCode] = (counts[errorCode] || 0) + total,
+            (error) => error === "UnknownError" ? "UnknownError" : "OlmKeysNotSentError",
         );
 
         // One failure of ERROR_CODE_1, and effectively two for ERROR_CODE_2
-        tracker.addDecryptionFailure(new DecryptionFailure('$event_id1', 'ERROR_CODE_1'));
-        tracker.addDecryptionFailure(new DecryptionFailure('$event_id2', 'ERROR_CODE_2'));
-        tracker.addDecryptionFailure(new DecryptionFailure('$event_id2', 'ERROR_CODE_2'));
-        tracker.addDecryptionFailure(new DecryptionFailure('$event_id3', 'ERROR_CODE_2'));
+        tracker.addDecryptionFailure(new DecryptionFailure('$event_id1', 'UnknownError'));
+        tracker.addDecryptionFailure(new DecryptionFailure('$event_id2', 'OlmKeysNotSentError'));
+        tracker.addDecryptionFailure(new DecryptionFailure('$event_id2', 'OlmKeysNotSentError'));
+        tracker.addDecryptionFailure(new DecryptionFailure('$event_id3', 'OlmKeysNotSentError'));
 
         // Pretend "now" is Infinity
         tracker.checkFailures(Infinity);
 
         tracker.trackFailures();
 
-        expect(counts['ERROR_CODE_1']).toBe(1, 'should track one ERROR_CODE_1');
-        expect(counts['ERROR_CODE_2']).toBe(2, 'should track two ERROR_CODE_2');
+        expect(counts['UnknownError']).toBe(1, 'should track one UnknownError');
+        expect(counts['OlmKeysNotSentError']).toBe(2, 'should track two OlmKeysNotSentError');
     });
 
     it('should map error codes correctly', () => {
         const counts = {};
         const tracker = new DecryptionFailureTracker(
             (total, errorCode) => counts[errorCode] = (counts[errorCode] || 0) + total,
-            (errorCode) => 'MY_NEW_ERROR_CODE',
+            (errorCode) => 'OlmUnspecifiedError',
         );
 
         // One failure of ERROR_CODE_1, and effectively two for ERROR_CODE_2
@@ -206,7 +205,7 @@ describe('DecryptionFailureTracker', function() {
 
         tracker.trackFailures();
 
-        expect(counts['MY_NEW_ERROR_CODE'])
-            .toBe(3, 'should track three MY_NEW_ERROR_CODE, got ' + counts['MY_NEW_ERROR_CODE']);
+        expect(counts['OlmUnspecifiedError'])
+            .toBe(3, 'should track three OlmUnspecifiedError, got ' + counts['OlmUnspecifiedError']);
     });
 });

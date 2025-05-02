@@ -17,16 +17,20 @@ limitations under the License.
 
 import React from 'react';
 import Group from "matrix-js-sdk/src/models/group";
+import { sortBy } from "lodash";
+import { Room } from 'matrix-js-sdk/src/models/room';
+
 import { _t } from '../languageHandler';
 import AutocompleteProvider from './AutocompleteProvider';
-import {MatrixClientPeg} from '../MatrixClientPeg';
+import { MatrixClientPeg } from '../MatrixClientPeg';
 import QueryMatcher from './QueryMatcher';
-import {PillCompletion} from './Components';
-import * as sdk from '../index';
-import _sortBy from 'lodash/sortBy';
-import {makeGroupPermalink} from "../utils/permalinks/Permalinks";
-import {ICompletion, ISelectionRange} from "./Autocompleter";
+import { PillCompletion } from './Components';
+import { makeGroupPermalink } from "../utils/permalinks/Permalinks";
+import { ICompletion, ISelectionRange } from "./Autocompleter";
 import FlairStore from "../stores/FlairStore";
+import { mediaFromMxc } from "../customisations/Media";
+import BaseAvatar from '../components/views/avatars/BaseAvatar';
+import { TimelineRenderingType } from '../contexts/RoomContext';
 
 const COMMUNITY_REGEX = /\B\+\S*/g;
 
@@ -42,29 +46,32 @@ function score(query, space) {
 export default class CommunityProvider extends AutocompleteProvider {
     matcher: QueryMatcher<Group>;
 
-    constructor() {
-        super(COMMUNITY_REGEX);
+    constructor(room: Room, renderingType?: TimelineRenderingType) {
+        super({ commandRegex: COMMUNITY_REGEX, renderingType });
         this.matcher = new QueryMatcher([], {
             keys: ['groupId', 'name', 'shortDescription'],
         });
     }
 
-    async getCompletions(query: string, selection: ISelectionRange, force = false): Promise<ICompletion[]> {
-        const BaseAvatar = sdk.getComponent('views.avatars.BaseAvatar');
-
+    async getCompletions(
+        query: string,
+        selection: ISelectionRange,
+        force = false,
+        limit = -1,
+    ): Promise<ICompletion[]> {
         // Disable autocompletions when composing commands because of various issues
-        // (see https://github.com/vector-im/riot-web/issues/4762)
+        // (see https://github.com/vector-im/element-web/issues/4762)
         if (/^(\/join|\/leave)/.test(query)) {
             return [];
         }
 
         const cli = MatrixClientPeg.get();
         let completions = [];
-        const {command, range} = this.getCurrentCommand(query, selection, force);
+        const { command, range } = this.getCurrentCommand(query, selection, force);
         if (command) {
-            const joinedGroups = cli.getGroups().filter(({myMembership}) => myMembership === 'join');
+            const joinedGroups = cli.getGroups().filter(({ myMembership }) => myMembership === 'join');
 
-            const groups = (await Promise.all(joinedGroups.map(async ({groupId}) => {
+            const groups = (await Promise.all(joinedGroups.map(async ({ groupId }) => {
                 try {
                     return FlairStore.getGroupProfileCached(cli, groupId);
                 } catch (e) { // if FlairStore failed, fall back to just groupId
@@ -80,26 +87,26 @@ export default class CommunityProvider extends AutocompleteProvider {
             this.matcher.setObjects(groups);
 
             const matchedString = command[0];
-            completions = this.matcher.match(matchedString);
-            completions = _sortBy(completions, [
+            completions = this.matcher.match(matchedString, limit);
+            completions = sortBy(completions, [
                 (c) => score(matchedString, c.groupId),
                 (c) => c.groupId.length,
-            ]).map(({avatarUrl, groupId, name}) => ({
+            ]).map(({ avatarUrl, groupId, name }) => ({
                 completion: groupId,
                 suffix: ' ',
                 type: "community",
                 href: makeGroupPermalink(groupId),
                 component: (
                     <PillCompletion title={name} description={groupId}>
-                        <BaseAvatar name={name || groupId}
-                                    width={24}
-                                    height={24}
-                                    url={avatarUrl ? cli.mxcUrlToHttp(avatarUrl, 24, 24) : null} />
+                        <BaseAvatar
+                            name={name || groupId}
+                            width={24}
+                            height={24}
+                            url={avatarUrl ? mediaFromMxc(avatarUrl).getSquareThumbnailHttp(24) : null} />
                     </PillCompletion>
                 ),
                 range,
-            }))
-            .slice(0, 4);
+            })).slice(0, 4);
         }
         return completions;
     }
@@ -112,7 +119,7 @@ export default class CommunityProvider extends AutocompleteProvider {
         return (
             <div
                 className="mx_Autocomplete_Completion_container_pill mx_Autocomplete_Completion_container_truncate"
-                role="listbox"
+                role="presentation"
                 aria-label={_t("Community Autocomplete")}
             >
                 { completions }

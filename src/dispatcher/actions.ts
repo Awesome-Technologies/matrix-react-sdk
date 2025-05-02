@@ -46,11 +46,6 @@ export enum Action {
     ViewRoomDirectory = "view_room_directory",
 
     /**
-     * Sets the current tooltip. Should be use with ViewTooltipPayload.
-     */
-    ViewTooltip = "view_tooltip",
-
-    /**
      * Forces the theme to reload. No additional payload information required.
      */
     RecheckTheme = "recheck_theme",
@@ -61,14 +56,31 @@ export enum Action {
     CheckUpdates = "check_updates",
 
     /**
-     * Focuses the user's cursor to the composer. No additional payload information required.
+     * Focuses the user's cursor to the send message composer. Should be used with a FocusComposerPayload.
      */
-    FocusComposer = "focus_composer",
+    FocusSendMessageComposer = "focus_send_message_composer",
+
+    /**
+     * Focuses the user's cursor to the edit message composer. Should be used with a FocusComposerPayload.
+     */
+    FocusEditMessageComposer = "focus_edit_message_composer",
+
+    /**
+     * Focuses the user's cursor to the edit message composer or send message
+     * composer based on the current edit state. No additional payload
+     * information required.
+     */
+    FocusAComposer = "focus_a_composer",
 
     /**
      * Opens the user menu (previously known as the top left menu). No additional payload information required.
      */
     ToggleUserMenu = "toggle_user_menu",
+
+    /**
+     * Toggles the Space panel. No additional payload information required.
+     */
+    ToggleSpacePanel = "toggle_space_panel",
 
     /**
      * Sets the apps root font size. Should be used with UpdateFontSizePayload
@@ -79,4 +91,131 @@ export enum Action {
      * Sets a system font. Should be used with UpdateSystemFontPayload
      */
     UpdateSystemFont = "update_system_font",
+
+    /**
+     * Changes room based on payload parameters.
+     */
+    ViewRoom = "view_room",
+
+    /**
+     * Changes room based on room list order and payload parameters. Should be used with ViewRoomDeltaPayload.
+     */
+    ViewRoomDelta = "view_room_delta",
+
+    /**
+     * Opens the modal dial pad
+     */
+    OpenDialPad = "open_dial_pad",
+
+    /**
+     * Dial the phone number in the payload
+     * payload: DialNumberPayload
+     */
+    DialNumber = "dial_number",
+
+    /**
+     * Fired when CallHandler has checked for PSTN protocol support
+     * payload: none
+     * XXX: Is an action the right thing for this?
+     */
+    PstnSupportUpdated = "pstn_support_updated",
+
+    /**
+     * Similar to PstnSupportUpdated, fired when CallHandler has checked for virtual room support
+     * payload: none
+     * XXX: Ditto
+     */
+    VirtualRoomSupportUpdated = "virtual_room_support_updated",
+
+    /**
+     * Fired when an upload has started. Should be used with UploadStartedPayload.
+     */
+    UploadStarted = "upload_started",
+
+    /**
+     * Fired when an upload makes progress. Should be used with UploadProgressPayload.
+     */
+    UploadProgress = "upload_progress",
+
+    /**
+     * Fired when an upload is completed. Should be used with UploadFinishedPayload.
+     */
+    UploadFinished = "upload_finished",
+
+    /**
+     * Fired when an upload fails. Should be used with UploadErrorPayload.
+     */
+    UploadFailed = "upload_failed",
+
+    /**
+     * Fired when an upload is cancelled by the user. Should be used with UploadCanceledPayload.
+     */
+    UploadCanceled = "upload_canceled",
+
+    /**
+     * Fired when requesting to join a room
+     */
+    JoinRoom = "join_room",
+
+    /**
+     * Fired when successfully joining a room
+     */
+    JoinRoomReady = "join_room_ready",
+
+    /**
+     * Fired when joining a room failed
+     */
+    JoinRoomError = "join_room_error",
+
+    /**
+     * Inserts content into the active composer. Should be used with ComposerInsertPayload
+     */
+    ComposerInsert = "composer_insert",
+
+    /**
+     * Switches space. Should be used with SwitchSpacePayload.
+     */
+    SwitchSpace = "switch_space",
+
+    /**
+     * Signals to the visible space hierarchy that a change has occurred and that it should refresh.
+     */
+    UpdateSpaceHierarchy = "update_space_hierarchy",
+
+    /**
+     * Fires when a monitored setting is updated,
+     * see SettingsStore::monitorSetting for more details.
+     * Should be used with SettingUpdatedPayload.
+     */
+    SettingUpdated = "setting_updated",
+
+    /**
+     * Fires when a user starts to edit event (e.g. up arrow in compositor)
+     */
+    EditEvent = "edit_event",
+
+    /**
+     * The user accepted pseudonymous analytics (i.e. posthog) from the toast
+     * Payload: none
+     */
+    PseudonymousAnalyticsAccept = "pseudonymous_analytics_accept",
+
+    /**
+     * The user rejected pseudonymous analytics (i.e. posthog) from the toast
+     * Payload: none
+     */
+    PseudonymousAnalyticsReject = "pseudonymous_analytics_reject",
+
+    /**
+     * The user accepted anonymous analytics (i.e. matomo, pre-posthog) from the toast
+     * (this action and its handler can be removed once posthog is rolled out)
+     * Payload: none
+     */
+    AnonymousAnalyticsAccept = "anonymous_analytics_accept",
+
+    /**
+     * The user rejected anonymous analytics (i.e. matomo, pre-posthog) from the toast
+     * Payload: none
+     */
+    AnonymousAnalyticsReject = "anonymous_analytics_reject",
 }

@@ -15,46 +15,32 @@ limitations under the License.
 */
 
 import { Room } from "matrix-js-sdk/src/models/room";
+import { isNullOrUndefined } from "matrix-js-sdk/src/utils";
+import { MatrixEvent } from "matrix-js-sdk/src/models/event";
+import { POLL_START_EVENT_TYPE } from "matrix-js-sdk/src/@types/polls";
+
 import { ActionPayload } from "../../dispatcher/payloads";
 import { AsyncStoreWithClient } from "../AsyncStoreWithClient";
 import defaultDispatcher from "../../dispatcher/dispatcher";
-import { RoomListStoreTempProxy } from "./RoomListStoreTempProxy";
 import { MessageEventPreview } from "./previews/MessageEventPreview";
-import { NameEventPreview } from "./previews/NameEventPreview";
+import { PollStartEventPreview } from "./previews/PollStartEventPreview";
 import { TagID } from "./models";
-import { isNullOrUndefined } from "matrix-js-sdk/src/utils";
-import { TopicEventPreview } from "./previews/TopicEventPreview";
-import { MembershipEventPreview } from "./previews/MembershipEventPreview";
-import { HistoryVisibilityEventPreview } from "./previews/HistoryVisibilityEventPreview";
 import { CallInviteEventPreview } from "./previews/CallInviteEventPreview";
 import { CallAnswerEventPreview } from "./previews/CallAnswerEventPreview";
 import { CallHangupEvent } from "./previews/CallHangupEvent";
-import { EncryptionEventPreview } from "./previews/EncryptionEventPreview";
-import { ThirdPartyInviteEventPreview } from "./previews/ThirdPartyInviteEventPreview";
 import { StickerEventPreview } from "./previews/StickerEventPreview";
 import { ReactionEventPreview } from "./previews/ReactionEventPreview";
-import { CreationEventPreview } from "./previews/CreationEventPreview";
+import { UPDATE_EVENT } from "../AsyncStore";
+import SettingsStore from "../../settings/SettingsStore";
+
+// Emitted event for when a room's preview has changed. First argument will the room for which
+// the change happened.
+const ROOM_PREVIEW_CHANGED = "room_preview_changed";
 
 const PREVIEWS = {
     'm.room.message': {
         isState: false,
         previewer: new MessageEventPreview(),
-    },
-    'm.room.name': {
-        isState: true,
-        previewer: new NameEventPreview(),
-    },
-    'm.room.topic': {
-        isState: true,
-        previewer: new TopicEventPreview(),
-    },
-    'm.room.member': {
-        isState: true,
-        previewer: new MembershipEventPreview(),
-    },
-    'm.room.history_visibility': {
-        isState: true,
-        previewer: new HistoryVisibilityEventPreview(),
     },
     'm.call.invite': {
         isState: false,
@@ -68,14 +54,6 @@ const PREVIEWS = {
         isState: false,
         previewer: new CallHangupEvent(),
     },
-    'm.room.encryption': {
-        isState: true,
-        previewer: new EncryptionEventPreview(),
-    },
-    'm.room.third_party_invite': {
-        isState: true,
-        previewer: new ThirdPartyInviteEventPreview(),
-    },
     'm.sticker': {
         isState: false,
         previewer: new StickerEventPreview(),
@@ -84,25 +62,39 @@ const PREVIEWS = {
         isState: false,
         previewer: new ReactionEventPreview(),
     },
-    'm.room.create': {
-        isState: true,
-        previewer: new CreationEventPreview(),
-    },
 };
+
+function previews(): Object {
+    // TODO: when polls comes out of labs, add this to PREVIEWS
+    if (SettingsStore.getValue("feature_polls")) {
+        return {
+            [POLL_START_EVENT_TYPE.name]: {
+                isState: false,
+                previewer: new PollStartEventPreview(),
+            },
+            ...PREVIEWS,
+        };
+    } else {
+        return PREVIEWS;
+    }
+}
 
 // The maximum number of events we're willing to look back on to get a preview.
 const MAX_EVENTS_BACKWARDS = 50;
 
 // type merging ftw
-type TAG_ANY = "im.vector.any";
+type TAG_ANY = "im.vector.any"; // eslint-disable-line @typescript-eslint/naming-convention
 const TAG_ANY: TAG_ANY = "im.vector.any";
 
 interface IState {
-    [roomId: string]: Map<TagID | TAG_ANY, string | null>; // null indicates the preview is empty / irrelevant
+    // Empty because we don't actually use the state
 }
 
 export class MessagePreviewStore extends AsyncStoreWithClient<IState> {
     private static internalInstance = new MessagePreviewStore();
+
+    // null indicates the preview is empty / irrelevant
+    private previews = new Map<string, Map<TagID|TAG_ANY, string|null>>();
 
     private constructor() {
         super(defaultDispatcher, {});
@@ -112,19 +104,22 @@ export class MessagePreviewStore extends AsyncStoreWithClient<IState> {
         return MessagePreviewStore.internalInstance;
     }
 
+    public static getPreviewChangedEventName(room: Room): string {
+        return `${ROOM_PREVIEW_CHANGED}:${room?.roomId}`;
+    }
+
     /**
      * Gets the pre-translated preview for a given room
      * @param room The room to get the preview for.
      * @param inTagId The tag ID in which the room resides
      * @returns The preview, or null if none present.
      */
-    public getPreviewForRoom(room: Room, inTagId: TagID): string {
+    public async getPreviewForRoom(room: Room, inTagId: TagID): Promise<string> {
         if (!room) return null; // invalid room, just return nothing
 
-        const val = this.state[room.roomId];
-        if (!val) this.generatePreview(room, inTagId);
+        if (!this.previews.has(room.roomId)) await this.generatePreview(room, inTagId);
 
-        const previews = this.state[room.roomId];
+        const previews = this.previews.get(room.roomId);
         if (!previews) return null;
 
         if (!previews.has(inTagId)) {
@@ -133,15 +128,22 @@ export class MessagePreviewStore extends AsyncStoreWithClient<IState> {
         return previews.get(inTagId);
     }
 
-    private generatePreview(room: Room, tagId?: TagID) {
+    public generatePreviewForEvent(event: MatrixEvent): string {
+        const previewDef = previews()[event.getType()];
+        // TODO: Handle case where we don't have
+        if (!previewDef) return '';
+        const previewText = previewDef.previewer.getTextFor(event, null, true);
+        return previewText ?? '';
+    }
+
+    private async generatePreview(room: Room, tagId?: TagID) {
         const events = room.timeline;
         if (!events) return; // should only happen in tests
 
-        let map = this.state[room.roomId];
+        let map = this.previews.get(room.roomId);
         if (!map) {
             map = new Map<TagID | TAG_ANY, string | null>();
-
-            // We set the state later with the map, so no need to send an update now
+            this.previews.set(room.roomId, map);
         }
 
         // Set the tags so we know what to generate
@@ -150,10 +152,16 @@ export class MessagePreviewStore extends AsyncStoreWithClient<IState> {
 
         let changed = false;
         for (let i = events.length - 1; i >= 0; i--) {
-            if (i === events.length - MAX_EVENTS_BACKWARDS) return; // limit reached
+            if (i === events.length - MAX_EVENTS_BACKWARDS) {
+                // limit reached - clear the preview by breaking out of the loop
+                break;
+            }
 
             const event = events[i];
-            const previewDef = PREVIEWS[event.getType()];
+
+            await this.matrixClient.decryptEventIfNeeded(event);
+
+            const previewDef = previews()[event.getType()];
             if (!previewDef) continue;
             if (previewDef.isState && isNullOrUndefined(event.getStateKey())) continue;
 
@@ -177,28 +185,28 @@ export class MessagePreviewStore extends AsyncStoreWithClient<IState> {
             }
 
             if (changed) {
-                // Update state for good measure - causes emit for update
-                // noinspection JSIgnoredPromiseFromCall - the AsyncStore handles concurrent calls
-                this.updateState({[room.roomId]: map});
+                // We've muted the underlying Map, so just emit that we've changed.
+                this.previews.set(room.roomId, map);
+                this.emit(UPDATE_EVENT, this);
+                this.emit(MessagePreviewStore.getPreviewChangedEventName(room), room);
             }
             return; // we're done
         }
 
         // At this point, we didn't generate a preview so clear it
-        // noinspection JSIgnoredPromiseFromCall - the AsyncStore handles concurrent calls
-        this.updateState({[room.roomId]: null});
+        this.previews.set(room.roomId, new Map<TagID|TAG_ANY, string|null>());
+        this.emit(UPDATE_EVENT, this);
+        this.emit(MessagePreviewStore.getPreviewChangedEventName(room), room);
     }
 
     protected async onAction(payload: ActionPayload) {
         if (!this.matrixClient) return;
 
-        // TODO: Remove when new room list is made the default: https://github.com/vector-im/riot-web/issues/14231
-        if (!RoomListStoreTempProxy.isUsingNewStore()) return;
-
         if (payload.action === 'MatrixActions.Room.timeline' || payload.action === 'MatrixActions.Event.decrypted') {
             const event = payload.event; // TODO: Type out the dispatcher
-            if (!Object.keys(this.state).includes(event.getRoomId())) return; // not important
-            this.generatePreview(this.matrixClient.getRoom(event.getRoomId()), TAG_ANY);
+            const isHistoricalEvent = payload.hasOwnProperty("isLiveEvent") && !payload.isLiveEvent;
+            if (!this.previews.has(event.getRoomId()) || isHistoricalEvent) return; // not important
+            await this.generatePreview(this.matrixClient.getRoom(event.getRoomId()), TAG_ANY);
         }
     }
 }

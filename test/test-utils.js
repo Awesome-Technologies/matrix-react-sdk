@@ -1,13 +1,14 @@
-"use strict";
-
 import React from 'react';
-import {MatrixClientPeg as peg} from '../src/MatrixClientPeg';
-import dis from '../src/dispatcher/dispatcher';
-import {makeType} from "../src/utils/TypeUtils";
-import {ValidatedServerConfig} from "../src/utils/AutoDiscoveryUtils";
+import EventEmitter from "events";
 import ShallowRenderer from 'react-test-renderer/shallow';
+import { MatrixEvent } from "matrix-js-sdk/src/models/event";
+import { JoinRule } from 'matrix-js-sdk/src/@types/partials';
+
+import { MatrixClientPeg as peg } from '../src/MatrixClientPeg';
+import dis from '../src/dispatcher/dispatcher';
+import { makeType } from "../src/utils/TypeUtils";
+import { ValidatedServerConfig } from "../src/utils/AutoDiscoveryUtils";
 import MatrixClientContext from "../src/contexts/MatrixClientContext";
-import {MatrixEvent} from "matrix-js-sdk/src/models/event";
 
 export function getRenderer() {
     // Old: ReactTestUtils.createRenderer();
@@ -44,11 +45,15 @@ export function stubClient() {
  * @returns {object} MatrixClient stub
  */
 export function createTestClient() {
+    const eventEmitter = new EventEmitter();
+
     return {
         getHomeserverUrl: jest.fn(),
         getIdentityServerUrl: jest.fn(),
         getDomain: jest.fn().mockReturnValue("matrix.rog"),
         getUserId: jest.fn().mockReturnValue("@userId:matrix.rog"),
+        getUser: jest.fn().mockReturnValue({ on: jest.fn() }),
+        credentials: { userId: "@userId:matrix.rog" },
 
         getPushActionsForEvent: jest.fn(),
         getRoom: jest.fn().mockImplementation(mkStubRoom),
@@ -56,8 +61,9 @@ export function createTestClient() {
         getVisibleRooms: jest.fn().mockReturnValue([]),
         getGroups: jest.fn().mockReturnValue([]),
         loginFlows: jest.fn(),
-        on: jest.fn(),
-        removeListener: jest.fn(),
+        on: eventEmitter.on.bind(eventEmitter),
+        emit: eventEmitter.emit.bind(eventEmitter),
+        removeListener: eventEmitter.removeListener.bind(eventEmitter),
         isRoomEncrypted: jest.fn().mockReturnValue(false),
         peekInRoom: jest.fn().mockResolvedValue(mkStubRoom()),
 
@@ -66,6 +72,11 @@ export function createTestClient() {
         getRoomIdForAlias: jest.fn().mockResolvedValue(undefined),
         getRoomDirectoryVisibility: jest.fn().mockResolvedValue(undefined),
         getProfileInfo: jest.fn().mockResolvedValue({}),
+        getThirdpartyProtocols: jest.fn().mockResolvedValue({}),
+        getClientWellKnown: jest.fn().mockReturnValue(null),
+        supportsVoip: jest.fn().mockReturnValue(true),
+        getTurnServersExpiry: jest.fn().mockReturnValue(2^32),
+        getThirdpartyUser: jest.fn().mockResolvedValue([]),
         getAccountData: (type) => {
             return mkEvent({
                 type,
@@ -73,13 +84,44 @@ export function createTestClient() {
                 content: {},
             });
         },
-        mxcUrlToHttp: (mxc) => 'http://this.is.a.url/',
+        mxcUrlToHttp: (mxc) => `http://this.is.a.url/${mxc.substring(6)}`,
         setAccountData: jest.fn(),
+        setRoomAccountData: jest.fn(),
         sendTyping: jest.fn().mockResolvedValue({}),
         sendMessage: () => jest.fn().mockResolvedValue({}),
+        sendStateEvent: jest.fn().mockResolvedValue(),
         getSyncState: () => "SYNCING",
         generateClientSecret: () => "t35tcl1Ent5ECr3T",
         isGuest: () => false,
+        isCryptoEnabled: () => false,
+        getRoomHierarchy: jest.fn().mockReturnValue({
+            rooms: [],
+        }),
+
+        // Used by various internal bits we aren't concerned with (yet)
+        sessionStore: {
+            store: {
+                getItem: jest.fn(),
+                setItem: jest.fn(),
+            },
+        },
+        pushRules: {},
+        decryptEventIfNeeded: () => Promise.resolve(),
+        isUserIgnored: jest.fn().mockReturnValue(false),
+        getCapabilities: jest.fn().mockResolvedValue({}),
+        supportsExperimentalThreads: () => false,
+        getRoomUpgradeHistory: jest.fn().mockReturnValue([]),
+        getOpenIdToken: jest.fn().mockResolvedValue(),
+        registerWithIdentityServer: jest.fn().mockResolvedValue({}),
+        getIdentityAccount: jest.fn().mockResolvedValue({}),
+        getTerms: jest.fn().mockResolvedValueOnce(),
+        doesServerSupportUnstableFeature: jest.fn().mockResolvedValue(),
+        getPushRules: jest.fn().mockResolvedValue(),
+        getPushers: jest.fn().mockResolvedValue({ pushers: [] }),
+        getThreePids: jest.fn().mockResolvedValue({ threepids: [] }),
+        setPusher: jest.fn().mockResolvedValue(),
+        setPushRuleEnabled: jest.fn().mockResolvedValue(),
+        setPushRuleActions: jest.fn().mockResolvedValue(),
     };
 }
 
@@ -89,10 +131,11 @@ export function createTestClient() {
  * @param {string} opts.type The event.type
  * @param {string} opts.room The event.room_id
  * @param {string} opts.user The event.user_id
- * @param {string} opts.skey Optional. The state key (auto inserts empty string)
- * @param {Number} opts.ts   Optional. Timestamp for the event
+ * @param {string=} opts.skey Optional. The state key (auto inserts empty string)
+ * @param {number=} opts.ts   Optional. Timestamp for the event
  * @param {Object} opts.content The event.content
  * @param {boolean} opts.event True to make a MatrixEvent.
+ * @param {unsigned=} opts.unsigned
  * @return {Object} a JSON object representing this event.
  */
 export function mkEvent(opts) {
@@ -110,9 +153,12 @@ export function mkEvent(opts) {
     };
     if (opts.skey) {
         event.state_key = opts.skey;
-    } else if (["m.room.name", "m.room.topic", "m.room.create", "m.room.join_rules",
-         "m.room.power_levels", "m.room.topic", "m.room.history_visibility", "m.room.encryption",
-         "com.example.state"].indexOf(opts.type) !== -1) {
+    } else if ([
+        "m.room.name", "m.room.topic", "m.room.create", "m.room.join_rules",
+        "m.room.power_levels", "m.room.topic", "m.room.history_visibility",
+        "m.room.encryption", "m.room.member", "com.example.state",
+        "m.room.guest_access",
+    ].indexOf(opts.type) !== -1) {
         event.state_key = "";
     }
     return opts.event ? new MatrixEvent(event) : event;
@@ -147,12 +193,13 @@ export function mkPresence(opts) {
  * @param {string} opts.room The room ID for the event.
  * @param {string} opts.mship The content.membership for the event.
  * @param {string} opts.prevMship The prev_content.membership for the event.
+ * @param {number=} opts.ts   Optional. Timestamp for the event
  * @param {string} opts.user The user ID for the event.
  * @param {RoomMember} opts.target The target of the event.
- * @param {string} opts.skey The other user ID for the event if applicable
+ * @param {string=} opts.skey The other user ID for the event if applicable
  * e.g. for invites/bans.
  * @param {string} opts.name The content.displayname for the event.
- * @param {string} opts.url The content.avatar_url for the event.
+ * @param {string=} opts.url The content.avatar_url for the event.
  * @param {boolean} opts.event True to make a MatrixEvent.
  * @return {Object|MatrixEvent} The event
  */
@@ -184,8 +231,9 @@ export function mkMembership(opts) {
  * @param {Object} opts Values for the message
  * @param {string} opts.room The room ID for the event.
  * @param {string} opts.user The user ID for the event.
- * @param {string} opts.msg Optional. The content.body for the event.
+ * @param {number} opts.ts The timestamp for the event.
  * @param {boolean} opts.event True to make a MatrixEvent.
+ * @param {string=} opts.msg Optional. The content.body for the event.
  * @return {Object|MatrixEvent} The event
  */
 export function mkMessage(opts) {
@@ -203,7 +251,7 @@ export function mkMessage(opts) {
     return mkEvent(opts);
 }
 
-export function mkStubRoom(roomId = null) {
+export function mkStubRoom(roomId = null, name, client) {
     const stubTimeline = { getEvents: () => [] };
     return {
         roomId,
@@ -214,33 +262,49 @@ export function mkStubRoom(roomId = null) {
             rawDisplayName: 'Member',
             roomId: roomId,
             getAvatarUrl: () => 'mxc://avatar.url/image.png',
+            getMxcAvatarUrl: () => 'mxc://avatar.url/image.png',
         }),
         getMembersWithMembership: jest.fn().mockReturnValue([]),
         getJoinedMembers: jest.fn().mockReturnValue([]),
+        getJoinedMemberCount: jest.fn().mockReturnValue(1),
+        getMembers: jest.fn().mockReturnValue([]),
         getPendingEvents: () => [],
         getLiveTimeline: () => stubTimeline,
         getUnfilteredTimelineSet: () => null,
+        findEventById: () => null,
         getAccountData: () => null,
         hasMembershipState: () => null,
         getVersion: () => '1',
         shouldUpgradeToVersion: () => null,
-        getMyMembership: () => "join",
+        getMyMembership: jest.fn().mockReturnValue("join"),
         maySendMessage: jest.fn().mockReturnValue(true),
         currentState: {
             getStateEvents: jest.fn(),
+            getMember: jest.fn(),
             mayClientSendStateEvent: jest.fn().mockReturnValue(true),
             maySendStateEvent: jest.fn().mockReturnValue(true),
             maySendEvent: jest.fn().mockReturnValue(true),
             members: [],
+            getJoinRule: jest.fn().mockReturnValue(JoinRule.Invite),
+            on: jest.fn(),
         },
-        tags: {
-            "m.favourite": {
-                order: 0.5,
-            },
-        },
+        tags: {},
         setBlacklistUnverifiedDevices: jest.fn(),
         on: jest.fn(),
+        off: jest.fn(),
         removeListener: jest.fn(),
+        getDMInviter: jest.fn(),
+        name,
+        getAvatarUrl: () => 'mxc://avatar.url/room.png',
+        getMxcAvatarUrl: () => 'mxc://avatar.url/room.png',
+        isSpaceRoom: jest.fn(() => false),
+        getUnreadNotificationCount: jest.fn(() => 0),
+        getEventReadUpTo: jest.fn(() => null),
+        getCanonicalAlias: jest.fn(),
+        getAltAliases: jest.fn().mockReturnValue([]),
+        timeline: [],
+        getJoinRule: jest.fn().mockReturnValue("invite"),
+        client,
     };
 }
 

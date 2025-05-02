@@ -19,6 +19,7 @@ limitations under the License.
     flex-direction: column;
     flex: 1;
     overflow-y: auto;
+    margin-top: 8px;
 }
 
 .mx_MemberInfo_name {
@@ -38,7 +39,7 @@ limitations under the License.
     mask-image: url('$(res)/img/minimise.svg');
     mask-repeat: no-repeat;
     mask-position: 16px center;
-    background-color: $rightpanel-button-color;
+    background-color: $header-panel-text-primary-color;
 }
 
 .mx_MemberInfo_name h2 {
@@ -70,7 +71,7 @@ limitations under the License.
 }
 
 .mx_MemberInfo_avatar {
-    background: $tagpanel-bg-color;
+    background: $groupFilterPanel-bg-color;
     margin-bottom: 16px;
 }
 
@@ -110,7 +111,7 @@ limitations under the License.
 .mx_MemberInfo_field {
     cursor: pointer;
     font-size: $font-15px;
-    color: $primary-fg-color;
+    color: $primary-content;
     margin-left: 8px;
     line-height: $font-23px;
 }

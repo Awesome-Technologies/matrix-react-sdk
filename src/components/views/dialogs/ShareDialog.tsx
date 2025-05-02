@@ -17,19 +17,26 @@ limitations under the License.
 
 import * as React from 'react';
 import * as PropTypes from 'prop-types';
-import {Room} from "matrix-js-sdk/src/models/room";
-import {User} from "matrix-js-sdk/src/models/user";
-import {Group} from "matrix-js-sdk/src/models/group";
-import {RoomMember} from "matrix-js-sdk/src/models/room-member";
-import {MatrixEvent} from "matrix-js-sdk/src/models/event";
-import * as sdk from '../../../index';
+import { Room } from "matrix-js-sdk/src/models/room";
+import { User } from "matrix-js-sdk/src/models/user";
+import { Group } from "matrix-js-sdk/src/models/group";
+import { RoomMember } from "matrix-js-sdk/src/models/room-member";
+import { MatrixEvent } from "matrix-js-sdk/src/models/event";
+
 import { _t } from '../../../languageHandler';
 import QRCode from "../elements/QRCode";
-import {RoomPermalinkCreator, makeGroupPermalink, makeUserPermalink} from "../../../utils/permalinks/Permalinks";
+import { RoomPermalinkCreator, makeGroupPermalink, makeUserPermalink } from "../../../utils/permalinks/Permalinks";
 import * as ContextMenu from "../../structures/ContextMenu";
-import {toRightOf} from "../../structures/ContextMenu";
-import {copyPlaintext, selectText} from "../../../utils/strings";
+import { toRightOf } from "../../structures/ContextMenu";
+import { copyPlaintext, selectText } from "../../../utils/strings";
 import StyledCheckbox from '../elements/StyledCheckbox';
+import AccessibleTooltipButton from '../elements/AccessibleTooltipButton';
+import { IDialogProps } from "./IDialogProps";
+import SettingsStore from "../../../settings/SettingsStore";
+import { UIFeature } from "../../../settings/UIFeature";
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import BaseDialog from "./BaseDialog";
+import GenericTextContextMenu from "../context_menus/GenericTextContextMenu";
 
 const socials = [
     {
@@ -59,8 +66,7 @@ const socials = [
     },
 ];
 
-interface IProps {
-    onFinished: () => void;
+interface IProps extends IDialogProps {
     target: Room | User | Group | RoomMember | MatrixEvent;
     permalinkCreator: RoomPermalinkCreator;
 }
@@ -70,6 +76,7 @@ interface IState {
     permalinkCreator: RoomPermalinkCreator;
 }
 
+@replaceableComponent("views.dialogs.ShareDialog")
 export default class ShareDialog extends React.PureComponent<IProps, IState> {
     static propTypes = {
         onFinished: PropTypes.func.isRequired,
@@ -114,8 +121,7 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
 
         const successful = await copyPlaintext(this.getUrl());
         const buttonRect = target.getBoundingClientRect();
-        const GenericTextContextMenu = sdk.getComponent('context_menus.GenericTextContextMenu');
-        const {close} = ContextMenu.createMenu(GenericTextContextMenu, {
+        const { close } = ContextMenu.createMenu(GenericTextContextMenu, {
             ...toRightOf(buttonRect, 2),
             message: successful ? _t('Copied!') : _t('Failed to copy'),
         });
@@ -143,7 +149,7 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
                 const events = this.props.target.getLiveTimeline().getEvents();
                 matrixToUrl = this.state.permalinkCreator.forEvent(events[events.length - 1].getId());
             } else {
-                matrixToUrl = this.state.permalinkCreator.forRoom();
+                matrixToUrl = this.state.permalinkCreator.forShareableRoom();
             }
         } else if (this.props.target instanceof User || this.props.target instanceof RoomMember) {
             matrixToUrl = makeUserPermalink(this.props.target.userId);
@@ -153,7 +159,7 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
             if (this.state.linkSpecificEvent) {
                 matrixToUrl = this.props.permalinkCreator.forEvent(this.props.target.getId());
             } else {
-                matrixToUrl = this.props.permalinkCreator.forRoom();
+                matrixToUrl = this.props.permalinkCreator.forShareableRoom();
             }
         }
         return matrixToUrl;
@@ -185,8 +191,8 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
             title = _t('Share Room Message');
             checkbox = <div>
                 <StyledCheckbox
-                       checked={this.state.linkSpecificEvent}
-                       onClick={this.onLinkSpecificEventCheckboxClick}
+                    checked={this.state.linkSpecificEvent}
+                    onClick={this.onLinkSpecificEventCheckboxClick}
                 >
                     { _t('Link to selected message') }
                 </StyledCheckbox>
@@ -196,33 +202,18 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
         const matrixToUrl = this.getUrl();
         const encodedUrl = encodeURIComponent(matrixToUrl);
 
-        const BaseDialog = sdk.getComponent('views.dialogs.BaseDialog');
-        return <BaseDialog title={title}
-                           className='mx_ShareDialog'
-                           contentId='mx_Dialog_content'
-                           onFinished={this.props.onFinished}
-        >
-            <div className="mx_ShareDialog_content">
-                <div className="mx_ShareDialog_matrixto">
-                    <a href={matrixToUrl}
-                       onClick={ShareDialog.onLinkClick}
-                       className="mx_ShareDialog_matrixto_link"
-                    >
-                        { matrixToUrl }
-                    </a>
-                    <a href={matrixToUrl} className="mx_ShareDialog_matrixto_copy" onClick={this.onCopyClick}>
-                        { _t('COPY') }
-                        <div>&nbsp;</div>
-                    </a>
-                </div>
-                { checkbox }
-                <hr />
+        const showQrCode = SettingsStore.getValue(UIFeature.ShareQRCode);
+        const showSocials = SettingsStore.getValue(UIFeature.ShareSocial);
 
+        let qrSocialSection;
+        if (showQrCode || showSocials) {
+            qrSocialSection = <>
+                <hr />
                 <div className="mx_ShareDialog_split">
-                    <div className="mx_ShareDialog_qrcode_container">
+                    { showQrCode && <div className="mx_ShareDialog_qrcode_container">
                         <QRCode data={matrixToUrl} width={256} />
-                    </div>
-                    <div className="mx_ShareDialog_social_container">
+                    </div> }
+                    { showSocials && <div className="mx_ShareDialog_social_container">
                         { socials.map((social) => (
                             <a
                                 rel="noreferrer noopener"
@@ -235,8 +226,35 @@ export default class ShareDialog extends React.PureComponent<IProps, IState> {
                                 <img src={social.img} alt={social.name} height={64} width={64} />
                             </a>
                         )) }
-                    </div>
+                    </div> }
                 </div>
+            </>;
+        }
+
+        return <BaseDialog
+            title={title}
+            className='mx_ShareDialog'
+            contentId='mx_Dialog_content'
+            onFinished={this.props.onFinished}
+        >
+            <div className="mx_ShareDialog_content">
+                <div className="mx_ShareDialog_matrixto">
+                    <a
+                        title={_t('Link to room')}
+                        href={matrixToUrl}
+                        onClick={ShareDialog.onLinkClick}
+                        className="mx_ShareDialog_matrixto_link"
+                    >
+                        { matrixToUrl }
+                    </a>
+                    <AccessibleTooltipButton
+                        title={_t("Copy")}
+                        onClick={this.onCopyClick}
+                        className="mx_ShareDialog_matrixto_copy"
+                    />
+                </div>
+                { checkbox }
+                { qrSocialSection }
             </div>
         </BaseDialog>;
     }

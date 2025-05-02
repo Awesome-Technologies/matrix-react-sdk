@@ -17,6 +17,7 @@ limitations under the License.
 import React from "react";
 
 import { _t } from "../languageHandler";
+import SdkConfig from "../SdkConfig";
 import GenericToast from "../components/views/toasts/GenericToast";
 import ToastStore from "../stores/ToastStore";
 import QuestionDialog from "../components/views/dialogs/QuestionDialog";
@@ -28,7 +29,7 @@ const TOAST_KEY = "update";
 
 /*
  * Check a version string is compatible with the Changelog
- * dialog ([riot-version]-react-[react-sdk-version]-js-[js-sdk-version])
+ * dialog ([element-version]-react-[react-sdk-version]-js-[js-sdk-version])
  */
 function checkVersion(ver) {
     const parts = ver.split('-');
@@ -50,7 +51,7 @@ export const showToast = (version: string, newVersion: string, releaseNotes?: st
         onAccept = () => {
             Modal.createTrackedDialog('Display release notes', '', QuestionDialog, {
                 title: _t("What's New"),
-                description: <pre>{releaseNotes}</pre>,
+                description: <pre>{ releaseNotes }</pre>,
                 button: _t("Update"),
                 onFinished: (update) => {
                     if (update && PlatformPeg.get()) {
@@ -73,17 +74,18 @@ export const showToast = (version: string, newVersion: string, releaseNotes?: st
         };
     } else {
         onAccept = installUpdate;
-        acceptLabel = _t("Restart");
+        acceptLabel = _t("Update");
     }
 
+    const brand = SdkConfig.get().brand;
     ToastStore.sharedInstance().addOrReplaceToast({
         key: TOAST_KEY,
-        title: _t("Upgrade your Riot"),
+        title: _t("Update %(brand)s", { brand }),
         props: {
-            description: _t("A new version of Riot is available!"),
+            description: _t("New version of %(brand)s is available", { brand }),
             acceptLabel,
             onAccept,
-            rejectLabel: _t("Later"),
+            rejectLabel: _t("Dismiss"),
             onReject,
         },
         component: GenericToast,

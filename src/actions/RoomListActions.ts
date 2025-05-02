@@ -15,16 +15,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { MatrixClient } from "matrix-js-sdk/src/client";
+import { Room } from "matrix-js-sdk/src/models/room";
+import { logger } from "matrix-js-sdk/src/logger";
+
 import { asyncAction } from './actionCreators';
-import { TAG_DM } from '../stores/RoomListStore';
 import Modal from '../Modal';
 import * as Rooms from '../Rooms';
 import { _t } from '../languageHandler';
-import * as sdk from '../index';
-import { MatrixClient } from "matrix-js-sdk/src/client";
-import { Room } from "matrix-js-sdk/src/models/room";
 import { AsyncActionPayload } from "../dispatcher/payloads";
-import { RoomListStoreTempProxy } from "../stores/room-list/RoomListStoreTempProxy";
+import RoomListStore from "../stores/room-list/RoomListStore";
+import { SortAlgorithm } from "../stores/room-list/algorithms/models";
+import { DefaultTagID } from "../stores/room-list/models";
+import ErrorDialog from '../components/views/dialogs/ErrorDialog';
 
 export default class RoomListActions {
     /**
@@ -51,9 +54,9 @@ export default class RoomListActions {
         let metaData = null;
 
         // Is the tag ordered manually?
-        if (newTag && !newTag.match(/^(m\.lowpriority|im\.vector\.fake\.(invite|recent|direct|archived))$/)) {
-            const lists = RoomListStoreTempProxy.getRoomLists();
-            const newList = [...lists[newTag]];
+        const store = RoomListStore.instance;
+        if (newTag && store.getTagSorting(newTag) === SortAlgorithm.Manual) {
+            const newList = [...store.orderedLists[newTag]];
 
             newList.sort((a, b) => a.tags[newTag].order - b.tags[newTag].order);
 
@@ -81,14 +84,13 @@ export default class RoomListActions {
             const roomId = room.roomId;
 
             // Evil hack to get DMs behaving
-            if ((oldTag === undefined && newTag === TAG_DM) ||
-                (oldTag === TAG_DM && newTag === undefined)
+            if ((oldTag === undefined && newTag === DefaultTagID.DM) ||
+                (oldTag === DefaultTagID.DM && newTag === undefined)
             ) {
                 return Rooms.guessAndSetDMRoom(
-                    room, newTag === TAG_DM,
+                    room, newTag === DefaultTagID.DM,
                 ).catch((err) => {
-                    const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-                    console.error("Failed to set direct chat tag " + err);
+                    logger.error("Failed to set direct chat tag " + err);
                     Modal.createTrackedDialog('Failed to set direct chat tag', '', ErrorDialog, {
                         title: _t('Failed to set direct chat tag'),
                         description: ((err && err.message) ? err.message : _t('Operation failed')),
@@ -102,16 +104,15 @@ export default class RoomListActions {
             // but we avoid ever doing a request with TAG_DM.
             //
             // if we moved lists, remove the old tag
-            if (oldTag && oldTag !== TAG_DM &&
+            if (oldTag && oldTag !== DefaultTagID.DM &&
                 hasChangedSubLists
             ) {
                 const promiseToDelete = matrixClient.deleteRoomTag(
                     roomId, oldTag,
-                ).catch(function (err) {
-                    const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-                    console.error("Failed to remove tag " + oldTag + " from room: " + err);
+                ).catch(function(err) {
+                    logger.error("Failed to remove tag " + oldTag + " from room: " + err);
                     Modal.createTrackedDialog('Failed to remove tag from room', '', ErrorDialog, {
-                        title: _t('Failed to remove tag %(tagName)s from room', {tagName: oldTag}),
+                        title: _t('Failed to remove tag %(tagName)s from room', { tagName: oldTag }),
                         description: ((err && err.message) ? err.message : _t('Operation failed')),
                     });
                 });
@@ -120,18 +121,17 @@ export default class RoomListActions {
             }
 
             // if we moved lists or the ordering changed, add the new tag
-            if (newTag && newTag !== TAG_DM &&
+            if (newTag && newTag !== DefaultTagID.DM &&
                 (hasChangedSubLists || metaData)
             ) {
                 // metaData is the body of the PUT to set the tag, so it must
                 // at least be an empty object.
                 metaData = metaData || {};
 
-                const promiseToAdd = matrixClient.setRoomTag(roomId, newTag, metaData).catch(function (err) {
-                    const ErrorDialog = sdk.getComponent("dialogs.ErrorDialog");
-                    console.error("Failed to add tag " + newTag + " to room: " + err);
+                const promiseToAdd = matrixClient.setRoomTag(roomId, newTag, metaData).catch(function(err) {
+                    logger.error("Failed to add tag " + newTag + " to room: " + err);
                     Modal.createTrackedDialog('Failed to add tag to room', '', ErrorDialog, {
-                        title: _t('Failed to add tag %(tagName)s to room', {tagName: newTag}),
+                        title: _t('Failed to add tag %(tagName)s to room', { tagName: newTag }),
                         description: ((err && err.message) ? err.message : _t('Operation failed')),
                     });
 

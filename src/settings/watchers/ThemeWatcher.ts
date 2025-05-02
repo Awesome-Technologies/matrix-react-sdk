@@ -15,23 +15,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import SettingsStore, { SettingLevel } from '../SettingsStore';
+import { logger } from "matrix-js-sdk/src/logger";
+
+import SettingsStore from '../SettingsStore';
 import dis from '../../dispatcher/dispatcher';
 import { Action } from '../../dispatcher/actions';
 import ThemeController from "../controllers/ThemeController";
-import { setTheme } from "../../theme";
+import { findHighContrastTheme, setTheme } from "../../theme";
 import { ActionPayload } from '../../dispatcher/payloads';
+import { SettingLevel } from "../SettingLevel";
 
 export default class ThemeWatcher {
-    // XXX: I think this is unused.
-    static _instance = null;
-
     private themeWatchRef: string;
     private systemThemeWatchRef: string;
     private dispatcherRef: string;
 
     private preferDark: MediaQueryList;
     private preferLight: MediaQueryList;
+    private preferHighContrast: MediaQueryList;
 
     private currentTheme: string;
 
@@ -44,6 +45,7 @@ export default class ThemeWatcher {
         // we can get the tristate of dark/light/unsupported
         this.preferDark = (<any>global).matchMedia("(prefers-color-scheme: dark)");
         this.preferLight = (<any>global).matchMedia("(prefers-color-scheme: light)");
+        this.preferHighContrast = (<any>global).matchMedia("(prefers-contrast: more)");
 
         this.currentTheme = this.getEffectiveTheme();
     }
@@ -54,6 +56,7 @@ export default class ThemeWatcher {
         if (this.preferDark.addEventListener) {
             this.preferDark.addEventListener('change', this.onChange);
             this.preferLight.addEventListener('change', this.onChange);
+            this.preferHighContrast.addEventListener('change', this.onChange);
         }
         this.dispatcherRef = dis.register(this.onAction);
     }
@@ -62,6 +65,7 @@ export default class ThemeWatcher {
         if (this.preferDark.addEventListener) {
             this.preferDark.removeEventListener('change', this.onChange);
             this.preferLight.removeEventListener('change', this.onChange);
+            this.preferHighContrast.removeEventListener('change', this.onChange);
         }
         SettingsStore.unwatchSetting(this.systemThemeWatchRef);
         SettingsStore.unwatchSetting(this.themeWatchRef);
@@ -80,7 +84,7 @@ export default class ThemeWatcher {
     };
 
     // XXX: forceTheme param added here as local echo appears to be unreliable
-    // https://github.com/vector-im/riot-web/issues/11443
+    // https://github.com/vector-im/element-web/issues/11443
     public recheck(forceTheme?: string) {
         const oldTheme = this.currentTheme;
         this.currentTheme = forceTheme === undefined ? this.getEffectiveTheme() : forceTheme;
@@ -107,9 +111,11 @@ export default class ThemeWatcher {
         const systemThemeExplicit = SettingsStore.getValueAt(
             SettingLevel.DEVICE, "use_system_theme", null, false, true);
         if (systemThemeExplicit) {
-            console.log("returning explicit system theme");
-            if (this.preferDark.matches) return 'dark';
-            if (this.preferLight.matches) return 'light';
+            logger.log("returning explicit system theme");
+            const theme = this.themeBasedOnSystem();
+            if (theme) {
+                return theme;
+            }
         }
 
         // If the user has specifically enabled the theme (without the system matching option being
@@ -118,18 +124,36 @@ export default class ThemeWatcher {
         const themeExplicit = SettingsStore.getValueAt(
             SettingLevel.DEVICE, "theme", null, false, true);
         if (themeExplicit) {
-            console.log("returning explicit theme: " + themeExplicit);
+            logger.log("returning explicit theme: " + themeExplicit);
             return themeExplicit;
         }
 
         // If the user hasn't really made a preference in either direction, assume the defaults of the
         // settings and use those.
         if (SettingsStore.getValue('use_system_theme')) {
-            if (this.preferDark.matches) return 'dark';
-            if (this.preferLight.matches) return 'light';
+            const theme = this.themeBasedOnSystem();
+            if (theme) {
+                return theme;
+            }
         }
-        console.log("returning theme value");
+        logger.log("returning theme value");
         return SettingsStore.getValue('theme');
+    }
+
+    private themeBasedOnSystem() {
+        let newTheme: string;
+        if (this.preferDark.matches) {
+            newTheme = 'dark';
+        } else if (this.preferLight.matches) {
+            newTheme = 'light';
+        }
+        if (this.preferHighContrast.matches) {
+            const hcTheme = findHighContrastTheme(newTheme);
+            if (hcTheme) {
+                newTheme = hcTheme;
+            }
+        }
+        return newTheme;
     }
 
     public isSystemThemeSupported() {

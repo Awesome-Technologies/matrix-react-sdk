@@ -17,6 +17,7 @@ limitations under the License.
 import { EventEmitter } from 'events';
 import AwaitLock from 'await-lock';
 import { Dispatcher } from "flux";
+
 import { ActionPayload } from "../dispatcher/payloads";
 
 /**
@@ -42,7 +43,7 @@ export const UPDATE_EVENT = "update";
  * help prevent lock conflicts.
  */
 export abstract class AsyncStore<T extends Object> extends EventEmitter {
-    private storeState: T;
+    private storeState: Readonly<T>;
     private lock = new AwaitLock();
     private readonly dispatcherRef: string;
 
@@ -62,7 +63,7 @@ export abstract class AsyncStore<T extends Object> extends EventEmitter {
      * The current state of the store. Cannot be mutated.
      */
     protected get state(): T {
-        return Object.freeze(this.storeState);
+        return this.storeState;
     }
 
     /**
@@ -79,7 +80,7 @@ export abstract class AsyncStore<T extends Object> extends EventEmitter {
     protected async updateState(newState: T | Object) {
         await this.lock.acquireAsync();
         try {
-            this.storeState = Object.assign(<T>{}, this.storeState, newState);
+            this.storeState = Object.freeze(Object.assign(<T>{}, this.storeState, newState));
             this.emit(UPDATE_EVENT, this);
         } finally {
             await this.lock.release();
@@ -94,7 +95,7 @@ export abstract class AsyncStore<T extends Object> extends EventEmitter {
     protected async reset(newState: T | Object = null, quiet = false) {
         await this.lock.acquireAsync();
         try {
-            this.storeState = <T>(newState || {});
+            this.storeState = Object.freeze(<T>(newState || {}));
             if (!quiet) this.emit(UPDATE_EVENT, this);
         } finally {
             await this.lock.release();

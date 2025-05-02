@@ -18,21 +18,22 @@ limitations under the License.
 */
 
 import React from 'react';
-import { _t } from '../languageHandler';
-import AutocompleteProvider from './AutocompleteProvider';
-import {PillCompletion} from './Components';
-import * as sdk from '../index';
-import QueryMatcher from './QueryMatcher';
-import _sortBy from 'lodash/sortBy';
-import {MatrixClientPeg} from '../MatrixClientPeg';
+import { sortBy } from 'lodash';
+import { MatrixEvent } from "matrix-js-sdk/src/models/event";
+import { Room } from "matrix-js-sdk/src/models/room";
+import { RoomMember } from "matrix-js-sdk/src/models/room-member";
+import { RoomState } from "matrix-js-sdk/src/models/room-state";
+import { EventTimeline } from "matrix-js-sdk/src/models/event-timeline";
 
-import MatrixEvent from "matrix-js-sdk/src/models/event";
-import Room from "matrix-js-sdk/src/models/room";
-import RoomMember from "matrix-js-sdk/src/models/room-member";
-import RoomState from "matrix-js-sdk/src/models/room-state";
-import EventTimeline from "matrix-js-sdk/src/models/event-timeline";
-import {makeUserPermalink} from "../utils/permalinks/Permalinks";
-import {ICompletion, ISelectionRange} from "./Autocompleter";
+import { MatrixClientPeg } from '../MatrixClientPeg';
+import QueryMatcher from './QueryMatcher';
+import { PillCompletion } from './Components';
+import AutocompleteProvider from './AutocompleteProvider';
+import { _t } from '../languageHandler';
+import { makeUserPermalink } from "../utils/permalinks/Permalinks";
+import { ICompletion, ISelectionRange } from "./Autocompleter";
+import MemberAvatar from '../components/views/avatars/MemberAvatar';
+import { TimelineRenderingType } from '../contexts/RoomContext';
 
 const USER_REGEX = /\B@\S*/g;
 
@@ -50,13 +51,16 @@ export default class UserProvider extends AutocompleteProvider {
     users: RoomMember[];
     room: Room;
 
-    constructor(room: Room) {
-        super(USER_REGEX, FORCED_USER_REGEX);
+    constructor(room: Room, renderingType?: TimelineRenderingType) {
+        super({
+            commandRegex: USER_REGEX,
+            forcedCommandRegex: FORCED_USER_REGEX,
+            renderingType,
+        });
         this.room = room;
         this.matcher = new QueryMatcher([], {
             keys: ['name'],
             funcs: [obj => obj.userId.slice(1)], // index by user id minus the leading '@'
-            shouldMatchPrefix: true,
             shouldMatchWordsOnly: false,
         });
 
@@ -71,8 +75,13 @@ export default class UserProvider extends AutocompleteProvider {
         }
     }
 
-    private onRoomTimeline = (ev: MatrixEvent, room: Room, toStartOfTimeline: boolean, removed: boolean,
-                       data: IRoomTimelineData) => {
+    private onRoomTimeline = (
+        ev: MatrixEvent,
+        room: Room,
+        toStartOfTimeline: boolean,
+        removed: boolean,
+        data: IRoomTimelineData,
+    ) => {
         if (!room) return;
         if (removed) return;
         if (room.roomId !== this.room.roomId) return;
@@ -98,14 +107,17 @@ export default class UserProvider extends AutocompleteProvider {
         this.users = null;
     };
 
-    async getCompletions(rawQuery: string, selection: ISelectionRange, force = false): Promise<ICompletion[]> {
-        const MemberAvatar = sdk.getComponent('views.avatars.MemberAvatar');
-
+    async getCompletions(
+        rawQuery: string,
+        selection: ISelectionRange,
+        force = false,
+        limit = -1,
+    ): Promise<ICompletion[]> {
         // lazy-load user list into matcher
-        if (!this.users) this._makeUsers();
+        if (!this.users) this.makeUsers();
 
         let completions = [];
-        const {command, range} = this.getCurrentCommand(rawQuery, selection, force);
+        const { command, range } = this.getCurrentCommand(rawQuery, selection, force);
 
         if (!command) return completions;
 
@@ -114,7 +126,7 @@ export default class UserProvider extends AutocompleteProvider {
         if (fullMatch && fullMatch !== '@') {
             // Don't include the '@' in our search query - it's only used as a way to trigger completion
             const query = fullMatch.startsWith('@') ? fullMatch.substring(1) : fullMatch;
-            completions = this.matcher.match(query).map((user) => {
+            completions = this.matcher.match(query, limit).map((user) => {
                 const displayName = (user.name || user.userId || '');
                 return {
                     // Length of completion should equal length of text in decorator. draft-js
@@ -137,10 +149,10 @@ export default class UserProvider extends AutocompleteProvider {
     }
 
     getName(): string {
-        return '👥 ' + _t('Users');
+        return _t('Users');
     }
 
-    _makeUsers() {
+    private makeUsers() {
         const events = this.room.getLiveTimeline().getEvents();
         const lastSpoken = {};
 
@@ -149,9 +161,10 @@ export default class UserProvider extends AutocompleteProvider {
         }
 
         const currentUserId = MatrixClientPeg.get().credentials.userId;
-        this.users = this.room.getJoinedMembers().filter(({userId}) => userId !== currentUserId);
+        this.users = this.room.getJoinedMembers().filter(({ userId }) => userId !== currentUserId);
+        this.users = this.users.concat(this.room.getMembersWithMembership("invite"));
 
-        this.users = _sortBy(this.users, (member) => 1E20 - lastSpoken[member.userId] || 1E20);
+        this.users = sortBy(this.users, (member) => 1E20 - lastSpoken[member.userId] || 1E20);
 
         this.matcher.setObjects(this.users);
     }
@@ -171,7 +184,11 @@ export default class UserProvider extends AutocompleteProvider {
 
     renderCompletions(completions: React.ReactNode[]): React.ReactNode {
         return (
-            <div className="mx_Autocomplete_Completion_container_pill" role="listbox" aria-label={_t("User Autocomplete")}>
+            <div
+                className="mx_Autocomplete_Completion_container_pill"
+                role="presentation"
+                aria-label={_t("User Autocomplete")}
+            >
                 { completions }
             </div>
         );

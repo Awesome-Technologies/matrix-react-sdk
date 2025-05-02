@@ -17,10 +17,10 @@ limitations under the License.
 import * as React from "react";
 import classNames from "classnames";
 
-import * as sdk from "../index";
 import Modal from "../Modal";
 import { _t, _td } from "../languageHandler";
-import {isMac, Key} from "../Keyboard";
+import { isMac, Key } from "../Keyboard";
+import InfoDialog from "../components/views/dialogs/InfoDialog";
 
 // TS: once languageHandler is TS we can probably inline this into the enum
 _td("Navigation");
@@ -57,6 +57,8 @@ export enum Modifiers {
 
 // Meta-modifier: isMac ? CMD : CONTROL
 export const CMD_OR_CTRL = isMac ? Modifiers.COMMAND : Modifiers.CONTROL;
+// Meta-key representing the digits [0-9] often found at the top of standard keyboard layouts
+export const DIGITS = "digits";
 
 interface IKeybind {
     modifiers?: Modifiers[];
@@ -161,14 +163,20 @@ const shortcuts: Record<Categories, IShortcut[]> = {
                 modifiers: [Modifiers.SHIFT],
                 key: Key.PAGE_UP,
             }],
-                description: _td("Jump to oldest unread message"),
+            description: _td("Jump to oldest unread message"),
         }, {
             keybinds: [{
                 modifiers: [CMD_OR_CTRL, Modifiers.SHIFT],
                 key: Key.U,
             }],
             description: _td("Upload a file"),
-        }
+        }, {
+            keybinds: [{
+                modifiers: [CMD_OR_CTRL],
+                key: Key.F,
+            }],
+            description: _td("Search (must be enabled)"),
+        },
     ],
 
     [Categories.ROOM_LIST]: [
@@ -247,6 +255,12 @@ const shortcuts: Record<Categories, IShortcut[]> = {
             description: _td("Activate selected button"),
         }, {
             keybinds: [{
+                modifiers: [CMD_OR_CTRL, Modifiers.SHIFT],
+                key: Key.D,
+            }],
+            description: _td("Toggle space panel"),
+        }, {
+            keybinds: [{
                 modifiers: [CMD_OR_CTRL],
                 key: Key.PERIOD,
             }],
@@ -257,6 +271,12 @@ const shortcuts: Record<Categories, IShortcut[]> = {
                 key: Key.SLASH,
             }],
             description: _td("Toggle this dialog"),
+        }, {
+            keybinds: [{
+                modifiers: [Modifiers.CONTROL, isMac ? Modifiers.SHIFT : Modifiers.ALT],
+                key: Key.H,
+            }],
+            description: _td("Go to Home View"),
         },
     ],
 
@@ -307,6 +327,7 @@ const alternateKeyName: Record<string, string> = {
     [Key.SPACE]: _td("Space"),
     [Key.HOME]: _td("Home"),
     [Key.END]: _td("End"),
+    [DIGITS]: _td("[number]"),
 };
 const keyIcon: Record<string, string> = {
     [Key.ARROW_UP]: "↑",
@@ -317,7 +338,7 @@ const keyIcon: Record<string, string> = {
 
 const Shortcut: React.FC<{
     shortcut: IShortcut;
-}> = ({shortcut}) => {
+}> = ({ shortcut }) => {
     const classes = classNames({
         "mx_KeyboardShortcutsDialog_inline": shortcut.keybinds.every(k => !k.modifiers || k.modifiers.length === 0),
     });
@@ -333,7 +354,7 @@ const Shortcut: React.FC<{
             }
 
             return <div key={s.key}>
-                { s.modifiers && s.modifiers.map(m => {
+                { s.modifiers?.map(m => {
                     return <React.Fragment key={m}>
                         <kbd>{ modifierIcon[m] || _t(m) }</kbd>+
                     </React.Fragment>;
@@ -355,12 +376,11 @@ export const toggleDialog = () => {
     const sections = categoryOrder.map(category => {
         const list = shortcuts[category];
         return <div className="mx_KeyboardShortcutsDialog_category" key={category}>
-            <h3>{_t(category)}</h3>
-            <div>{list.map(shortcut => <Shortcut key={shortcut.description} shortcut={shortcut} />)}</div>
+            <h3>{ _t(category) }</h3>
+            <div>{ list.map(shortcut => <Shortcut key={shortcut.description} shortcut={shortcut} />) }</div>
         </div>;
     });
 
-    const InfoDialog = sdk.getComponent('dialogs.InfoDialog');
     activeModal = Modal.createTrackedDialog("Keyboard Shortcuts", "", InfoDialog, {
         className: "mx_KeyboardShortcutsDialog",
         title: _t("Keyboard Shortcuts"),

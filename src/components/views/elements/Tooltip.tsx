@@ -17,19 +17,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
-import React, { Component } from 'react';
+import React, { Component, CSSProperties } from 'react';
 import ReactDOM from 'react-dom';
-import dis from '../../../dispatcher/dispatcher';
 import classNames from 'classnames';
-import { ViewTooltipPayload } from '../../../dispatcher/payloads/ViewTooltipPayload';
-import { Action } from '../../../dispatcher/actions';
+
+import { replaceableComponent } from "../../../utils/replaceableComponent";
+import UIStore from "../../../stores/UIStore";
 
 const MIN_TOOLTIP_HEIGHT = 25;
 
-interface IProps {
+export enum Alignment {
+    Natural, // Pick left or right
+    Left,
+    Right,
+    Top, // Centered
+    Bottom, // Centered
+    InnerBottom, // Inside the target, at the bottom
+}
+
+export interface ITooltipProps {
         // Class applied to the element used to position the tooltip
-        className: string;
+        className?: string;
         // Class applied to the tooltip itself
         tooltipClassName?: string;
         // Whether the tooltip is visible or hidden.
@@ -38,16 +46,29 @@ interface IProps {
         visible?: boolean;
         // the react element to put into the tooltip
         label: React.ReactNode;
+        alignment?: Alignment; // defaults to Natural
+        yOffset?: number;
+        // id describing tooltip
+        // used to associate tooltip with target for a11y
+        id?: string;
+        // If the parent is over this width, act as if it is only this wide
+        maxParentWidth?: number;
 }
 
-export default class Tooltip extends React.Component<IProps> {
+@replaceableComponent("views.elements.Tooltip")
+export default class Tooltip extends React.Component<ITooltipProps> {
     private tooltipContainer: HTMLElement;
     private tooltip: void | Element | Component<Element, any, any>;
     private parent: Element;
 
+    // XXX: This is because some components (Field) are unable to `import` the Tooltip class,
+    // so we expose the Alignment options off of us statically.
+    public static readonly Alignment = Alignment;
 
     public static readonly defaultProps = {
         visible: true,
+        yOffset: 0,
+        alignment: Alignment.Natural,
     };
 
     // Create a wrapper for the tooltip outside the parent and attach it to the body element
@@ -55,7 +76,10 @@ export default class Tooltip extends React.Component<IProps> {
         this.tooltipContainer = document.createElement("div");
         this.tooltipContainer.className = "mx_Tooltip_wrapper";
         document.body.appendChild(this.tooltipContainer);
-        window.addEventListener('scroll', this.renderTooltip, true);
+        window.addEventListener('scroll', this.renderTooltip, {
+            passive: true,
+            capture: true,
+        });
 
         this.parent = ReactDOM.findDOMNode(this).parentNode as Element;
 
@@ -68,18 +92,14 @@ export default class Tooltip extends React.Component<IProps> {
 
     // Remove the wrapper element, as the tooltip has finished using it
     public componentWillUnmount() {
-        dis.dispatch<ViewTooltipPayload>({
-            action: Action.ViewTooltip,
-            tooltip: null,
-            parent: null,
-        });
-
         ReactDOM.unmountComponentAtNode(this.tooltipContainer);
         document.body.removeChild(this.tooltipContainer);
-        window.removeEventListener('scroll', this.renderTooltip, true);
+        window.removeEventListener('scroll', this.renderTooltip, {
+            capture: true,
+        });
     }
 
-    private updatePosition(style: {[key: string]: any}) {
+    private updatePosition(style: CSSProperties) {
         const parentBox = this.parent.getBoundingClientRect();
         let offset = 0;
         if (parentBox.height > MIN_TOOLTIP_HEIGHT) {
@@ -89,8 +109,49 @@ export default class Tooltip extends React.Component<IProps> {
             // we need so that we're still centered.
             offset = Math.floor(parentBox.height - MIN_TOOLTIP_HEIGHT);
         }
-        style.top = (parentBox.top - 2) + window.pageYOffset + offset;
-        style.left = 6 + parentBox.right + window.pageXOffset;
+        const width = UIStore.instance.windowWidth;
+        const parentWidth = (
+            this.props.maxParentWidth
+                ? Math.min(parentBox.width, this.props.maxParentWidth)
+                : parentBox.width
+        );
+        const baseTop = (parentBox.top - 2 + this.props.yOffset) + window.pageYOffset;
+        const top = baseTop + offset;
+        const right = width - parentBox.right - window.pageXOffset - 16;
+        const left = parentBox.right + window.pageXOffset + 6;
+        const horizontalCenter = (
+            parentBox.left - window.pageXOffset + (parentWidth / 2)
+        );
+        switch (this.props.alignment) {
+            case Alignment.Natural:
+                if (parentBox.right > width / 2) {
+                    style.right = right;
+                    style.top = top;
+                    break;
+                }
+                // fall through to Right
+            case Alignment.Right:
+                style.left = left;
+                style.top = top;
+                break;
+            case Alignment.Left:
+                style.right = right;
+                style.top = top;
+                break;
+            case Alignment.Top:
+                style.top = baseTop - 16;
+                style.left = horizontalCenter;
+                break;
+            case Alignment.Bottom:
+                style.top = baseTop + parentBox.height;
+                style.left = horizontalCenter;
+                break;
+            case Alignment.InnerBottom:
+                style.top = baseTop + parentBox.height - 50;
+                style.left = horizontalCenter;
+                style.transform = "translate(-50%)";
+        }
+
         return style;
     }
 
@@ -99,7 +160,6 @@ export default class Tooltip extends React.Component<IProps> {
         // positioned, also taking into account any window zoom
         // NOTE: The additional 6 pixels for the left position, is to take account of the
         // tooltips chevron
-        const parent = ReactDOM.findDOMNode(this).parentNode as Element;
         const style = this.updatePosition({});
         // Hide the entire container when not visible. This prevents flashing of the tooltip
         // if it is not meant to be visible on first mount.
@@ -119,20 +179,12 @@ export default class Tooltip extends React.Component<IProps> {
 
         // Render the tooltip manually, as we wish it not to be rendered within the parent
         this.tooltip = ReactDOM.render<Element>(tooltip, this.tooltipContainer);
-
-        // Tell the roomlist about us so it can manipulate us if it wishes
-        dis.dispatch<ViewTooltipPayload>({
-            action: Action.ViewTooltip,
-            tooltip: this.tooltip,
-            parent: parent,
-        });
     };
 
     public render() {
         // Render a placeholder
         return (
-            <div className={this.props.className} >
-            </div>
+            <div className={this.props.className} />
         );
     }
 }
