@@ -1261,9 +1261,9 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
     };
 
     private onJoinButtonClicked = () => {
-        // If the user is a ROU, allow them to transition to a PWLU
+        // AMP allow guests to enter the room without registration
         if (this.context && this.context.isGuest()) {
-            // Join this room once the user has registered and logged in
+            // Join this room
             // (If we failed to peek, we may not have a valid room object.)
             dis.dispatch({
                 action: 'do_after_sync_prepared',
@@ -1272,7 +1272,13 @@ export class RoomView extends React.Component<IRoomProps, IRoomState> {
                     room_id: this.getRoomId(),
                 },
             });
-            dis.dispatch({ action: 'require_registration' });
+            // AMP join the room
+            dis.dispatch({
+                action: Action.JoinRoom,
+                roomId: this.getRoomId(),
+                opts: { },
+                _type: "unknown", // TODO: instrumentation
+            });
         } else {
             Promise.resolve().then(() => {
                 const signUrl = this.props.threepidInvite?.signUrl;
